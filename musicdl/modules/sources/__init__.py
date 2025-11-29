@@ -1,5 +1,6 @@
 '''initialize'''
 from .qq import QQMusicClient
+from .mitu import MituMusicClient
 from .joox import JooxMusicClient
 from .base import BaseMusicClient
 from .kuwo import KuwoMusicClient
@@ -24,7 +25,7 @@ class MusicClientBuilder(BaseModuleBuilder):
         'QianqianMusicClient': QianqianMusicClient, 'QQMusicClient': QQMusicClient, 'MiguMusicClient': MiguMusicClient,
         'JooxMusicClient': JooxMusicClient, 'LizhiMusicClient': LizhiMusicClient, 'NeteaseMusicClient': NeteaseMusicClient,
         'XimalayaMusicClient': XimalayaMusicClient, 'TIDALMusicClient': TIDALMusicClient, 'YouTubeMusicClient': YouTubeMusicClient,
-        'AppleMusicClient': AppleMusicClient, 'MP3JuiceMusicClient': MP3JuiceMusicClient,
+        'AppleMusicClient': AppleMusicClient, 'MP3JuiceMusicClient': MP3JuiceMusicClient, 'MituMusicClient': MituMusicClient,
     }
 
 
