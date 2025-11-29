@@ -94,7 +94,7 @@ If you are a rights holder and believe this repository infringes your rights, pl
 |  [TIDALMusicClient](https://tidal.com/)                              |  [TIDAL (提供HiFi音质的流媒体平台)](https://tidal.com/)                |   ✓                |  ✓                   |    [tidal.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/tidal.py)              |
 |  [YouTubeMusicClient](https://music.youtube.com/)                    |  [油管音乐](https://music.youtube.com/)                                |   ✓                |  ✓                   |    [youtube.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/youtube.py)          |
 |  [AppleMusicClient](https://music.apple.com/)                        |  [苹果音乐](https://music.apple.com/)                                  |   ✓                |  ✓                   |    [apple.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/apple.py)              |
-|  [MP3JuiceMusicClient](https://music.apple.com/)                     |  [MP3 Juice (SoundCloud+YouTube源)](https://music.apple.com/)          |   ✓                |  ✓                   |    [mp3juice.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/mp3juice.py)        |
+|  [MP3JuiceMusicClient](https://mp3juice.co/)                         |  [MP3 Juice (SoundCloud+YouTube源)](https://mp3juice.co/)              |   ✓                |  ✓                   |    [mp3juice.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/mp3juice.py)        |
 
 
 # 🧪 Playground
@@ -129,27 +129,25 @@ cd musicdl
 python setup.py install
 ```
 
-Some music platforms require [FFmpeg](https://www.ffmpeg.org/) and [Node.js](https://nodejs.org/en) to be directly callable in your environment 
-(*i.e.*, `ffmpeg` and `node` must be available on your system `PATH`) in order to obtain higher-quality audio or improve the robustness of the download process.  
+Some of the music downloaders supported by `musicdl` require additional CLI tools to function properly, mainly for decrypting encrypted search/download requests and audio files.
+These CLI tools include [FFmpeg](https://www.ffmpeg.org/) and [Node.js](https://nodejs.org/en). Specifically,
 
-To verify that they are installed and available on your `PATH`, run the following commands in a terminal (Command Prompt / PowerShell on Windows, Terminal on macOS/Linux):
-
-- **Check FFmpeg**
+- [FFmpeg](https://www.ffmpeg.org/): At the moment, only `TIDALMusicClient` depends on FFmpeg for audio file decoding.
+  If you don’t need to use `TIDALMusicClient` when working with `musicdl`, you don’t need to install FFmpeg.
+  After installing it, you should run the following command in a terminal (Command Prompt / PowerShell on Windows, Terminal on macOS/Linux) to check whether FFmpeg is on your system `PATH`:
   ```bash
   ffmpeg -version
   ```
   If FFmpeg is installed correctly and on your `PATH`, this command will print the FFmpeg version information (*e.g.*, a few lines starting with `ffmpeg version ...`).
   If you see an error like `command not found` or `'ffmpeg' is not recognized as an internal or external command`, then FFmpeg is either not installed or not added to your `PATH`.
 
-- **Check Node.js**
+- [Node.js](https://nodejs.org/en): Currently, only `YouTubeMusicClient` in `musicdl` depends on Node.js, so if you don’t need `YouTubeMusicClient`, you don’t have to install Node.js.
+  Similar to FFmpeg, after installing Node.js, you should run the following command to check whether Node.js is on your system `PATH`:
   ```bash
-  node -v
-  npm -v
+  node -v (npm -v)
   ```
   If Node.js is installed correctly, `node -v` will print the Node.js version (*e.g.*, `v22.11.0`), and `npm -v` will print the npm version.
   If you see a similar `command not found` / `not recognized` error, Node.js is not installed correctly or not available on your `PATH`.
-
-FFmpeg is primarily used by `TIDALMusicClient`, while Node.js is primarily used by `YouTubeMusicClient`.
 
 
 # 🚀 Quick Start
@@ -176,8 +174,7 @@ Options:
   -m, --music-sources, --music_sources TEXT
                                   The music search and download sources.
                                   [default: MiguMusicClient,NeteaseMusicClient
-                                  ,KuwoMusicClient,KugouMusicClient,QQMusicCli
-                                  ent,QianqianMusicClient]
+                                  ,QQMusicClient]
   -i, --init-music-clients-cfg, --init_music_clients_cfg TEXT
                                   Config such as `work_dir` for each music
                                   client as a JSON string.
