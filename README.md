@@ -55,8 +55,9 @@
 
 # 🎉 What's New
 
+- 2025-11-30: Released musicdl v2.6.0 — by tuning and improving the search arguments, we have significantly increased the search efficiency for some music sources, added support for searching and downloading music from Apple Music and MP3 Juice, and made several other minor optimizations.
 - 2025-11-25: Released musicdl v2.5.0 — supports searching and downloading from YouTube Music and make musicdl more robust. 
-- 2025-11-21: Released musicdl v2.4.6 — fixed bugs caused by mismatched parameters in MusicClient.download and optimized music sources.
+- 2025-11-21: Released musicdl v2.4.6 — fixed bugs caused by mismatched arguments in MusicClient.download and optimized music sources.
 - 2025-11-19: Released musicdl v2.4.5 — fix potential in-place modified bugs in HTTP requests.
 - 2025-11-19: Released musicdl v2.4.4 — some minor improvements and bug fixes.
 - 2025-11-15: Released musicdl v2.4.3 — migu and netease have introduced an automatic audio quality enhancement feature, which significantly increases the chances of getting lossless quality, Hi-Res audio, JyEffect (HD surround sound), Sky (immersive surround sound), and JyMaster (ultra-clear master quality).
