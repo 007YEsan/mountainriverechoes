@@ -99,6 +99,7 @@ If you are a rights holder and believe this repository infringes your rights, pl
 |  [MituMusicClient](https://www.qqmp3.vip/)                           |  [米兔音乐](https://www.qqmp3.vip/)                                    |   ✓                |  ✓                   |    [mitu.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/mitu.py)                |
 |  [GequbaoMusicClient](https://www.gequbao.com/)                      |  [歌曲宝](https://www.gequbao.com/)                                    |   ✓                |  ✓                   |    [gequbao.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/gequbao.py)          |
 |  [YinyuedaoMusicClient](https://1mp3.top/)                           |  [音乐岛](https://1mp3.top/)                                           |   ✓                |  ✓                   |    [yinyuedao.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/yinyuedao.py)      |
+|  [BuguyyMusicClient](https://buguyy.top/)                            |  [布谷音乐](https://buguyy.top/)                                       |   ✓                |  ✓                   |    [buguyy.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/buguyy.py)            |
 
 
 # 🧪 Playground
