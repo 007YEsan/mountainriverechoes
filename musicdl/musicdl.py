@@ -53,7 +53,7 @@ class MusicClient():
                 'search_size_per_source': 5, 'auto_set_proxies': False, 'random_update_ua': False, 'max_retries': 5,
                 'maintain_session': False, 'logger_handle': self.logger_handle, 'disable_print': True, 'work_dir': 'musicdl_outputs',
                 'proxy_sources': None, 'default_search_cookies': {}, 'default_download_cookies': {}, 'type': music_source,
-                'search_size_per_page': 10, 'strict_limit_search_size_per_page': True,
+                'search_size_per_page': 10, 'strict_limit_search_size_per_page': True, 'quark_parser_config': {}
             }
             init_music_client_cfg.update(init_music_clients_cfg.get(music_source, {}))
             self.music_clients[music_source] = BuildMusicClient(module_cfg=init_music_client_cfg)
@@ -80,7 +80,7 @@ class MusicClient():
                     colorize(str(song_info_pointer), 'number'), 
                     colorize(search_result['singers'][:12] + '...' if len(search_result['singers']) > 15 else search_result['singers'], 'singer'), 
                     search_result['song_name'], 
-                    search_result['file_size'] if search_result['ext'] not in ['flac', 'ogg'] else colorize(search_result['file_size'], 'flac'), 
+                    search_result['file_size'] if search_result['ext'] not in ['flac', 'wav', 'ogg'] else colorize(search_result['file_size'], 'flac'), 
                     search_result['duration'], search_result['album'], 
                     colorize(search_result['source'].removesuffix('MusicClient').upper(), 'highlight'),
                 ])

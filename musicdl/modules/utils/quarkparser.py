@@ -14,8 +14,19 @@ from urllib.parse import urlparse
 
 '''QuarkParser'''
 class QuarkParser():
+    '''parsefromurl'''
     @staticmethod
-    def parsefromurl(url: str, passcode: str = '', cookies: str | dict = ''):
+    def parsefromurl(url: str, passcode: str = '', cookies: str | dict = '', max_tries: int = 3):
+        for _ in range(max_tries):
+            try:
+                download_url = QuarkParser._parsefromurl(url=url, passcode=passcode, cookies=cookies)
+                break
+            except:
+                download_url = ""
+        return download_url
+    '''_parsefromurl'''
+    @staticmethod
+    def _parsefromurl(url: str, passcode: str = '', cookies: str | dict = ''):
         # init
         session = requests.Session()
         parsed_url = urlparse(url)

@@ -42,7 +42,7 @@ class BaseMusicClient():
     source = 'BaseMusicClient'
     def __init__(self, search_size_per_source: int = 5, auto_set_proxies: bool = False, random_update_ua: bool = False, max_retries: int = 5, maintain_session: bool = False, 
                  logger_handle: LoggerHandle = None, disable_print: bool = False, work_dir: str = 'musicdl_outputs', proxy_sources: list = None, default_search_cookies: dict | str = None,
-                 default_download_cookies: dict | str = None, search_size_per_page: int = 10, strict_limit_search_size_per_page: bool = True):
+                 default_download_cookies: dict | str = None, search_size_per_page: int = 10, strict_limit_search_size_per_page: bool = True, quark_parser_config: dict = None):
         # set up work dir
         touchdir(work_dir)
         # set attributes
@@ -65,6 +65,14 @@ class BaseMusicClient():
         # init requests.Session
         self.default_search_headers = {'User-Agent': UserAgent().random}
         self.default_download_headers = {'User-Agent': UserAgent().random}
+        quark_parser_config = quark_parser_config or {'cookies': ''}
+        self.quark_parser_config = copy.deepcopy(quark_parser_config)
+        quark_cookie_string = self.quark_parser_config.get('cookies', '')
+        if isinstance(quark_cookie_string, dict): quark_cookie_string = "; ".join(f"{k}={v}" for k, v in quark_cookie_string.items())
+        self.quark_default_download_headers = {
+            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36 Core/1.94.225.400 QQBrowser/12.2.5544.400',
+            'origin': 'https://pan.quark.cn', 'referer': 'https://pan.quark.cn/', 'accept-language': 'zh-CN,zh;q=0.9', 'cookie': quark_cookie_string,
+        }
         self.default_headers = self.default_search_headers
         self._initsession()
         # proxied_session_client
