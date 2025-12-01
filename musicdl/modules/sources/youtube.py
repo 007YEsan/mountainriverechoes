@@ -27,8 +27,8 @@ class YouTubeMusicClient(BaseMusicClient):
         self._initsession()
     '''_download'''
     @usedownloadheaderscookies
-    def _download(self, song_info: dict, request_overrides: dict = None, downloaded_song_infos: list = [], progress: Progress = None, song_progress_id: int = 0, songs_progress_id: int = 0):
-        if isinstance(song_info['download_url'], str): return super()._download(song_info=song_info, request_overrides=request_overrides, downloaded_song_infos=downloaded_song_infos, progress=progress, song_progress_id=song_progress_id, songs_progress_id=songs_progress_id)
+    def _download(self, song_info: dict, request_overrides: dict = None, downloaded_song_infos: list = [], progress: Progress = None, song_progress_id: int = 0):
+        if isinstance(song_info['download_url'], str): return super()._download(song_info=song_info, request_overrides=request_overrides, downloaded_song_infos=downloaded_song_infos, progress=progress, song_progress_id=song_progress_id)
         request_overrides = request_overrides or {}
         try:
             touchdir(song_info['work_dir'])
@@ -50,7 +50,6 @@ class YouTubeMusicClient(BaseMusicClient):
                         downloading_text = "%0.2fMB/%0.2fMB" % (downloaded_size / 1024 / 1024, downloaded_size / 1024 / 1024)
                     progress.advance(song_progress_id, len(chunk))
                     progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info['song_name']} (Downloading: {downloading_text})")
-            progress.advance(songs_progress_id, 1)
             progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info['song_name']} (Success)")
             downloaded_song_info = copy.deepcopy(song_info)
             downloaded_song_info['save_path'] = save_path

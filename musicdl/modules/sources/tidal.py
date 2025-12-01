@@ -216,8 +216,7 @@ class TIDALMusicClient(BaseMusicClient):
         return search_urls
     '''_download'''
     @usedownloadheaderscookies
-    def _download(self, song_info: dict, request_overrides: dict = None, downloaded_song_infos: list = [], progress: Progress = None, 
-                  song_progress_id: int = 0, songs_progress_id: int = 0):
+    def _download(self, song_info: dict, request_overrides: dict = None, downloaded_song_infos: list = [], progress: Progress = None, song_progress_id: int = 0):
         # init
         request_overrides = request_overrides or {}
         # success
@@ -273,7 +272,6 @@ class TIDALMusicClient(BaseMusicClient):
                 setmetadata(track=song_info['raw_data']['search_result'], filepath=save_path, stream=stream_url)
             # update progress
             progress.advance(song_progress_id, 1)
-            progress.advance(songs_progress_id, 1)
             progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info['song_name']} (Success)")
             downloaded_song_info = copy.deepcopy(song_info)
             downloaded_song_info['save_path'] = save_path

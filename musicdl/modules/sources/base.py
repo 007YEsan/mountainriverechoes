@@ -143,8 +143,7 @@ class BaseMusicClient():
         return song_infos
     '''_download'''
     @usedownloadheaderscookies
-    def _download(self, song_info: dict, request_overrides: dict = None, downloaded_song_infos: list = [], progress: Progress = None, 
-                  song_progress_id: int = 0, songs_progress_id: int = 0):
+    def _download(self, song_info: dict, request_overrides: dict = None, downloaded_song_infos: list = [], progress: Progress = None, song_progress_id: int = 0):
         request_overrides = request_overrides or {}
         try:
             touchdir(song_info['work_dir'])
@@ -168,7 +167,6 @@ class BaseMusicClient():
                             downloading_text = "%0.2fMB/%0.2fMB" % (downloaded_size / 1024 / 1024, downloaded_size / 1024 / 1024)
                         progress.advance(song_progress_id, len(chunk))
                         progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info['song_name']} (Downloading: {downloading_text})")
-                progress.advance(songs_progress_id, 1)
                 progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info['song_name']} (Success)")
                 downloaded_song_info = copy.deepcopy(song_info)
                 downloaded_song_info['save_path'] = save_path
@@ -197,10 +195,11 @@ class BaseMusicClient():
             with ThreadPoolExecutor(max_workers=num_threadings) as pool:
                 for song_progress_id, song_info in zip(song_progress_ids, song_infos):
                     submitted_tasks.append(pool.submit(
-                        self._download, song_info, request_overrides, downloaded_song_infos, progress, song_progress_id, songs_progress_id
+                        self._download, song_info, request_overrides, downloaded_song_infos, progress, song_progress_id
                     ))
                 for _ in as_completed(submitted_tasks):
                     num_downloaded_songs = int(progress.tasks[songs_progress_id].completed)
+                    progress.advance(songs_progress_id, 1)
                     progress.update(songs_progress_id, description=f"{self.source}.download >>> completed ({num_downloaded_songs}/{len(song_infos)})")
         # logging
         if len(downloaded_song_infos) > 0:

@@ -9,10 +9,12 @@ WeChat Official Account (微信公众号):
 import re
 import os
 import copy
+import shutil
 from .base import BaseMusicClient
 from urllib.parse import urlencode
 from rich.progress import Progress
-from ..utils import legalizestring, resp2json, isvalidresp, seconds2hms, usesearchheaderscookies, safeextractfromdict, AudioLinkTester, WhisperLRC
+from ..utils.appleutils import AppleMusicClientUtils
+from ..utils import touchdir, legalizestring, resp2json, isvalidresp, seconds2hms, usesearchheaderscookies, safeextractfromdict, usedownloadheaderscookies, AudioLinkTester, WhisperLRC
 
 
 '''AppleMusicClient'''
@@ -22,17 +24,21 @@ class AppleMusicClient(BaseMusicClient):
         super(AppleMusicClient, self).__init__(**kwargs)
         # headers setting
         self.default_search_headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
-            'Accept': '*/*',
-            'Accept-Encoding': 'gzip, deflate, br, zstd',
-            'Accept-Language': 'zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7',
-            'Authorization': f'Bearer {self._fetchtoken()}',
-            'Origin': 'https://music.apple.com',
-            'Referer': 'https://music.apple.com/',
+            "authorization": f"Bearer {self._fetchtoken()}",
+            "accept": "*/*",
+            "accept-language": "en-US",
+            "origin": "https://music.apple.com",
+            "priority": "u=1, i",
+            "referer": "https://music.apple.com",
+            "sec-ch-ua": '"Google Chrome";v="137", "Chromium";v="137", "Not/A)Brand";v="24"',
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": '"Windows"',
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-site",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
         }
-        self.default_download_headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36',
-        }
+        self.default_download_headers = copy.deepcopy(self.default_search_headers)
         self.default_headers = self.default_search_headers
         # account info (whether a VIP user)
         self.account_info = {}
@@ -42,6 +48,29 @@ class AppleMusicClient(BaseMusicClient):
             self.account_info = self._fetchaccountinfo()
         # init session
         self._initsession()
+    '''_download'''
+    @usedownloadheaderscookies
+    def _download(self, song_info: dict, request_overrides: dict = None, downloaded_song_infos: list = [], progress: Progress = None, song_progress_id: int = 0):
+        request_overrides = request_overrides or {}
+        try:
+            touchdir(song_info['work_dir'])
+            tmp_dir = os.path.join(song_info['work_dir'], song_info['identifier'])
+            download_item = song_info['download_url']
+            save_path, same_name_file_idx = os.path.join(song_info['work_dir'], f"{song_info['song_name']}.{song_info['ext']}"), 1
+            while os.path.exists(save_path):
+                save_path = os.path.join(song_info['work_dir'], f"{song_info['song_name']}_{same_name_file_idx}.{song_info['ext']}")
+                same_name_file_idx += 1
+            download_item.final_path = save_path
+            AppleMusicClientUtils.download(download_item, work_dir=tmp_dir)
+            progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info['song_name']} (Success)")
+            downloaded_song_info = copy.deepcopy(song_info)
+            downloaded_song_info['save_path'] = save_path
+            downloaded_song_infos.append(downloaded_song_info)
+        except Exception as err:
+            progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info['song_name']} (Error: {err})")
+        try: shutil.rmtree(tmp_dir, ignore_errors=True)
+        except: pass
+        return downloaded_song_infos
     '''_fetchtoken'''
     def _fetchtoken(self, request_overrides: dict = None):
         request_overrides = request_overrides or {}
@@ -91,6 +120,14 @@ class AppleMusicClient(BaseMusicClient):
             count += page_size
         # return
         return search_urls
+    '''_fetchlicenseexchange'''
+    def _fetchlicenseexchange(self, track_id: str, track_uri: str, challenge: str, key_system: str = "com.widevine.alpha", request_overrides: dict = None):
+        request_overrides = request_overrides or {}
+        json_data = {"challenge": challenge, "key-system": key_system, "uri": track_uri, "adamId": track_id, "isLibrary": False, "user-initiated": True}
+        resp = self.post("https://play.itunes.apple.com/WebObjects/MZPlay.woa/wa/acquireWebPlaybackLicense", json=json_data, **request_overrides)
+        resp.raise_for_status()
+        license_exchange = resp2json(resp)
+        return license_exchange
     '''_search'''
     @usesearchheaderscookies
     def _search(self, keyword: str = '', search_url: str = '', request_overrides: dict = None, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
@@ -121,25 +158,32 @@ class AppleMusicClient(BaseMusicClient):
                     ext, file_size = download_url.split('.')[-1].split('?')[0], download_result_suppl['file_size']
                     if download_result_suppl['ext'] != 'NULL': ext = download_result_suppl['ext']
                     download_result['download_result_suppl'] = download_result_suppl
+                    lyric_result, lyric = {}, 'NULL'
                 # ----vip users
                 else:
-                    resp = self.post('https://play.music.apple.com/WebObjects/MZPlay.woa/wa/webPlayback', json={"salableAdamId": search_result['id']}, **request_overrides)
+                    account_info = self._fetchaccountinfo(request_overrides=request_overrides)
+                    geo = safeextractfromdict(account_info, ['meta', 'subscription', 'storefront'], 'us')
+                    params = {"extend": "extendedAssetUrls", "include": "lyrics,albums"}
+                    resp = self.get(f'https://amp-api.music.apple.com/v1/catalog/{geo}/songs/{search_result["id"]}', params=params, **request_overrides)
                     if not isvalidresp(resp=resp): continue
                     download_result = resp2json(resp=resp)
-                    def _qualitykey(item: dict):
-                        meta: dict = item.get("metadata", {}) or {}
-                        bit_rate = int(meta.get("bitRate", 0) or 0)
-                        sample_rate = int(meta.get("sampleRate", 0) or 0)
-                        file_size = int(item.get("file-size", 0) or 0)
-                        return (-bit_rate, -sample_rate, -file_size)
-                    tracks = safeextractfromdict(download_result, ['songList', 0, 'assets'], [])
-                    tracks = [t for t in tracks if t.get('URL')]
-                    if not tracks: continue
-                    tracks = sorted(tracks, key=_qualitykey)
-                    download_url, download_url_status = tracks[0]['URL'], {}
-                    ext, file_size = safeextractfromdict(tracks[0], ['metadata', 'fileExtension'], 'm4p'), safeextractfromdict(tracks[0], ['metadata', 'file-size'], '0')
+                    song_metadata = download_result['data'][0]
+                    resp = self.post("https://play.itunes.apple.com/WebObjects/MZPlay.woa/wa/webPlayback", json={"salableAdamId": search_result["id"], "language": "en-US"}, **request_overrides)
+                    if not isvalidresp(resp=resp): continue
+                    webplayback = resp2json(resp=resp)
+                    download_result['webplayback'] = webplayback
+                    download_item = AppleMusicClientUtils.getsongdownloaditem(song_metadata=song_metadata, webplayback=webplayback, get_license_exchange_func=self._fetchlicenseexchange, request_overrides=request_overrides)
+                    lyric_result, lyric = download_item.lyrics_results if download_item.lyrics_results else {}, download_item.lyrics.synced if download_item.lyrics.synced else 'NULL'
+                    download_url, ext = download_item, download_item.stream_info.file_format.value
+                    download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_download_cookies).test(download_url.stream_info.audio_track.stream_url, request_overrides)
+                    if not download_url_status['ok']: continue
+                    try:
+                        download_result_suppl = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_download_cookies).probe(download_url.stream_info.audio_track.stream_url, request_overrides)
+                    except:
+                        download_result_suppl = {'download_url': download_url.stream_info.audio_track.stream_url, 'file_size': 'NULL', 'ext': 'NULL'}
+                    file_size = download_result_suppl['file_size']
+                    download_result['download_result_suppl'] = download_result_suppl
                 # --lyric results
-                # ----non-vip users
                 if not self.default_cookies or 'media-user-token' not in self.default_cookies:
                     try:
                         if os.environ.get('ENABLE_WHISPERLRC', 'False').lower() == 'true':
@@ -149,20 +193,6 @@ class AppleMusicClient(BaseMusicClient):
                             lyric = lyric_result['lyric']
                         else:
                             lyric_result, lyric = dict(), 'NULL'
-                    except:
-                        lyric_result, lyric = dict(), 'NULL'
-                # ----vip users
-                else:
-                    try:
-                        params = {
-                            'art[url]': 'f', 'extend': 'lyricsExcerpt,offers', 'fields[albums]': 'artistName,artistUrl,artwork,name,url', 
-                            'fields[artists]': 'name,url', 'format[resources]': 'map', 'include': 'albums,artists,credits,lyrics,music-videos',
-                            'l': 'en-US', 'platform': 'web'
-                        }
-                        resp = self.get(f'https://amp-api.music.apple.com/v1/catalog/cn/songs/{search_result["id"]}', params=params, **request_overrides)
-                        resp.raise_for_status()
-                        lyric_result = resp2json(resp=resp)
-                        lyric = safeextractfromdict(lyric_result, ['resources', 'lyrics', search_result['id'], 'attributes', 'ttml'], 'NULL')
                     except:
                         lyric_result, lyric = dict(), 'NULL'
                 # --construct song_info

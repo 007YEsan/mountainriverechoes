@@ -151,6 +151,14 @@ These CLI tools include [FFmpeg](https://www.ffmpeg.org/) and [Node.js](https://
   If Node.js is installed correctly, `node -v` will print the Node.js version (*e.g.*, `v22.11.0`), and `npm -v` will print the npm version.
   If you see a similar `command not found` / `not recognized` error, Node.js is not installed correctly or not available on your `PATH`.
 
+- [MP4Box](https://gpac.io/downloads/gpac-nightly-builds/):
+
+- [Bento4](https://www.bento4.com/downloads/):
+
+- [amdecrypt](https://github.com/CharlesPikachu/musicdl/releases/download/applemusic-dependency/amdecrypt-v0.0.1.zip): 
+
+- [N_m3u8DL-RE](https://github.com/nilaoda/N_m3u8DL-RE): 
+
 
 # 🚀 Quick Start
 
