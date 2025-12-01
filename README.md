@@ -55,6 +55,7 @@
 
 # 🎉 What's New
 
+- 2025-12-02: Released musicdl v2.6.2 — support parsing `AppleMusicClient` encrypted audio streams, along with some minor optimizations.
 - 2025-12-01: Released musicdl v2.6.1 — we have provided more comprehensive documentation and added four new music search and download sources, *i.e.*, `MituMusicClient`, `GequbaoMusicClient`, `YinyuedaoMusicClient`, and `BuguyyMusicClient`, which allow you to download a large collection of lossless tracks.
 - 2025-11-30: Released musicdl v2.6.0 — by tuning and improving the search arguments, we have significantly increased the search efficiency for some music sources, added support for searching and downloading music from Apple Music and MP3 Juice, and made several other minor optimizations.
 - 2025-11-25: Released musicdl v2.5.0 — supports searching and downloading from YouTube Music and make musicdl more robust. 
@@ -134,8 +135,8 @@ python setup.py install
 Some of the music downloaders supported by `musicdl` require additional CLI tools to function properly, mainly for decrypting encrypted search/download requests and audio files.
 These CLI tools include [FFmpeg](https://www.ffmpeg.org/) and [Node.js](https://nodejs.org/en). Specifically,
 
-- [FFmpeg](https://www.ffmpeg.org/): At the moment, only `TIDALMusicClient` depends on FFmpeg for audio file decoding.
-  If you don’t need to use `TIDALMusicClient` when working with `musicdl`, you don’t need to install FFmpeg.
+- [FFmpeg](https://www.ffmpeg.org/): At the moment, only `TIDALMusicClient` and `AppleMusicClient` depends on FFmpeg for audio file decoding.
+  If you don’t need to use `TIDALMusicClient` and `AppleMusicClient` when working with `musicdl`, you don’t need to install FFmpeg.
   After installing it, you should run the following command in a terminal (Command Prompt / PowerShell on Windows, Terminal on macOS/Linux) to check whether FFmpeg is on your system `PATH`:
   ```bash
   ffmpeg -version
@@ -151,13 +152,31 @@ These CLI tools include [FFmpeg](https://www.ffmpeg.org/) and [Node.js](https://
   If Node.js is installed correctly, `node -v` will print the Node.js version (*e.g.*, `v22.11.0`), and `npm -v` will print the npm version.
   If you see a similar `command not found` / `not recognized` error, Node.js is not installed correctly or not available on your `PATH`.
 
-- [MP4Box](https://gpac.io/downloads/gpac-nightly-builds/):
+- [GPAC](https://gpac.io/downloads/gpac-nightly-builds/): GPAC is an open-source multimedia framework for packaging, processing, and streaming formats like MP4, DASH, and HLS.
+  In musicdl, this library is mainly used for handling `AppleMusicClient` audio streams, so if you don’t need `AppleMusicClient` support, you don’t need to install it.
+  After installing GPAC, you need to make sure all of its executables are available in your system `PATH`.
+  A quick way to verify this is that you should be able to run
+  ```bash
+  python -c "import shutil; print(shutil.which('MP4Box'))"
+  ```
+  in Command Prompt and get the full path without an error. 
 
-- [Bento4](https://www.bento4.com/downloads/):
+- [Bento4](https://www.bento4.com/downloads/): Bento4 is an open-source C++ toolkit for reading, writing, inspecting, and packaging MP4 files and related multimedia formats.
+  In musicdl, this library is mainly used for handling `AppleMusicClient` audio streams, so if you don’t need `AppleMusicClient` support, you don’t need to install it.
+  After installing Bento4, you need to make sure all of its executables are available in your system `PATH`.
+  A quick way to verify this is that you should be able to run
+  ```bash
+  python -c "import shutil; print(shutil.which('mp4decrypt'))"
+  ```
+  in Command Prompt and get the full path without an error. 
 
-- [amdecrypt](https://github.com/CharlesPikachu/musicdl/releases/download/applemusic-dependency/amdecrypt-v0.0.1.zip): 
-
-- [N_m3u8DL-RE](https://github.com/nilaoda/N_m3u8DL-RE): 
+- [N_m3u8DL-RE](https://github.com/nilaoda/N_m3u8DL-RE): N_m3u8DL-RE is a powerful open-source command-line tool for downloading, decrypting, and muxing HLS/DASH (m3u8/mpd) streaming media into local video files.
+  In musicdl, this library is mainly used for handling `AppleMusicClient` audio streams, so if you don’t need `AppleMusicClient` support, you don’t need to install it.
+  After installing N_m3u8DL-RE, you need to make sure all of its executables are available in your system `PATH`.
+  A quick way to verify this is that you should be able to run
+  ```bash
+  python -c "import shutil; print(shutil.which('N_m3u8DL-RE'))"
+  ```
 
 
 # 🚀 Quick Start
@@ -487,7 +506,23 @@ If the cookies you supply belong to a non-VIP Quark account, the download speed 
 
 #### Apple Music Download
 
-Support for `AppleMusicClient` is currently incomplete, so even users with an Apple Music subscription cannot yet use musicdl to download full high-quality source audio files.
+`AppleMusicClient` works similarly to `TIDALMusicClient`: 
+if you are not an Apple Music subscriber or you have not manually set in musicdl the cookies (*i.e.*, the `media-user-token`) from your logged-in Apple Music session in the browser, 
+you will only be able to download a partial segment of each track (usually 30–90 seconds). 
+
+If you need to download the full audio and lyrics for each song, you can configure musicdl as follows:
+
+```python
+from musicdl import musicdl
+
+cookies = {'media-user-token': xxx}
+init_music_clients_cfg = {'AppleMusicClient': {'default_search_cookies': cookies, 'default_download_cookies': cookies, 'search_size_per_source': 10}
+music_client = musicdl.MusicClient(music_sources=['AppleMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
+music_client.startcmdui()
+```
+
+It is important to note that to download Apple Music audio files (including decryption) using musicdl, you must properly install [GPAC](https://gpac.io/downloads/gpac-nightly-builds/),
+[Bento4](https://www.bento4.com/downloads/) and [N_m3u8DL-RE](https://github.com/nilaoda/N_m3u8DL-RE).
 
 For more details, please refer to the [official documentation](https://musicdl.readthedocs.io/).
 
