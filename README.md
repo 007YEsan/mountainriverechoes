@@ -516,7 +516,7 @@ If you need to download the full audio and lyrics for each song, you can configu
 from musicdl import musicdl
 
 cookies = {'media-user-token': xxx}
-init_music_clients_cfg = {'AppleMusicClient': {'default_search_cookies': cookies, 'default_download_cookies': cookies, 'search_size_per_source': 10}
+init_music_clients_cfg = {'AppleMusicClient': {'default_search_cookies': cookies, 'default_download_cookies': cookies, 'search_size_per_source': 10}}
 music_client = musicdl.MusicClient(music_sources=['AppleMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
 music_client.startcmdui()
 ```
