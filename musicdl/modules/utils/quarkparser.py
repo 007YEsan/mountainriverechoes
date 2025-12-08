@@ -19,16 +19,16 @@ class QuarkParser():
     def parsefromurl(url: str, passcode: str = '', cookies: str | dict = '', max_tries: int = 3):
         for _ in range(max_tries):
             try:
-                download_url = QuarkParser._parsefromurl(url=url, passcode=passcode, cookies=cookies)
+                download_result, download_url = QuarkParser._parsefromurl(url=url, passcode=passcode, cookies=cookies)
                 break
             except:
-                download_url = ""
-        return download_url
+                download_result, download_url = {}, ""
+        return download_result, download_url
     '''_parsefromurl'''
     @staticmethod
     def _parsefromurl(url: str, passcode: str = '', cookies: str | dict = ''):
         # init
-        session = requests.Session()
+        session, download_result = requests.Session(), {}
         parsed_url = urlparse(url)
         pwd_id = parsed_url.path.strip('/').split('/')[-1]
         if cookies and isinstance(cookies, str): cookies = dict(item.split("=", 1) for item in cookies.split("; "))
@@ -43,6 +43,7 @@ class QuarkParser():
         resp.raise_for_status()
         token_data = resp2json(resp=resp)
         stoken = token_data['data']['stoken']
+        download_result['token_data'] = token_data
         time.sleep(0.1)
         # share/sharepage/detail
         params = {
@@ -55,6 +56,7 @@ class QuarkParser():
         detail_data = resp2json(resp=resp)
         fid = detail_data["data"]["list"][0]["fid"]
         share_fid_token = detail_data["data"]["list"][0]["share_fid_token"]
+        download_result['detail_data'] = detail_data
         time.sleep(0.1)
         # clouddrive/file/info/path_list
         params = {"pr": "ucpro", "fr": "pc", "uc_param_str": "", "__dt": "1266", "__t": f"{int(time.time() * 1000)}"}
@@ -63,6 +65,7 @@ class QuarkParser():
         resp.raise_for_status()
         path_list_data = resp2json(resp=resp)
         to_pdir_fid = path_list_data["data"][0]["fid"]
+        download_result['path_list_data'] = path_list_data
         time.sleep(0.1)
         # share/sharepage/save
         params = {"pr": "ucpro", "fr": "pc", "uc_param_str": "", "__dt": "5660", "__t": f"{int(time.time() * 1000)}"}
@@ -71,6 +74,7 @@ class QuarkParser():
         resp.raise_for_status()
         save_data = resp2json(resp=resp)
         task_id = save_data['data']['task_id']
+        download_result['save_data'] = save_data
         time.sleep(0.1)
         # clouddrive/task
         for retry_index in range(5):
@@ -80,6 +84,7 @@ class QuarkParser():
                 resp.raise_for_status()
                 task_data = resp2json(resp=resp)
                 fid_encrypt = task_data['data']['save_as']['save_as_top_fids'][0]
+                download_result['task_data'] = task_data
                 break
             except:
                 time.sleep(0.1)
@@ -95,5 +100,6 @@ class QuarkParser():
         resp.raise_for_status()
         download_data = resp2json(resp=resp)
         download_url = download_data["data"][0]["download_url"]
+        download_result['download_data'] = download_data
         # return
-        return download_url
+        return download_result, download_url
