@@ -17,9 +17,9 @@ from xml.etree import ElementTree
 from .base import BaseMusicClient
 from rich.progress import Progress
 from urllib.parse import urlencode, urljoin
-from ..utils import legalizestring, byte2mb, resp2json, isvalidresp, seconds2hms, touchdir, replacefile, usesearchheaderscookies, usedownloadheaderscookies, AudioLinkTester
+from ..utils import legalizestring, resp2json, seconds2hms, touchdir, replacefile, usesearchheaderscookies, usedownloadheaderscookies, SongInfo
 from ..utils.tidalutils import (
-    TIDALTvSession, SearchResult, StreamRespond, StreamUrl, Manifest, Period, AdaptationSet, Representation, SegmentTemplate, SegmentList, SegmentTimelineEntry,
+    TIDALTvSession, SearchResult, StreamRespond, StreamUrl, Manifest, Period, AdaptationSet, Representation, SegmentTemplate, SegmentList, SegmentTimelineEntry, Track,
     decryptfile, decryptsecuritytoken, pyavready, ffmpegready, remuxflacstream, setmetadata
 )
 
@@ -216,15 +216,15 @@ class TIDALMusicClient(BaseMusicClient):
         return search_urls
     '''_download'''
     @usedownloadheaderscookies
-    def _download(self, song_info: dict, request_overrides: dict = None, downloaded_song_infos: list = [], progress: Progress = None, song_progress_id: int = 0):
+    def _download(self, song_info: SongInfo, request_overrides: dict = None, downloaded_song_infos: list = [], progress: Progress = None, song_progress_id: int = 0):
         # init
         request_overrides = request_overrides or {}
         # success
         try:
-            touchdir(song_info['work_dir'])
+            touchdir(song_info.work_dir)
             # parse basic information
-            stream_url: StreamUrl = song_info['download_url']
-            download_ext, final_ext = self._guessstreamextension(stream_url=stream_url), song_info['ext']
+            stream_url: StreamUrl = song_info.download_url
+            download_ext, final_ext = self._guessstreamextension(stream_url=stream_url), song_info.ext
             if (final_ext != ".flac") or (download_ext == ".flac"):
                 remux_required = False
             else:
@@ -233,7 +233,7 @@ class TIDALMusicClient(BaseMusicClient):
                 final_ext, remux_required = download_ext, False
             chunk_size = 1048576
             progress.update(song_progress_id, total=1)
-            progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info['song_name']} (Downloading")
+            progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name} (Downloading)")
             # download music file
             with tempfile.TemporaryDirectory(prefix="musicdl-TIDALMusicClient-track-") as tmpdir:
                 download_part = os.path.join(
@@ -264,22 +264,19 @@ class TIDALMusicClient(BaseMusicClient):
                     else:
                         final_ext = download_ext
                         decrypted_path = decrypted_path
-                save_path, same_name_file_idx = os.path.join(song_info['work_dir'], f"{song_info['song_name']}{final_ext}"), 1
-                while os.path.exists(save_path):
-                    save_path = os.path.join(song_info['work_dir'], f"{song_info['song_name']}_{same_name_file_idx}{final_ext}")
-                    same_name_file_idx += 1
+                save_path = song_info.save_path
                 replacefile(decrypted_path, save_path)
-                setmetadata(track=song_info['raw_data']['search_result'], filepath=save_path, stream=stream_url)
+                setmetadata(track=song_info.raw_data['search'], filepath=save_path, stream=stream_url)
             # update progress
-            progress.advance(song_progress_id, 1)
-            progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info['song_name']} (Success)")
+            progress.update(song_progress_id, total=os.path.getsize(save_path))
+            progress.advance(song_progress_id, os.path.getsize(save_path))
+            progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name} (Success)")
             downloaded_song_info = copy.deepcopy(song_info)
-            downloaded_song_info['save_path'] = save_path
-            downloaded_song_info['ext'] = final_ext
+            downloaded_song_info.ext = final_ext
             downloaded_song_infos.append(downloaded_song_info)
         # failure
         except Exception as err:
-            progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info['song_name']} (Error: {err})")
+            progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name} (Error: {err})")
         # return
         return downloaded_song_infos
     '''_search'''
@@ -292,50 +289,46 @@ class TIDALMusicClient(BaseMusicClient):
             # --search results
             resp = self._saferequestget(search_url, **request_overrides)
             resp.raise_for_status()
-            search_results = aigpy.model.dictToModel(resp2json(resp=resp), SearchResult()).tracks.items
+            search_results: list[Track] = aigpy.model.dictToModel(resp2json(resp=resp), SearchResult()).tracks.items
             for search_result in search_results:
                 if search_result.id is None: continue
+                song_info = SongInfo(source=self.source)
                 # --download results
-                download_result, download_url, ext, file_size = {}, "", "m4a", "0"
                 qualities = [('hi_res_lossless', 'HI_RES_LOSSLESS'), ('high_lossless', 'LOSSLESS'), ('low_320k', 'HIGH'), ('low_96k', 'LOW')]
                 for quality in qualities:
                     params = {"playbackmode": "STREAM", "audioquality": quality[1], "assetpresentation": "FULL",}
-                    resp = self._saferequestget(f'https://tidal.com/v1/tracks/{search_result.id}/playbackinfo', params=params, **request_overrides)
-                    if not isvalidresp(resp): continue
-                    download_result = aigpy.model.dictToModel(resp2json(resp), StreamRespond())
-                    if ("vnd.tidal.bt" not in download_result.manifestMimeType) and ("dash+xml" not in download_result.manifestMimeType): continue
                     try:
-                        download_url = self._parsemanifest(stream_resp=download_result)
+                        resp = self._saferequestget(f'https://tidal.com/v1/tracks/{search_result.id}/playbackinfo', params=params, **request_overrides)
+                        resp.raise_for_status()
+                        download_result = aigpy.model.dictToModel(resp2json(resp), StreamRespond())
                     except:
-                        download_url = ''
+                        continue
+                    if ("vnd.tidal.bt" not in download_result.manifestMimeType) and ("dash+xml" not in download_result.manifestMimeType): continue
+                    try: download_url = self._parsemanifest(stream_resp=download_result)
+                    except: continue
                     if not download_url: continue
-                    download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_download_cookies).test(download_url.urls[0], request_overrides)
-                    if download_url_status['ok']: break
-                    download_result, download_url, ext, file_size = {}, "", "m4a", "0"
-                if not download_url: continue
-                if not download_url_status['ok']: continue
-                ext = self._guessextension(stream_url=download_url)
-                duration = seconds2hms(search_result.duration)
+                    song_info = SongInfo(
+                        source=self.source, download_url=download_url, download_url_status=self.audio_link_tester.test(download_url.urls[0], request_overrides),
+                        ext=self._guessextension(stream_url=download_url), duration=seconds2hms(search_result.duration),
+                        raw_data={'search': search_result, 'download': download_result}, file_size='NULL',
+                        song_name=legalizestring(search_result.title, replace_null_string='NULL'), 
+                        singers=legalizestring(', '.join([singer.name for singer in search_result.artists]), replace_null_string='NULL'), 
+                        album=legalizestring(search_result.album.title, replace_null_string='NULL'),
+                        identifier=search_result.id,
+                    )
+                    if song_info.with_valid_download_url: break
+                if not song_info.with_valid_download_url: continue
                 # --lyric results
                 params = {'countryCode': self.tidal_session.storage.country_code, 'include': 'lyrics'}
-                resp = self._saferequestget(f'https://openapi.tidal.com/v2/tracks/{search_result.id}', params=params, **request_overrides)
-                if isvalidresp(resp):
-                    try:
-                        lyric_result = resp2json(resp)
-                        lyric = lyric_result.get('included', [{}])[0].get('attributes', {}).get('lrcText', 'NULL')
-                    except:
-                        lyric_result, lyric = {}, 'NULL'
-                else:
+                try:
+                    resp = self._saferequestget(f'https://openapi.tidal.com/v2/tracks/{search_result.id}', params=params, **request_overrides)
+                    resp.raise_for_status()
+                    lyric_result = resp2json(resp)
+                    lyric = lyric_result.get('included', [{}])[0].get('attributes', {}).get('lrcText', 'NULL')
+                except:
                     lyric_result, lyric = {}, 'NULL'
-                # --construct song_info
-                song_info = dict(
-                    source=self.source, raw_data=dict(search_result=search_result, download_result=download_result, lyric_result=lyric_result), 
-                    download_url_status=download_url_status, download_url=download_url, ext=ext, file_size=byte2mb(file_size), lyric=lyric, duration=duration,
-                    song_name=legalizestring(search_result.title, replace_null_string='NULL'), 
-                    singers=legalizestring(', '.join([singer.name for singer in search_result.artists]), replace_null_string='NULL'), 
-                    album=legalizestring(search_result.album.title, replace_null_string='NULL'),
-                    identifier=search_result.id,
-                )
+                song_info.raw_data['lyric'] = lyric_result
+                song_info.lyric = lyric
                 # --append to song_infos
                 song_infos.append(song_info)
                 # --judgement for search_size

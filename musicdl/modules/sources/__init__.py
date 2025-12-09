@@ -24,12 +24,11 @@ from .yinyuedao import YinyuedaoMusicClient
 '''MusicClientBuilder'''
 class MusicClientBuilder(BaseModuleBuilder):
     REGISTERED_MODULES = {
-        'FiveSingMusicClient': FiveSingMusicClient, 'KuwoMusicClient': KuwoMusicClient, 'KugouMusicClient': KugouMusicClient,
-        'QianqianMusicClient': QianqianMusicClient, 'QQMusicClient': QQMusicClient, 'MiguMusicClient': MiguMusicClient,
-        'JooxMusicClient': JooxMusicClient, 'LizhiMusicClient': LizhiMusicClient, 'NeteaseMusicClient': NeteaseMusicClient,
-        'XimalayaMusicClient': XimalayaMusicClient, 'TIDALMusicClient': TIDALMusicClient, 'YouTubeMusicClient': YouTubeMusicClient,
-        'AppleMusicClient': AppleMusicClient, 'MP3JuiceMusicClient': MP3JuiceMusicClient, 'MituMusicClient': MituMusicClient,
-        'GequbaoMusicClient': GequbaoMusicClient, 'YinyuedaoMusicClient': YinyuedaoMusicClient, 'BuguyyMusicClient': BuguyyMusicClient,
+        'QQMusicClient': QQMusicClient, 'MituMusicClient': MituMusicClient, 'BuguyyMusicClient': BuguyyMusicClient, 'GequbaoMusicClient': GequbaoMusicClient,
+        'MP3JuiceMusicClient': MP3JuiceMusicClient, 'YinyuedaoMusicClient': YinyuedaoMusicClient, 'LizhiMusicClient': LizhiMusicClient, 'XimalayaMusicClient': XimalayaMusicClient,
+        'JooxMusicClient': JooxMusicClient, 'KuwoMusicClient': KuwoMusicClient, 'KugouMusicClient': KugouMusicClient, 'FiveSingMusicClient': FiveSingMusicClient,
+        'QianqianMusicClient': QianqianMusicClient, 'MiguMusicClient': MiguMusicClient, 'NeteaseMusicClient': NeteaseMusicClient, 'YouTubeMusicClient': YouTubeMusicClient,
+        'TIDALMusicClient': TIDALMusicClient, 'AppleMusicClient': AppleMusicClient,
     }
 
 

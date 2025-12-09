@@ -14,7 +14,7 @@ import random
 from .base import BaseMusicClient
 from rich.progress import Progress
 from ..utils.qqutils import QQMusicClientUtils, Device, DEFAULT_VIP_QUALITIES, DEFAULT_QUALITIES
-from ..utils import byte2mb, resp2json, isvalidresp, seconds2hms, legalizestring, safeextractfromdict, usesearchheaderscookies, AudioLinkTester
+from ..utils import byte2mb, resp2json, seconds2hms, legalizestring, safeextractfromdict, usesearchheaderscookies, SongInfo
 
 
 '''QQMusicClient'''
@@ -91,20 +91,16 @@ class QQMusicClient(BaseMusicClient):
             search_results = resp2json(resp)['music.search.SearchCgiService.DoSearchForQQMusicMobile']['data']['body']['item_song']
             for search_result in search_results:
                 # --download results
-                if 'mid' not in search_result:
+                if not isinstance(search_result, dict) or ('mid' not in search_result):
                     continue
-                download_result, download_url, ext, file_size = {}, "", "mp3", "0"
-                file_size_infos = dict(
-                    size_new=safeextractfromdict(search_result, ['file', 'size_new'], ['0', '0', '0', '0', '0']),
-                    size_flac=safeextractfromdict(search_result, ['file', 'size_flac'], '0'),
-                    size_192ogg=safeextractfromdict(search_result, ['file', 'size_192ogg'], '0'),
-                    size_96ogg=safeextractfromdict(search_result, ['file', 'size_96ogg'], '0'),
-                    size_320mp3=safeextractfromdict(search_result, ['file', 'size_320mp3'], '0'),
-                    size_128mp3=safeextractfromdict(search_result, ['file', 'size_128mp3'], '0'),
-                    size_192aac=safeextractfromdict(search_result, ['file', 'size_192aac'], '0'),
-                    size_96aac=safeextractfromdict(search_result, ['file', 'size_96aac'], '0'),
+                # ----init
+                file_size_infos, song_info = dict(
+                    size_new=safeextractfromdict(search_result, ['file', 'size_new'], ['0', '0', '0', '0', '0']), size_flac=safeextractfromdict(search_result, ['file', 'size_flac'], '0'),
+                    size_192ogg=safeextractfromdict(search_result, ['file', 'size_192ogg'], '0'), size_96ogg=safeextractfromdict(search_result, ['file', 'size_96ogg'], '0'),
+                    size_320mp3=safeextractfromdict(search_result, ['file', 'size_320mp3'], '0'), size_128mp3=safeextractfromdict(search_result, ['file', 'size_128mp3'], '0'),
+                    size_192aac=safeextractfromdict(search_result, ['file', 'size_192aac'], '0'), size_96aac=safeextractfromdict(search_result, ['file', 'size_96aac'], '0'),
                     size_48aac=safeextractfromdict(search_result, ['file', 'size_48aac'], '0'),
-                )
+                ), SongInfo(source=self.source)
                 # ----if cookies exits, assume user with vip first
                 if self.default_cookies or request_overrides.get('cookies', {}):
                     default_vip_rule = {
@@ -118,29 +114,31 @@ class QQMusicClient(BaseMusicClient):
                         },
                     }
                     default_file_sizes = [
-                        file_size_infos['size_new'][0], file_size_infos['size_new'][1], file_size_infos['size_new'][2],
-                        file_size_infos['size_flac'], file_size_infos['size_new'][5], file_size_infos['size_new'][3],
-                        file_size_infos['size_192ogg'], file_size_infos['size_96ogg'],
+                        file_size_infos['size_new'][0], file_size_infos['size_new'][1], file_size_infos['size_new'][2], file_size_infos['size_flac'], file_size_infos['size_new'][5], 
+                        file_size_infos['size_new'][3], file_size_infos['size_192ogg'], file_size_infos['size_96ogg'],
                     ]
                     for quality, default_file_size in zip(list(DEFAULT_VIP_QUALITIES.values()), default_file_sizes):
-                        if download_result and download_url: continue
-                        current_rule = copy.deepcopy(default_vip_rule)
-                        current_rule['music.vkey.GetEVkey.CgiGetEVkey']['param']['filename'] = [f"{quality[0]}{search_result['mid']}{search_result['mid']}{quality[1]}"]
-                        resp = self.post('https://u.y.qq.com/cgi-bin/musicu.fcg', json=current_rule, **request_overrides)
-                        if not isvalidresp(resp): continue
-                        download_result: dict = resp2json(resp)
-                        if download_result.get('code', 'NULL') not in [0] or safeextractfromdict(download_result, ['music.vkey.GetEVkey.CgiGetEVkey', 'code'], 'NULL') not in [0]:
+                        song_info = SongInfo(source=self.source)
+                        try:
+                            current_rule = copy.deepcopy(default_vip_rule)
+                            current_rule['music.vkey.GetEVkey.CgiGetEVkey']['param']['filename'] = [f"{quality[0]}{search_result['mid']}{search_result['mid']}{quality[1]}"]
+                            resp = self.post('https://u.y.qq.com/cgi-bin/musicu.fcg', json=current_rule, **request_overrides)
+                            resp.raise_for_status()
+                            download_result: dict = resp2json(resp)
+                            if download_result.get('code', 'NULL') not in [0] or safeextractfromdict(download_result, ['music.vkey.GetEVkey.CgiGetEVkey', 'code'], 'NULL') not in [0]: continue
+                            download_url = safeextractfromdict(download_result, ['music.vkey.GetEVkey.CgiGetEVkey', 'data', "midurlinfo", 0, "wifiurl"], "")
+                            if not download_url: continue
+                            download_url, ext, file_size = "https://isure.stream.qqmusic.qq.com/" + download_url, quality[1][1:], default_file_size
+                            download_url_status = self.audio_link_tester.test(download_url, request_overrides)
+                            song_info.update(dict(
+                                download_url=download_url, download_url_status=download_url_status, ext=ext, file_size_bytes=file_size, file_size=byte2mb(file_size),
+                                raw_data={'search': search_result, 'download': download_result},
+                            ))
+                            if song_info.with_valid_download_url: break
+                        except:
                             continue
-                        download_url = safeextractfromdict(download_result, ['music.vkey.GetEVkey.CgiGetEVkey', 'data', "midurlinfo", 0, "wifiurl"], "")
-                        if not download_url: continue
-                        download_url = "https://isure.stream.qqmusic.qq.com/" + download_url
-                        ext = quality[1][1:]
-                        file_size = default_file_size
-                        download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_download_cookies).test(download_url, request_overrides)
-                        if download_url_status['ok']: break
-                        download_result, download_url, ext, file_size = {}, "", "mp3", "0"
                 # ----common user in post try
-                if not download_result or not download_url:
+                if not song_info.with_valid_download_url:
                     default_rule = {
                         'comm': {
                             'cv': self.version_info['version_code'], 'v': self.version_info['version_code'], 'QIMEI36': self.qimei_info['q36'], 'ct': '11', 
@@ -152,31 +150,32 @@ class QQMusicClient(BaseMusicClient):
                         },
                     }
                     default_file_sizes = [
-                        file_size_infos['size_new'][0], file_size_infos['size_new'][1], file_size_infos['size_new'][2],
-                        file_size_infos['size_flac'], file_size_infos['size_new'][5], file_size_infos['size_new'][3],
-                        file_size_infos['size_192ogg'], file_size_infos['size_96ogg'], file_size_infos['size_320mp3'],
-                        file_size_infos['size_128mp3'], file_size_infos['size_192aac'], file_size_infos['size_96aac'],
+                        file_size_infos['size_new'][0], file_size_infos['size_new'][1], file_size_infos['size_new'][2], file_size_infos['size_flac'], file_size_infos['size_new'][5], file_size_infos['size_new'][3],
+                        file_size_infos['size_192ogg'], file_size_infos['size_96ogg'], file_size_infos['size_320mp3'], file_size_infos['size_128mp3'], file_size_infos['size_192aac'], file_size_infos['size_96aac'],
                         file_size_infos['size_48aac'],
                     ]
                     for quality, default_file_size in zip(list(DEFAULT_QUALITIES.values()), default_file_sizes):
-                        if download_result and download_url: continue
-                        current_rule = copy.deepcopy(default_rule)
-                        current_rule['music.vkey.GetVkey.UrlGetVkey']['param']['filename'] = [f"{quality[0]}{search_result['mid']}{search_result['mid']}{quality[1]}"]
-                        resp = self.post('https://u.y.qq.com/cgi-bin/musicu.fcg', json=current_rule, **request_overrides)
-                        if not isvalidresp(resp): continue
-                        download_result: dict = resp2json(resp)
-                        if download_result.get('code', 'NULL') not in [0] or safeextractfromdict(download_result, ['music.vkey.GetVkey.UrlGetVkey', 'code'], 'NULL') not in [0]:
+                        song_info = SongInfo(source=self.source)
+                        try:
+                            current_rule = copy.deepcopy(default_rule)
+                            current_rule['music.vkey.GetVkey.UrlGetVkey']['param']['filename'] = [f"{quality[0]}{search_result['mid']}{search_result['mid']}{quality[1]}"]
+                            resp = self.post('https://u.y.qq.com/cgi-bin/musicu.fcg', json=current_rule, **request_overrides)
+                            resp.raise_for_status()
+                            download_result: dict = resp2json(resp)
+                            if download_result.get('code', 'NULL') not in [0] or safeextractfromdict(download_result, ['music.vkey.GetVkey.UrlGetVkey', 'code'], 'NULL') not in [0]: continue
+                            download_url = safeextractfromdict(download_result, ['music.vkey.GetVkey.UrlGetVkey', 'data', "midurlinfo", 0, "wifiurl"], "")
+                            if not download_url: continue
+                            download_url, ext, file_size = "https://isure.stream.qqmusic.qq.com/" + download_url, quality[1][1:], default_file_size
+                            download_url_status = self.audio_link_tester.test(download_url, request_overrides)
+                            song_info.update(dict(
+                                download_url=download_url, download_url_status=download_url_status, ext=ext, file_size_bytes=file_size, file_size=byte2mb(file_size),
+                                raw_data={'search': search_result, 'download': download_result},
+                            ))
+                            if song_info.with_valid_download_url: break
+                        except:
                             continue
-                        download_url = safeextractfromdict(download_result, ['music.vkey.GetVkey.UrlGetVkey', 'data', "midurlinfo", 0, "wifiurl"], "")
-                        if not download_url: continue
-                        download_url = "https://isure.stream.qqmusic.qq.com/" + download_url
-                        ext = quality[1][1:]
-                        file_size = default_file_size
-                        download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_download_cookies).test(download_url, request_overrides)
-                        if download_url_status['ok']: break
-                        download_result, download_url, ext, file_size = {}, "", "mp3", "0"
                 # ----common user in get try
-                if not download_result or not download_url:
+                if not song_info.with_valid_download_url:
                     params = {
                         'data': json.dumps({
                             "req_0": {
@@ -191,21 +190,31 @@ class QQMusicClient(BaseMusicClient):
                         }, ensure_ascii=False).encode('utf-8'),
                         'format': 'json',
                     }
-                    resp = self.get('https://u.y.qq.com/cgi-bin/musicu.fcg', params=params, **request_overrides)
-                    if not isvalidresp(resp): continue
-                    download_result: dict = resp2json(resp)
-                    if download_result.get('code', 'NULL') not in [0] or safeextractfromdict(download_result, ['req_0', 'code'], 'NULL') not in [0]:
+                    song_info = SongInfo(source=self.source)
+                    try:
+                        resp = self.get('https://u.y.qq.com/cgi-bin/musicu.fcg', params=params, **request_overrides)
+                        resp.raise_for_status()
+                        download_result: dict = resp2json(resp)
+                        if download_result.get('code', 'NULL') not in [0] or safeextractfromdict(download_result, ['req_0', 'code'], 'NULL') not in [0]: continue
+                        download_url = safeextractfromdict(download_result, ['req_0', 'data', "midurlinfo", 0, "purl"], "")
+                        if not download_url: continue
+                        download_url, ext, file_size = 'http://ws.stream.qqmusic.qq.com/' + download_url, "mp3", file_size_infos['size_128mp3']
+                        download_url_status = self.audio_link_tester.test(download_url, request_overrides)
+                        song_info.update(dict(
+                            download_url=download_url, download_url_status=download_url_status, ext=ext, file_size_bytes=file_size, file_size=byte2mb(file_size),
+                            raw_data={'search': search_result, 'download': download_result},
+                        ))
+                    except:
                         continue
-                    download_url = safeextractfromdict(download_result, ['req_0', 'data', "midurlinfo", 0, "purl"], "")
-                    if not download_url: continue
-                    download_url = 'http://ws.stream.qqmusic.qq.com/' + download_url
-                    ext = "mp3"
-                    file_size = file_size_infos['size_128mp3']
-                    download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_download_cookies).test(download_url, request_overrides)
                 # ----parse more infos
-                if not download_url: continue
-                if not download_url_status['ok']: continue
-                duration = seconds2hms(search_result.get('interval', '0'))
+                if not song_info.with_valid_download_url: continue
+                song_info.update(dict(
+                    duration_s=search_result.get('interval', 0), duration=seconds2hms(search_result.get('interval', 0)),
+                    song_name=legalizestring(search_result.get('title', 'NULL'), replace_null_string='NULL'),
+                    singers=legalizestring(', '.join([singer.get('name', 'NULL') for singer in search_result.get('singer', [])]), replace_null_string='NULL'), 
+                    album=legalizestring(safeextractfromdict(search_result, ['album', 'title'], 'NULL'), replace_null_string='NULL'),
+                    identifier=search_result['mid'],
+                ))
                 # --lyric results
                 params = {
                     'songmid': str(search_result['mid']), 'g_tk': '5381', 'loginUin': '0', 'hostUin': '0', 'format': 'json',
@@ -213,26 +222,15 @@ class QQMusicClient(BaseMusicClient):
                 }
                 request_overrides = copy.deepcopy(request_overrides)
                 request_overrides.pop('headers', {})
-                resp = self.get('https://c.y.qq.com/lyric/fcgi-bin/fcg_query_lyric_new.fcg', headers={'Referer': 'https://y.qq.com/portal/player.html'}, params=params, **request_overrides)
-                if isvalidresp(resp):
+                try:
+                    resp = self.get('https://c.y.qq.com/lyric/fcgi-bin/fcg_query_lyric_new.fcg', headers={'Referer': 'https://y.qq.com/portal/player.html'}, params=params, **request_overrides)
                     lyric_result: dict = resp2json(resp) or {'lyric': ''}
-                    try:
-                        lyric = lyric_result.get('lyric', '')
-                        if not lyric: lyric = 'NULL'
-                        else: lyric = base64.b64decode(lyric).decode('utf-8')
-                    except:
-                        lyric = 'NULL'
-                else:
+                    lyric = lyric_result.get('lyric', '')
+                    if not lyric: lyric = 'NULL'
+                    else: lyric = base64.b64decode(lyric).decode('utf-8')
+                except:
                     lyric_result, lyric = {}, "NULL"
-                # --construct song_info
-                song_info = dict(
-                    source=self.source, raw_data=dict(search_result=search_result, download_result=download_result, lyric_result=lyric_result), 
-                    download_url_status=download_url_status, download_url=download_url, ext=ext, file_size=byte2mb(file_size), lyric=lyric, duration=duration,
-                    song_name=legalizestring(search_result.get('title', 'NULL'), replace_null_string='NULL'), 
-                    singers=legalizestring(', '.join([singer.get('name', 'NULL') for singer in search_result.get('singer', [])]), replace_null_string='NULL'), 
-                    album=legalizestring(safeextractfromdict(search_result, ['album', 'title'], 'NULL'), replace_null_string='NULL'),
-                    identifier=search_result['mid'],
-                )
+                song_info.raw_data['lyric'], song_info.lyric = lyric_result, lyric
                 # --append to song_infos
                 song_infos.append(song_info)
                 # --judgement for search_size

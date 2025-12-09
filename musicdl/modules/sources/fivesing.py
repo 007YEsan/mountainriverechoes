@@ -10,7 +10,7 @@ import copy
 from .base import BaseMusicClient
 from urllib.parse import urlencode
 from rich.progress import Progress
-from ..utils import legalizestring, byte2mb, resp2json, isvalidresp, usesearchheaderscookies, AudioLinkTester
+from ..utils import legalizestring, byte2mb, resp2json, usesearchheaderscookies, SongInfo
 
 
 '''FiveSingMusicClient'''
@@ -56,43 +56,45 @@ class FiveSingMusicClient(BaseMusicClient):
             search_results = resp2json(resp)['list']
             for search_result in search_results:
                 # --download results
-                if 'songId' not in search_result or 'typeEname' not in search_result:
+                if not isinstance(search_result, dict) or ('songId' not in search_result) or ('typeEname' not in search_result):
                     continue
+                song_info = SongInfo(source=self.source)
                 params = {'songid': str(search_result['songId']), 'songtype': search_result['typeEname']}
-                resp = self.get('http://mobileapi.5sing.kugou.com/song/getSongUrl', params=params, **request_overrides)
-                if (not isvalidresp(resp)) or (resp2json(resp)['code'] not in [1000]):
+                try:
+                    resp = self.get('http://mobileapi.5sing.kugou.com/song/getSongUrl', params=params, **request_overrides)
+                    resp.raise_for_status()
+                    download_result: dict = resp2json(resp)
+                    if download_result['code'] not in [1000, '1000']: continue
+                except:
                     continue
-                download_result: dict = resp2json(resp)
+                data: dict = download_result.get('data', {})
                 for quality in ['sq', 'hq', 'lq']:
-                    data: dict = download_result.get('data', {})
                     download_url = data.get(f'{quality}url', '').strip() or data.get(f'{quality}url_backup', '').strip()
                     if not download_url: continue
-                    ext = data.get(f'{quality}ext', 'mp3').strip() or 'mp3'
-                    file_size = byte2mb(data.get(f'{quality}size', '0'))
-                    download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_download_cookies).test(download_url, request_overrides)
-                    if download_url_status['ok']: break
-                if not download_url: continue
-                if not download_url_status['ok']: continue
+                    song_info = SongInfo(
+                        source=self.source, download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+                        ext = data.get(f'{quality}ext', 'mp3').strip() or 'mp3', file_size_bytes=data.get(f'{quality}size', 0),
+                        file_size = byte2mb(data.get(f'{quality}size', 0)), raw_data={'search': search_result, 'download': download_result},
+                    )
+                    if song_info.with_valid_download_url: break
+                if not song_info.with_valid_download_url: continue
                 # --lyric results
                 params = {'songid': str(search_result['songId']), 'songtype': search_result['typeEname'], 'songfields': '', 'userfields': ''}
-                resp = self.get('http://mobileapi.5sing.kugou.com/song/newget', params=params, **request_overrides)
-                if isvalidresp(resp):
-                    lyric_result: dict = resp2json(resp)
-                else:
-                    lyric_result = {}
                 try:
+                    resp = self.get('http://mobileapi.5sing.kugou.com/song/newget', params=params, **request_overrides)
+                    resp.raise_for_status()
+                    lyric_result: dict = resp2json(resp)
                     lyric = str(lyric_result.get('data', {}).get('dynamicWords', 'NULL')).strip() or 'NULL'
                 except:
-                    lyric = 'NULL'
-                # --construct song_info
-                song_info = dict(
-                    source=self.source, raw_data=dict(search_result=search_result, download_result=download_result, lyric_result=lyric_result), 
-                    download_url_status=download_url_status, download_url=download_url, ext=ext, file_size=file_size, lyric=lyric, duration='-:-:-',
+                    lyric_result, lyric = {}, 'NULL'
+                # --update song_info
+                song_info.raw_data['lyric'] = lyric_result
+                song_info.update(dict(
                     song_name=legalizestring(search_result.get('songName', 'NULL'), replace_null_string='NULL'), 
                     singers=legalizestring(search_result.get('singer', 'NULL'), replace_null_string='NULL'), 
                     album=legalizestring(lyric_result.get('data', {}).get('albumName', 'NULL'), replace_null_string='NULL'),
-                    identifier=search_result['songId'],
-                )
+                    identifier=search_result['songId'], lyric=lyric, duration='-:-:-',
+                ))
                 # --append to song_infos
                 song_infos.append(song_info)
                 # --judgement for search_size

@@ -10,9 +10,9 @@ import copy
 import base64
 import json_repair
 from .base import BaseMusicClient
-from urllib.parse import urlencode
 from rich.progress import Progress
-from ..utils import legalizestring, byte2mb, resp2json, isvalidresp, seconds2hms, usesearchheaderscookies, AudioLinkTester
+from urllib.parse import urlencode, urlparse, parse_qs
+from ..utils import legalizestring, byte2mb, resp2json, seconds2hms, usesearchheaderscookies, SongInfo
 
 
 '''JooxMusicClient'''
@@ -58,45 +58,50 @@ class JooxMusicClient(BaseMusicClient):
             for section in resp2json(resp)['section_list']:
                 for items in section['item_list']:
                     search_results.extend(items.get('song', []))
+            parsed_search_url = parse_qs(urlparse(search_url).query, keep_blank_values=True)
+            lang, country = parsed_search_url['lang'][0], parsed_search_url['country'][0]
             for search_result in search_results:
                 # --download results
-                if 'song_info' not in search_result or 'id' not in search_result['song_info']:
+                if not isinstance(search_result, dict) or ('song_info' not in search_result) or ('id' not in search_result['song_info']):
                     continue
-                params = {'songid': search_result['song_info']['id'], 'lang': 'zh_cn', 'country': 'sg'}
-                resp = self.get('https://api.joox.com/web-fcgi-bin/web_get_songinfo', params=params, **request_overrides)
-                download_result = json_repair.loads(resp.text.replace('MusicInfoCallback(', '')[:-1])
-                kbps_map = json_repair.loads(download_result['kbps_map'])
+                song_info = SongInfo(source=self.source)
+                params = {'songid': search_result['song_info']['id'], 'lang': lang, 'country': country}
+                try:
+                    resp = self.get('https://api.joox.com/web-fcgi-bin/web_get_songinfo', params=params, **request_overrides)
+                    resp.raise_for_status()
+                    download_result = json_repair.loads(resp.text.replace('MusicInfoCallback(', '')[:-1])
+                    kbps_map = json_repair.loads(download_result['kbps_map'])
+                except:
+                    continue
                 for quality in [('r320Url', '320'), ('r192Url', '192'), ('mp3Url', '128'), ('m4aUrl', '96')]:
                     if (not kbps_map.get(quality[1])) or (not download_result.get(quality[0])):
                         continue
                     download_url: str = download_result.get(quality[0])
-                    file_size = byte2mb(kbps_map.get(quality[1], '0'))
                     ext = download_url.split('.')[-1].split('?')[0]
-                    duration = seconds2hms(download_result.get('minterval', '0'))
-                    download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_download_cookies).test(download_url, request_overrides)
-                    if download_url_status['ok']: break
-                if not download_url: continue
-                if not download_url_status['ok']: continue
-                # --lyric results
-                params = {'musicid': search_result['song_info']['id'], 'country': 'sg', 'lang': 'zh_cn'}
-                resp = self.get('https://api.joox.com/web-fcgi-bin/web_lyric', params=params, **request_overrides)
-                if isvalidresp(resp):
-                    lyric_result: dict = json_repair.loads(resp.text.replace('MusicJsonCallback(', '')[:-1])
-                else:
-                    lyric_result = {}
-                try:
-                    lyric = base64.b64decode(lyric_result.get('lyric', '')).decode('utf-8') or 'NULL'
-                except:
-                    lyric = 'NULL'
-                # --construct song_info
-                song_info = dict(
-                    source=self.source, raw_data=dict(search_result=search_result, download_result=download_result, lyric_result=lyric_result), 
-                    download_url_status=download_url_status, download_url=download_url, ext=ext, file_size=file_size, lyric=lyric, duration=duration,
+                    song_info = SongInfo(
+                        source=self.source, download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides), ext=ext,
+                        raw_data={'search': search_result, 'download': download_result}, file_size_bytes=kbps_map.get(quality[1], 0),
+                        file_size=byte2mb(kbps_map.get(quality[1], 0)), duration_s=download_result.get('minterval', 0), duration=seconds2hms(download_result.get('minterval', 0)),
+                    )
+                    if song_info.with_valid_download_url: break
+                if not song_info.with_valid_download_url: continue
+                song_info.update(dict(
                     song_name=legalizestring(search_result['song_info'].get('name', 'NULL'), replace_null_string='NULL'), 
                     singers=legalizestring(', '.join([singer.get('name', 'NULL') for singer in search_result['song_info'].get('artist_list', [])]), replace_null_string='NULL'), 
                     album=legalizestring(search_result['song_info'].get('album_name', 'NULL'), replace_null_string='NULL'),
                     identifier=search_result['song_info']['id'],
-                )
+                ))
+                # --lyric results
+                params = {'musicid': search_result['song_info']['id'], 'country': country, 'lang': lang}
+                try:
+                    resp = self.get('https://api.joox.com/web-fcgi-bin/web_lyric', params=params, **request_overrides)
+                    resp.raise_for_status()
+                    lyric_result: dict = json_repair.loads(resp.text.replace('MusicJsonCallback(', '')[:-1]) or {}
+                    lyric = base64.b64decode(lyric_result.get('lyric', '')).decode('utf-8') or 'NULL'
+                except:
+                    lyric_result, lyric = dict(), 'NULL'
+                song_info.raw_data['lyric'] = lyric_result
+                song_info.lyric = lyric
                 # --append to song_infos
                 song_infos.append(song_info)
                 # --judgement for search_size

@@ -6,13 +6,14 @@ Author:
 WeChat Official Account (微信公众号):
     Charles的皮卡丘
 '''
+import re
 import time
 import copy
 import hashlib
 from .base import BaseMusicClient
 from urllib.parse import urlencode
 from rich.progress import Progress
-from ..utils import byte2mb, resp2json, isvalidresp, seconds2hms, legalizestring, safeextractfromdict, usesearchheaderscookies, AudioLinkTester
+from ..utils import byte2mb, resp2json, seconds2hms, legalizestring, safeextractfromdict, usesearchheaderscookies, SongInfo
 
 
 '''QianqianMusicClient'''
@@ -74,44 +75,54 @@ class QianqianMusicClient(BaseMusicClient):
             search_results = resp2json(resp)['data']['typeTrack']
             for search_result in search_results:
                 # --download results
-                if 'TSID' not in search_result:
+                if not isinstance(search_result, dict) or ('TSID' not in search_result):
                     continue
-                params = {'TSID': search_result['TSID'], 'appid': self.appid}
-                params = self._addsignandtstoparams(params=params)
-                resp = self.get("https://music.91q.com/v1/song/tracklink", params=params, **request_overrides)
-                if not isvalidresp(resp): continue
-                download_result: dict = resp2json(resp)
-                download_url = safeextractfromdict(download_result, ['data', 'path'], '') or safeextractfromdict(download_result, ['data', 'trail_audio_info', 'path'], '')
-                if not download_url: continue
-                download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_download_cookies).test(download_url, request_overrides)
-                if not download_url_status['ok']: continue
-                file_size = byte2mb(download_result.get('size', '0'))
-                duration = seconds2hms(download_result.get('duration', '0'))
-                ext = download_result.get('format', 'mp3')
-                if file_size == 'NULL':
-                    download_result_suppl = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_download_cookies).probe(download_url, request_overrides)
-                    download_result['download_result_suppl'] = download_result_suppl
-                    file_size, ext = download_result_suppl['file_size'], download_result_suppl['ext'] if download_result_suppl['ext'] not in ['NULL'] else ext
-                # --lyric results
-                resp = self.get(search_result['lyric'], **request_overrides)
-                if isvalidresp(resp):
+                song_info = SongInfo(source=self.source)
+                for rate in ['64', '128', '320', '3000'][::-1]:
+                    params = {'TSID': search_result['TSID'], 'appid': self.appid, 'rate': rate}
+                    params = self._addsignandtstoparams(params=params)
                     try:
-                        resp.encoding = 'utf-8'
-                        lyric = resp.text or 'NULL'
-                        lyric_result = dict(lyric=lyric)
+                        resp = self.get("https://music.91q.com/v1/song/tracklink", params=params, **request_overrides)
+                        resp.raise_for_status()
+                        download_result: dict = resp2json(resp)
+                        download_url = safeextractfromdict(download_result, ['data', 'path'], '')
+                        if not download_url: continue
+                        song_info = SongInfo(
+                            source=self.source, download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+                            raw_data={'search': search_result, 'download': download_result}, file_size_bytes=download_result['data'].get('size', 0), 
+                            file_size=byte2mb(download_result['data'].get('size', 0)), duration_s=download_result['data'].get('duration', 0),
+                            duration = seconds2hms(download_result['data'].get('duration', 0)), ext=download_result['data'].get('format', 'mp3')
+                        )
+                        if song_info.with_valid_download_url: break
                     except:
-                        lyric_result, lyric = dict(), 'NULL'
-                else:
-                    lyric_result, lyric = dict(), 'NULL'
-                # --construct song_info
-                song_info = dict(
-                    source=self.source, raw_data=dict(search_result=search_result, download_result=download_result, lyric_result=lyric_result), 
-                    download_url_status=download_url_status, download_url=download_url, ext=ext, file_size=file_size, lyric=lyric, duration=duration, 
+                        continue
+                if not song_info.with_valid_download_url: continue
+                song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
+                ext, file_size = song_info.download_url_status['probe_status']['ext'], song_info.download_url_status['probe_status']['file_size']
+                if file_size and file_size != 'NULL': song_info.file_size = file_size
+                if ext and ext != 'NULL': song_info.ext = ext
+                song_info.update(dict(
                     song_name=legalizestring(search_result.get('title', 'NULL'), replace_null_string='NULL'), 
                     singers=legalizestring(', '.join([singer.get('name', 'NULL') for singer in search_result.get('artist', [])]), replace_null_string='NULL'), 
                     album=legalizestring(search_result.get('albumTitle', 'NULL'), replace_null_string='NULL'),
                     identifier=search_result['TSID'],
-                )
+                ))
+                # --lyric results
+                try:
+                    resp = self.get(search_result['lyric'], **request_overrides)
+                    resp.raise_for_status()
+                    resp.encoding = 'utf-8'
+                    lyric = resp.text or 'NULL'
+                    lyric_result = dict(lyric=lyric)
+                    if song_info.singers == 'NULL':
+                        try:
+                            song_info.singers = re.findall(r'\[ar:(.*?)\]', lyric)[0]
+                        except:
+                            song_info.singers = 'NULL'
+                except:
+                    lyric_result, lyric = dict(), 'NULL'
+                song_info.raw_data['lyric'] = lyric_result
+                song_info.lyric = lyric
                 # --append to song_infos
                 song_infos.append(song_info)
                 # --judgement for search_size
