@@ -28,6 +28,8 @@ Instructions:
     Download multiple songs: when selecting songs to download, enter "1,2,5" to download songs 1, 2, and 5 simultaneously
 Music Files Save Path:
     %s (root dir is the current directory if using relative path).'''
+'''DEFAULT_MUSIC_SOURCES'''
+DEFAULT_MUSIC_SOURCES = ['MiguMusicClient', 'NeteaseMusicClient', 'QQMusicClient', 'KugouMusicClient', 'KuwoMusicClient', 'QianqianMusicClient']
 
 
 '''MusicClient'''
@@ -43,7 +45,7 @@ class MusicClient():
         self.search_rules = search_rules
         self.clients_threadings = clients_threadings
         self.requests_overrides = requests_overrides
-        self.music_sources = music_sources if music_sources else ['MiguMusicClient', 'NeteaseMusicClient', 'QQMusicClient', 'KugouMusicClient', 'KuwoMusicClient', 'QianqianMusicClient']
+        self.music_sources = music_sources if music_sources else DEFAULT_MUSIC_SOURCES
         self.music_sources = list(set(self.music_sources))
         # init
         self.logger_handle, self.music_clients = LoggerHandle(), dict()
@@ -150,7 +152,7 @@ class MusicClient():
     '-k', '--keyword', default=None, help='The keywords for the music search. If left empty, an interactive terminal will open automatically.', type=str, show_default=True,
 )
 @click.option(
-    '-m', '--music-sources', '--music_sources', default='MiguMusicClient,NeteaseMusicClient,QQMusicClient,KugouMusicClient,KuwoMusicClient,QianqianMusicClient', help='The music search and download sources.', type=str, show_default=True, 
+    '-m', '--music-sources', '--music_sources', default=','.join(DEFAULT_MUSIC_SOURCES), help='The music search and download sources.', type=str, show_default=True, 
 )
 @click.option(
     '-i', '--init-music-clients-cfg', '--init_music_clients_cfg', default=None, help='Config such as `work_dir` for each music client as a JSON string.', type=str, show_default=True,

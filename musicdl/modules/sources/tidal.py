@@ -273,7 +273,7 @@ class TIDALMusicClient(BaseMusicClient):
             progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name} (Success)")
             downloaded_song_info = copy.deepcopy(song_info)
             downloaded_song_info.ext = final_ext
-            downloaded_song_infos.append(MusicInfoUtils.fillsongtechinfo(downloaded_song_info))
+            downloaded_song_infos.append(MusicInfoUtils.fillsongtechinfo(downloaded_song_info, logger_handle=self.logger_handle, disable_print=self.disable_print))
         # failure
         except Exception as err:
             progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name} (Error: {err})")
