@@ -10,7 +10,7 @@ import copy
 from .base import BaseMusicClient
 from rich.progress import Progress
 from urllib.parse import urlencode
-from ..utils import byte2mb, resp2json, isvalidresp, seconds2hms, legalizestring, safeextractfromdict, usesearchheaderscookies, AudioLinkTester
+from ..utils import byte2mb, resp2json, seconds2hms, legalizestring, safeextractfromdict, usesearchheaderscookies, SongInfo
 
 
 '''MiguMusicClient'''
@@ -26,8 +26,10 @@ class MiguMusicClient(BaseMusicClient):
         }
         self.default_headers = self.default_search_headers
         self._initsession()
-    '''_boostquality'''
-    def _boostquality(self, song_id, request_overrides):
+    '''_parsewithcggapi'''
+    def _parsewithcggapi(self, search_result: dict, request_overrides: dict = None):
+        # init
+        request_overrides = request_overrides or {}
         # _safefetchfilesize
         def _safefetchfilesize(meta: dict):
             if not isinstance(meta, dict): return 0
@@ -87,13 +89,18 @@ class MiguMusicClient(BaseMusicClient):
             search_results = resp2json(resp)
             for search_result in search_results:
                 # --download results
-                if 'copyrightId' not in search_result or 'contentId' not in search_result:
+                if not isinstance(search_result, dict) or ('copyrightId' not in search_result) or ('contentId' not in search_result):
                     continue
-                # ----try to obtain high quality music file infos
+                song_info = SongInfo(source=self.source)
+                # ----try _parsewithcggapi first
                 try:
-                    boost_result = self._boostquality(search_result['contentId'], request_overrides=request_overrides)
+                    song_info = self._parsewithcggapi(search_result, request_overrides)
                 except:
-                    boost_result = dict()
+                    pass
+                
+
+
+
                 # ----general parse
                 file_size, ext = 'NULL', 'NULL'
                 for rate in sorted(search_result.get('audioFormats', []), key=lambda x: int(_safefetchfilesize(x)), reverse=True):
@@ -146,6 +153,9 @@ class MiguMusicClient(BaseMusicClient):
                     album=legalizestring(search_result.get('album', 'NULL'), replace_null_string='NULL'),
                     identifier=search_result['copyrightId'] + '-' + search_result['contentId'],
                 )
+
+
+
                 # --append to song_infos
                 song_infos.append(song_info)
                 # --judgement for search_size

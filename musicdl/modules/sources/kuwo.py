@@ -132,8 +132,8 @@ class KuwoMusicClient(BaseMusicClient):
                     album=legalizestring(search_result.get('ALBUM', 'NULL'), replace_null_string='NULL'),
                     identifier=search_result['MUSICRID'],
                 ))
-                song_info.download_url_status['prob_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
-                ext, file_size = song_info.download_url_status['prob_status']['ext'], song_info.download_url_status['prob_status']['file_size']
+                song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
+                ext, file_size = song_info.download_url_status['probe_status']['ext'], song_info.download_url_status['probe_status']['file_size']
                 if file_size and file_size != 'NULL': song_info.file_size = file_size
                 if not song_info.file_size: song_info.file_size = 'NULL'
                 if ext and ext != 'NULL': song_info.ext = ext

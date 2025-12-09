@@ -12,7 +12,7 @@ import random
 from .base import BaseMusicClient
 from rich.progress import Progress
 from ..utils.neteaseutils import EapiCryptoUtils
-from ..utils import byte2mb, resp2json, isvalidresp, seconds2hms, legalizestring, safeextractfromdict, usesearchheaderscookies, AudioLinkTester
+from ..utils import resp2json, seconds2hms, legalizestring, safeextractfromdict, usesearchheaderscookies, SongInfo
 
 
 '''NeteaseMusicClient'''
@@ -30,8 +30,10 @@ class NeteaseMusicClient(BaseMusicClient):
         if not self.default_search_cookies: self.default_search_cookies = default_cookies
         if not self.default_download_cookies: self.default_download_cookies = default_cookies
         self._initsession()
-    '''_boostquality'''
-    def _boostquality(self, song_id, request_overrides):
+    '''_parsewithcggapi'''
+    def _parsewithcggapi(self, search_result: dict, request_overrides: dict = None):
+        # init
+        request_overrides, song_id = request_overrides or {}, search_result['id']
         # _safefetchfilesize
         def _safefetchfilesize(meta: dict):
             if not isinstance(meta, dict): return 0
@@ -40,20 +42,28 @@ class NeteaseMusicClient(BaseMusicClient):
             try: return float(file_size)
             except: return 0
         # parse
-        download_url, download_url_status, file_size, ext = "", dict(), 0, 'flac'
         for quality in ['jymaster', 'sky', 'jyeffect', 'hires', 'lossless', 'exhigh', 'standard']:
-            resp = self.get(url=f'https://api.cenguigui.cn/api/netease/music_v1.php?id={song_id}&type=json&level={quality}')
-            if not isvalidresp(resp=resp): continue
-            download_result = resp2json(resp=resp)
-            if 'data' not in download_result or (_safefetchfilesize(download_result['data']) < 0.01): continue
-            download_url, file_size = download_result['data'].get('url', ''), _safefetchfilesize(download_result['data'])
+            try:
+                resp = self.get(url=f'https://api.cenguigui.cn/api/netease/music_v1.php?id={song_id}&type=json&level={quality}', **request_overrides)
+                resp.raise_for_status()
+                download_result = resp2json(resp=resp)
+                if 'data' not in download_result or (_safefetchfilesize(download_result['data']) < 0.01): continue
+            except:
+                continue
+            download_url: str = download_result['data'].get('url', '')
             if not download_url: continue
-            ext = download_url.split('.')[-1].split('?')[0]
-            download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_download_cookies).test(download_url, request_overrides)
-            if download_url_status['ok']: break
+            song_info = SongInfo(
+                source=self.source, download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+                ext=download_url.split('.')[-1].split('?')[0], raw_data={'search': search_result, 'download': download_result},
+            )
+            song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
+            ext, file_size = song_info.download_url_status['probe_status']['ext'], song_info.download_url_status['probe_status']['file_size']
+            if file_size and file_size != 'NULL': song_info.file_size = file_size
+            if not song_info.file_size: song_info.file_size = 'NULL'
+            if ext and ext != 'NULL': song_info.ext = ext
+            if song_info.with_valid_download_url: break
         # return
-        boost_result = dict(download_result=download_result, download_url=download_url, file_size=file_size, download_url_status=download_url_status, ext=ext)
-        return boost_result
+        return song_info, quality
     '''_constructsearchurls'''
     def _constructsearchurls(self, keyword: str, rule: dict = None, request_overrides: dict = None):
         # init
@@ -87,67 +97,64 @@ class NeteaseMusicClient(BaseMusicClient):
             search_results = resp2json(resp)['result']['songs']
             for search_result in search_results:
                 # --download results
-                if 'id' not in search_result:
+                if not isinstance(search_result, dict) or ('id' not in search_result):
                     continue
-                # ----try to obtain high quality music file infos
+                song_info = SongInfo(source=self.source)
+                # ----try _parsewithcggapi first
                 try:
-                    boost_result = self._boostquality(search_result['id'], request_overrides=request_overrides)
+                    song_info_cgg, quality_cgg = self._parsewithcggapi(search_result, request_overrides)
                 except:
-                    boost_result = dict()
-                # ----general parse
-                qualties, download_result, ext, file_size, download_url_status = ["jymaster", "jyeffect", "sky", "hires", "lossless", "exhigh", "standard"], dict(), 'NULL', 'NULL', {}
-                for quality in qualties:
+                    pass
+                # ----general parse with official API
+                qualties = ["jymaster", "jyeffect", "sky", "hires", "lossless", "exhigh", "standard"]
+                for quality_idx, quality in enumerate(qualties):
+                    if quality_idx >= qualties.index(quality_cgg) and song_info_cgg.with_valid_download_url: song_info = song_info_cgg; break
                     header = {"os": "pc", "appver": "", "osver": "", "deviceId": "pyncm!"}
                     header["requestId"] = str(random.randrange(20000000, 30000000))
-                    params = {
-                        'ids': [search_result['id']], 'level': quality, 'encodeType': 'flac', 'header': json.dumps(header),
-                    }
+                    params = {'ids': [search_result['id']], 'level': quality, 'encodeType': 'flac', 'header': json.dumps(header)}
                     if quality == 'sky': params['immerseType'] = 'c51'
                     params = EapiCryptoUtils.encryptparams(url='https://interface3.music.163.com/eapi/song/enhance/player/url/v1', payload=params)
-                    resp = self.post('https://interface3.music.163.com/eapi/song/enhance/player/url/v1', data={"params": params}, **request_overrides)
-                    if not isvalidresp(resp):  continue
-                    download_result: dict = resp2json(resp)
-                    if (download_result.get('code') not in [200]) or ('data' not in download_result) or (not download_result['data']) or \
+                    try:
+                        resp = self.post('https://interface3.music.163.com/eapi/song/enhance/player/url/v1', data={"params": params}, **request_overrides)
+                        resp.raise_for_status()
+                        download_result: dict = resp2json(resp)
+                    except:
+                        continue
+                    if (download_result.get('code') not in [200, '200']) or ('data' not in download_result) or (not download_result['data']) or \
                        (not isinstance(download_result['data'], list)) or (not isinstance(download_result['data'][0], dict)):
                         continue
-                    download_url = download_result['data'][0].get('url', '')
+                    download_url: str = download_result['data'][0].get('url', '')
                     if not download_url: continue
-                    download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_download_cookies).test(download_url, request_overrides)
-                    if download_url_status['ok']: break
-                # ----boost music quality if possible
-                if boost_result and boost_result['download_url'] and boost_result['download_url_status']['ok']:
-                    try: file_size_ori = float(byte2mb(download_result['data'][0].get('size', '0')).split(' ')[0])
-                    except: file_size_ori = 0
-                    file_size_imp = boost_result['file_size']
-                    if file_size_imp > file_size_ori:
-                        download_result['boost_result'] = boost_result
-                        download_url, ext, file_size = boost_result['download_url'], boost_result['ext'], f"{boost_result['file_size']} MB"
-                # ----misc
-                if not download_url: continue
-                if (not download_url_status.get('ok', False)) and (not safeextractfromdict(boost_result, ['download_url_status', 'ok'], False)): continue
-                duration = seconds2hms(search_result.get('dt', 0) / 1000 if isinstance(search_result.get('dt', 0), (int, float)) else 0)
-                ext = download_result['data'][0].get('type', 'mp3') if ext == 'NULL' else ext
-                file_size = byte2mb(download_result['data'][0].get('size', '0')) if file_size == 'NULL' else file_size
-                # --lyric results
-                data = {'id': search_result['id'], 'cp': 'false', 'tv': '0', 'lv': '0', 'rv': '0', 'kv': '0', 'yv': '0', 'ytv': '0', 'yrv': '0'}
-                resp = self.post('https://interface3.music.163.com/api/song/lyric', data=data, **request_overrides)
-                if isvalidresp(resp):
-                    try:
-                        lyric_result: dict = resp2json(resp)
-                        lyric = lyric_result.get('lrc', {}).get('lyric', 'NULL') or lyric_result.get('tlyric', {}).get('lyric', 'NULL')
-                    except:
-                        lyric_result, lyric = dict(), 'NULL'
-                else:
-                    lyric_result, lyric = dict(), 'NULL'
-                # --construct song_info
-                song_info = dict(
-                    source=self.source, raw_data=dict(search_result=search_result, download_result=download_result, lyric_result=lyric_result), 
-                    download_url_status=download_url_status, download_url=download_url, ext=ext, file_size=file_size, lyric=lyric, duration=duration, 
+                    song_info = SongInfo(
+                        source=self.source, download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+                        ext=download_url.split('.')[-1].split('?')[0], raw_data={'search': search_result, 'download': download_result},
+                    )
+                    song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
+                    ext, file_size = song_info.download_url_status['probe_status']['ext'], song_info.download_url_status['probe_status']['file_size']
+                    if file_size and file_size != 'NULL': song_info.file_size = file_size
+                    if not song_info.file_size: song_info.file_size = 'NULL'
+                    if ext and ext != 'NULL': song_info.ext = ext
+                    if song_info.with_valid_download_url: break
+                if not song_info.with_valid_download_url: continue
+                # ----parse more information
+                song_info.update(dict(
+                    duration=seconds2hms(search_result.get('dt', 0) / 1000 if isinstance(search_result.get('dt', 0), (int, float)) else 0),
                     song_name=legalizestring(search_result.get('name', 'NULL'), replace_null_string='NULL'), 
                     singers=legalizestring(', '.join([singer.get('name', 'NULL') for singer in search_result.get('ar', [])]), replace_null_string='NULL'), 
                     album=legalizestring(safeextractfromdict(search_result, ['al', 'name'], 'NULL'), replace_null_string='NULL'),
                     identifier=search_result['id'],
-                )
+                ))
+                # --lyric results
+                data = {'id': search_result['id'], 'cp': 'false', 'tv': '0', 'lv': '0', 'rv': '0', 'kv': '0', 'yv': '0', 'ytv': '0', 'yrv': '0'}
+                try:
+                    resp = self.post('https://interface3.music.163.com/api/song/lyric', data=data, **request_overrides)
+                    resp.raise_for_status()
+                    lyric_result: dict = resp2json(resp)
+                    lyric = lyric_result.get('lrc', {}).get('lyric', 'NULL') or lyric_result.get('tlyric', {}).get('lyric', 'NULL')
+                except:
+                    lyric_result, lyric = dict(), 'NULL'
+                song_info.raw_data['lyric'] = lyric_result
+                song_info.lyric = lyric
                 # --append to song_infos
                 song_infos.append(song_info)
                 # --judgement for search_size

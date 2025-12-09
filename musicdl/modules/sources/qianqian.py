@@ -97,8 +97,8 @@ class QianqianMusicClient(BaseMusicClient):
                     except:
                         continue
                 if not song_info.with_valid_download_url: continue
-                song_info.download_url_status['prob_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
-                ext, file_size = song_info.download_url_status['prob_status']['ext'], song_info.download_url_status['prob_status']['file_size']
+                song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
+                ext, file_size = song_info.download_url_status['probe_status']['ext'], song_info.download_url_status['probe_status']['file_size']
                 if file_size and file_size != 'NULL': song_info.file_size = file_size
                 if ext and ext != 'NULL': song_info.ext = ext
                 song_info.update(dict(

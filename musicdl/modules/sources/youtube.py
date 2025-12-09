@@ -106,8 +106,8 @@ class YouTubeMusicClient(BaseMusicClient):
                 source=self.source, download_url=download_result['download'], download_url_status=self.audio_link_tester.test(download_result['download'], request_overrides), 
                 ext='mp3', raw_data={'search': search_result, 'download': download_result}, duration=search_result.get('duration')
             )
-            song_info.download_url_status['prob_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
-            ext, file_size = song_info.download_url_status['prob_status']['ext'], song_info.download_url_status['prob_status']['file_size']
+            song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
+            ext, file_size = song_info.download_url_status['probe_status']['ext'], song_info.download_url_status['probe_status']['file_size']
             if file_size and file_size != 'NULL': song_info.file_size = file_size
             if not song_info.file_size: song_info.file_size = 'NULL'
             if ext and ext != 'NULL': song_info.ext = ext
@@ -141,8 +141,8 @@ class YouTubeMusicClient(BaseMusicClient):
                 download_url_status=self.audio_link_tester.test(download_result['url'], request_overrides_test), ext='mp3',
                 raw_data={'search': search_result, 'download': download_result}, duration=search_result.get('duration')
             )
-            song_info.download_url_status['prob_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides_test)
-            ext, file_size = song_info.download_url_status['prob_status']['ext'], song_info.download_url_status['prob_status']['file_size']
+            song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides_test)
+            ext, file_size = song_info.download_url_status['probe_status']['ext'], song_info.download_url_status['probe_status']['file_size']
             if file_size and file_size != 'NULL': song_info.file_size = file_size
             if not song_info.file_size: song_info.file_size = 'NULL'
             if ext and ext != 'NULL': song_info.ext = ext
