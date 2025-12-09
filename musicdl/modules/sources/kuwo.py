@@ -91,7 +91,7 @@ class KuwoMusicClient(BaseMusicClient):
                         ),
                         "secret": "4932e2c95746126c945fe2fb3f88d3455b85b69a4fbdfa6c44b501d7dfe50cff04eb9a8e",
                         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36 Edg/136.0.0.0",
-                    }
+                    } # TODO: implement secret generate algorithm
                     for br in brs:
                         params = {'mid': search_result['MUSICRID'].removeprefix('MUSIC_'), 'type': 'music', 'httpsStatus': '1', 'br': br}
                         try:

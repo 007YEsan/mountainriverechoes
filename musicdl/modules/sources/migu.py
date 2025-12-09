@@ -29,35 +29,42 @@ class MiguMusicClient(BaseMusicClient):
     '''_parsewithcggapi'''
     def _parsewithcggapi(self, search_result: dict, request_overrides: dict = None):
         # init
-        request_overrides = request_overrides or {}
+        request_overrides, song_id = request_overrides or {}, search_result['contentId']
         # _safefetchfilesize
         def _safefetchfilesize(meta: dict):
             if not isinstance(meta, dict): return 0
             file_size = str(meta.get('size', '0.00 MB'))
-            file_size = file_size.split( )[0]
+            file_size = file_size.removesuffix('MB').strip()
             try: return float(file_size)
             except: return 0
         # parse
-        resp = self.get(url=f'https://api.cenguigui.cn/api/mg_music/api.php?id={song_id}', **request_overrides)
-        if not isvalidresp(resp): return {}
-        download_result = resp2json(resp=resp)
-        download_url, download_url_status, file_size, ext = "", dict(), 0, 'flac'
+        try:
+            resp = self.get(url=f'https://api.cenguigui.cn/api/mg_music/api.php?id={song_id}', **request_overrides)
+            resp.raise_for_status()
+            download_result = resp2json(resp=resp)
+        except:
+            return SongInfo(source=self.source)
         for rate in sorted(safeextractfromdict(download_result, ['data', 'level', 'quality'], []), key=lambda x: _safefetchfilesize(x), reverse=True):
-            download_url, file_size, ext = rate.get('url', ''), _safefetchfilesize(rate), str(rate.get('format', 'flac')).lower()
+            download_url = rate.get('url', '')
             if not download_url: continue
-            download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_download_cookies).test(download_url, request_overrides)
-            if download_url_status['ok']: break
+            song_info = SongInfo(
+                source=self.source, download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+                ext=str(rate.get('format', 'flac')).lower(), raw_data={'search': search_result, 'download': download_result},
+            )
+            song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
+            ext, file_size = song_info.download_url_status['probe_status']['ext'], song_info.download_url_status['probe_status']['file_size']
+            if file_size and file_size != 'NULL': song_info.file_size = file_size
+            if not song_info.file_size: song_info.file_size = 'NULL'
+            if ext and ext != 'NULL': song_info.ext = ext
+            if song_info.with_valid_download_url: break
         # return
-        boost_result = dict(download_result=download_result, download_url=download_url, file_size=file_size, download_url_status=download_url_status, ext=ext)
-        return boost_result
+        return song_info
     '''_constructsearchurls'''
     def _constructsearchurls(self, keyword: str, rule: dict = None, request_overrides: dict = None):
         # init
         rule, request_overrides = rule or {}, request_overrides or {}
         # search rules
-        default_rule = {
-            "text": keyword, 'pageNo': 1, 'pageSize': 10
-        }
+        default_rule = {"text": keyword, 'pageNo': 1, 'pageSize': 10}
         default_rule.update(rule)
         # construct search urls based on search rules
         base_url = 'https://app.u.nf.migu.cn/pc/resource/song/item/search/v1.0?'
@@ -78,9 +85,10 @@ class MiguMusicClient(BaseMusicClient):
         # _safefetchfilesize
         def _safefetchfilesize(meta: dict):
             file_size = meta.get('asize') or meta.get('isize') or meta.get('size') or '0'
-            if byte2mb(file_size) == 'NULL':
-                file_size = '0'
+            if byte2mb(file_size) == 'NULL': file_size = '0'
             return file_size
+        # user info
+        uid = '15548614588710179085069'
         # successful
         try:
             # --search results
@@ -94,68 +102,68 @@ class MiguMusicClient(BaseMusicClient):
                 song_info = SongInfo(source=self.source)
                 # ----try _parsewithcggapi first
                 try:
-                    song_info = self._parsewithcggapi(search_result, request_overrides)
+                    song_info_cgg = self._parsewithcggapi(search_result, request_overrides)
                 except:
-                    pass
-                
-
-
-
-                # ----general parse
-                file_size, ext = 'NULL', 'NULL'
+                    song_info_cgg = SongInfo(source=self.source)
+                # ----general parse with official API
                 for rate in sorted(search_result.get('audioFormats', []), key=lambda x: int(_safefetchfilesize(x)), reverse=True):
-                    if byte2mb(_safefetchfilesize(rate)) == 'NULL' or (not rate.get('formatType', '')) or (not rate.get('resourceType', '')):
-                        continue
+                    if not isinstance(rate, dict): continue
+                    if byte2mb(_safefetchfilesize(rate)) == 'NULL' or (not rate.get('formatType', '')) or (not rate.get('resourceType', '')): continue
                     ext = {'PQ': 'mp3', 'HQ': 'mp3', 'SQ': 'flac', 'ZQ24': 'flac'}.get(rate['formatType'], 'NULL')
-                    file_size = byte2mb(_safefetchfilesize(rate))
-                    download_url = f"https://app.pd.nf.migu.cn/MIGUM3.0/v1.0/content/sub/listenSong.do?channel=mx&copyrightId={search_result['copyrightId']}&contentId={search_result['contentId']}&toneFlag={rate['formatType']}&resourceType={rate['resourceType']}&userId=15548614588710179085069&netType=00"
-                    download_url_status = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_download_cookies).test(download_url, request_overrides)
-                    if download_url_status['ok']: break
-                try:
-                    download_result = AudioLinkTester(headers=self.default_download_headers, cookies=self.default_download_cookies).probe(download_url, request_overrides)
-                except:
-                    download_result = {'download_url': download_url, 'file_size': 'NULL', 'ext': 'NULL'}
-                if download_result['ext'] == 'NULL':
-                    download_result['ext'] = ext if (ext and ext != 'NULL') else 'mp3'
-                if download_result['file_size'] == 'NULL':
-                    download_result['file_size'] = file_size
-                # ----boost music quality if possible
-                ext, file_size = download_result['ext'], download_result['file_size']
-                if boost_result and boost_result['download_url'] and boost_result['download_url_status']['ok']:
-                    try: file_size_ori = float(file_size.split(' ')[0])
-                    except: file_size_ori = 0
-                    file_size_imp = boost_result['file_size']
-                    if file_size_imp > file_size_ori:
-                        download_result['boost_result'] = boost_result
-                        download_url, ext, file_size = boost_result['download_url'], boost_result['ext'], f"{boost_result['file_size']} MB"
-                # ----misc
-                if not download_url: continue
-                if (not download_url_status.get('ok', False)) and (not safeextractfromdict(boost_result, ['download_url_status', 'ok'], False)): continue
-                duration = seconds2hms(search_result.get('duration', '0'))
+                    url = (
+                        f"https://c.musicapp.migu.cn/MIGUM3.0/strategy/listen-url/v2.4?resourceType={rate['resourceType']}&netType=01&scene="
+                        f"&toneFlag={rate['formatType']}&contentId={search_result['contentId']}&copyrightId={search_result['copyrightId']}"
+                        f"&lowerQualityContentId={search_result['contentId']}"
+                    )
+                    headers = copy.deepcopy(self.default_headers)
+                    headers['channel'] = '014000D'
+                    try:
+                        resp = self.get(url, headers=headers, **request_overrides)
+                        resp.raise_for_status()
+                        download_result = resp2json(resp=resp)
+                    except:
+                        continue
+                    download_url = safeextractfromdict(download_result, ['data', 'url'], "") or \
+                                   f"https://app.pd.nf.migu.cn/MIGUM3.0/v1.0/content/sub/listenSong.do?channel=mx&copyrightId={search_result['copyrightId']}&contentId={search_result['contentId']}&toneFlag={rate['formatType']}&resourceType={rate['resourceType']}&userId={uid}&netType=00"
+                    song_info = SongInfo(
+                        source=self.source, download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+                        ext=ext, raw_data={'search': search_result, 'download': download_result},
+                    )
+                    if not song_info.with_valid_download_url: continue
+                    song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
+                    ext, file_size = song_info.download_url_status['probe_status']['ext'], song_info.download_url_status['probe_status']['file_size']
+                    if file_size and file_size != 'NULL': song_info.file_size = file_size
+                    if not song_info.file_size: song_info.file_size = 'NULL'
+                    if ext and ext != 'NULL': song_info.ext = ext
+                    if song_info_cgg.with_valid_download_url and song_info_cgg.file_size != 'NULL':
+                        file_size_cgg = float(song_info_cgg.file_size.removesuffix('MB').strip())
+                        file_size_official = float(song_info.file_size.removesuffix('MB').strip()) if song_info.file_size != 'NULL' else 0
+                        if file_size_cgg > file_size_official: song_info = song_info_cgg
+                    if song_info.with_valid_download_url: break
+                if not song_info.with_valid_download_url: song_info = song_info_cgg
+                if not song_info.with_valid_download_url: continue
+                # ----parse more information
+                song_info.update(dict(
+                    duration_s=search_result.get('duration', 0), duration=seconds2hms(search_result.get('duration', 0)),
+                    song_name=legalizestring(search_result.get('songName', 'NULL'), replace_null_string='NULL'), 
+                    singers=legalizestring(', '.join([singer.get('name', 'NULL') for singer in search_result.get('singerList', [])]), replace_null_string='NULL'), 
+                    album=legalizestring(search_result.get('album', 'NULL'), replace_null_string='NULL'),
+                    identifier=f"{search_result['copyrightId']}_{search_result['contentId']}"
+                ))
                 # --lyric results
                 lyric_url = safeextractfromdict(search_result, ['ext', 'lrcUrl'], '') or safeextractfromdict(search_result, ['ext', 'mrcUrl'], '') or \
                             safeextractfromdict(search_result, ['ext', 'trcUrl'], '')
                 if lyric_url:
-                    resp = self.get(lyric_url, **request_overrides)
-                    if isvalidresp(resp):
+                    try:
+                        resp = self.get(lyric_url, **request_overrides)
                         resp.encoding = 'utf-8'
                         lyric_result, lyric = {'lyric': resp.text}, resp.text
-                    else:
+                    except:
                         lyric_result, lyric = {}, 'NULL'
                 else:
                     lyric_result, lyric = {}, 'NULL'
-                # --construct song_info
-                song_info = dict(
-                    source=self.source, raw_data=dict(search_result=search_result, download_result=download_result, lyric_result=lyric_result), 
-                    download_url_status=download_url_status, download_url=download_url, ext=ext, file_size=file_size, lyric=lyric, duration=duration, 
-                    song_name=legalizestring(search_result.get('songName', 'NULL'), replace_null_string='NULL'), 
-                    singers=legalizestring(', '.join([singer.get('name', 'NULL') for singer in search_result.get('singerList', [])]), replace_null_string='NULL'), 
-                    album=legalizestring(search_result.get('album', 'NULL'), replace_null_string='NULL'),
-                    identifier=search_result['copyrightId'] + '-' + search_result['contentId'],
-                )
-
-
-
+                song_info.raw_data['lyric'] = lyric_result
+                song_info.lyric = lyric
                 # --append to song_infos
                 song_infos.append(song_info)
                 # --judgement for search_size

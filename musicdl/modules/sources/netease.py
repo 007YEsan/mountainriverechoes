@@ -104,7 +104,7 @@ class NeteaseMusicClient(BaseMusicClient):
                 try:
                     song_info_cgg, quality_cgg = self._parsewithcggapi(search_result, request_overrides)
                 except:
-                    pass
+                    song_info_cgg, quality_cgg = SongInfo(source=self.source), "standard"
                 # ----general parse with official API
                 qualties = ["jymaster", "jyeffect", "sky", "hires", "lossless", "exhigh", "standard"]
                 for quality_idx, quality in enumerate(qualties):
