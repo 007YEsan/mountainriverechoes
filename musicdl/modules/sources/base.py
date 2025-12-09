@@ -148,6 +148,7 @@ class BaseMusicClient():
         request_overrides = request_overrides or {}
         try:
             touchdir(song_info.work_dir)
+            if song_info.default_download_headers: request_overrides['headers'] = song_info.default_download_headers
             with self.get(song_info.download_url, stream=True, **request_overrides) as resp:
                 resp.raise_for_status()
                 total_size, chunk_size, downloaded_size = int(resp.headers.get('content-length', 0)), song_info.get('chunk_size', 1024), 0
