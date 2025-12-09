@@ -45,7 +45,10 @@ class SongInfo:
     chunk_size: Optional[int] = 1024 * 1024
     @property
     def with_valid_download_url(self) -> bool:
-        is_valid_format = self.download_url and self.download_url.startswith('http')
+        if isinstance(self.download_url, str):
+            is_valid_format = self.download_url and self.download_url.startswith('http')
+        else:
+            is_valid_format = self.download_url
         is_downloadable = isinstance(self.download_url_status, dict) and self.download_url_status.get('ok')
         return bool(is_valid_format and is_downloadable)
     # save info
