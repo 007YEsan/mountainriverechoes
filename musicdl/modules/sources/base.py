@@ -194,8 +194,8 @@ class BaseMusicClient():
                         self._download, song_info, request_overrides, downloaded_song_infos, progress, song_progress_id
                     ))
                 for _ in as_completed(submitted_tasks):
-                    num_downloaded_songs = int(progress.tasks[songs_progress_id].completed)
                     progress.advance(songs_progress_id, 1)
+                    num_downloaded_songs = int(progress.tasks[songs_progress_id].completed)
                     progress.update(songs_progress_id, description=f"{self.source}.download >>> completed ({num_downloaded_songs}/{len(song_infos)})")
         # logging
         if len(downloaded_song_infos) > 0:
