@@ -8,8 +8,8 @@ WeChat Official Account (微信公众号):
 '''
 import os
 import copy
+import pickle
 import requests
-import cloudpickle
 from rich.text import Text
 from datetime import datetime
 from rich.progress import Task
@@ -136,7 +136,7 @@ class BaseMusicClient():
         if len(song_infos) > 0:
             work_dir = song_infos[0].work_dir
             touchdir(work_dir)
-            self._savetopkl(song_infos, os.path.join(work_dir, 'search_results.pkl'))
+            self._savetopkl([s.todict() for s in song_infos], os.path.join(work_dir, 'search_results.pkl'))
         else:
             work_dir = self.work_dir
         self.logger_handle.info(f'Finished searching music files using {self.source}. Search results have been saved to {work_dir}, valid items: {len(song_infos)}.', disable_print=self.disable_print)
@@ -201,7 +201,7 @@ class BaseMusicClient():
         if len(downloaded_song_infos) > 0:
             work_dir = downloaded_song_infos[0]['work_dir']
             touchdir(work_dir)
-            self._savetopkl(downloaded_song_infos, os.path.join(work_dir, 'download_results.pkl'))
+            self._savetopkl([s.todict() for s in downloaded_song_infos], os.path.join(work_dir, 'download_results.pkl'))
         else:
             work_dir = self.work_dir
         self.logger_handle.info(f'Finished downloading music files using {self.source}. Download results have been saved to {work_dir}, valid downloads: {len(downloaded_song_infos)}.', disable_print=self.disable_print)
@@ -259,4 +259,4 @@ class BaseMusicClient():
     def _savetopkl(self, data, file_path, auto_sanitize=True):
         if auto_sanitize: file_path = sanitize_filepath(file_path)
         with open(file_path, 'wb') as fp:
-            cloudpickle.dump(data, fp)
+            pickle.dump(data, fp)

@@ -22,4 +22,3 @@ nodejs-wheel
 m3u8
 pywidevine
 tinytag 
-cloudpickle  
