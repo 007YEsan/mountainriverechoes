@@ -530,7 +530,7 @@ It is important to note that to download Apple Music audio files (including decr
 We’ve added `GDStudioMusicClient` to musicdl as a practical solution for users who are on a tight budget or who find it difficult to configure extra command-line tools/arguments for musicdl. 
 With only the basic installation of musicdl, you can search for and download high-quality music files from the following music platforms:
 
-| Music Platforms (EN)    | Music Platforms (CN)               | Official Website                      | `music_sources` key  |
+| Music Platforms (EN)    | Music Platforms (CN)               | Official Website                      | `music_sources`      |
 | -----------------       | -------------------                | -----------------------------------   | -------------------  |
 | Spotify                 | Spotify                            | https://www.spotify.com               | `spotify`            |
 | Tencent (QQ Music)      | QQ音乐                             | https://y.qq.com                      | `tencent`            |
