@@ -91,7 +91,6 @@ class GDStudioMusicClient(BaseMusicClient):
         try:
             # --search results
             resp = self.post(search_url, **search_meta, **request_overrides)
-            print(resp.text)
             resp.raise_for_status()
             json_str = resp.text[resp.text.index('(')+1: resp.text.rindex(')')]
             search_results = json_repair.loads(json_str)
@@ -147,7 +146,5 @@ class GDStudioMusicClient(BaseMusicClient):
         # failure
         except Exception as err:
             progress.update(progress_id, description=f"{self.source}.search >>> {search_url} (Error: {err})")
-        # advance progress
-        progress.advance(progress_id, 1)
         # return
         return song_infos

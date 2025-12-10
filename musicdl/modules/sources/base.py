@@ -129,6 +129,7 @@ class BaseMusicClient():
                         self._search, keyword, search_url, request_overrides, song_infos[str(search_url_idx)], progress, progress_id
                     ))
                 for _ in as_completed(submitted_tasks):
+                    progress.advance(progress_id, 1)
                     num_searched_urls = int(progress.tasks[progress_id].completed)
                     progress.update(progress_id, description=f"{self.source}.search >>> completed ({num_searched_urls}/{len(search_urls)})")
         song_infos = list(chain.from_iterable(song_infos.values()))
