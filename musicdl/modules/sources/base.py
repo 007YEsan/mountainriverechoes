@@ -18,7 +18,7 @@ from fake_useragent import UserAgent
 from pathvalidate import sanitize_filepath
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from ..utils import (
-    LoggerHandle, AudioLinkTester, SongInfo, MusicInfoUtils, touchdir, usedownloadheaderscookies, usesearchheaderscookies, cookies2dict, cookies2string
+    LoggerHandle, AudioLinkTester, SongInfo, SongInfoUtils, touchdir, usedownloadheaderscookies, usesearchheaderscookies, cookies2dict, cookies2string
 )
 from rich.progress import (
     Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn, DownloadColumn, TransferSpeedColumn, 
@@ -166,7 +166,7 @@ class BaseMusicClient():
                         progress.advance(song_progress_id, len(chunk))
                         progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name} (Downloading: {downloading_text})")
                 progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name} (Success)")
-                downloaded_song_infos.append(MusicInfoUtils.fillsongtechinfo(copy.deepcopy(song_info), logger_handle=self.logger_handle, disable_print=self.disable_print))
+                downloaded_song_infos.append(SongInfoUtils.fillsongtechinfo(copy.deepcopy(song_info), logger_handle=self.logger_handle, disable_print=self.disable_print))
         except Exception as err:
             progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name} (Error: {err})")
         return downloaded_song_infos

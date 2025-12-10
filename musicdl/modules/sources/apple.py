@@ -14,7 +14,7 @@ from .base import BaseMusicClient
 from urllib.parse import urlencode
 from rich.progress import Progress
 from ..utils.appleutils import AppleMusicClientUtils, DownloadItem
-from ..utils import touchdir, legalizestring, resp2json, seconds2hms, usesearchheaderscookies, safeextractfromdict, usedownloadheaderscookies, SongInfo, MusicInfoUtils
+from ..utils import touchdir, legalizestring, resp2json, seconds2hms, usesearchheaderscookies, safeextractfromdict, usedownloadheaderscookies, SongInfo, SongInfoUtils
 
 
 '''AppleMusicClient'''
@@ -66,7 +66,7 @@ class AppleMusicClient(BaseMusicClient):
             progress.update(song_progress_id, total=os.path.getsize(song_info.save_path))
             progress.advance(song_progress_id, os.path.getsize(song_info.save_path))
             progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name} (Success)")
-            downloaded_song_infos.append(MusicInfoUtils.fillsongtechinfo(copy.deepcopy(song_info), logger_handle=self.logger_handle, disable_print=self.disable_print))
+            downloaded_song_infos.append(SongInfoUtils.fillsongtechinfo(copy.deepcopy(song_info), logger_handle=self.logger_handle, disable_print=self.disable_print))
             shutil.rmtree(tmp_dir, ignore_errors=True)
         except Exception as err:
             progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name} (Error: {err})")

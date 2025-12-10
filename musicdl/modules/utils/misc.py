@@ -23,6 +23,17 @@ from bs4 import BeautifulSoup
 from pathvalidate import sanitize_filepath, sanitize_filename
 
 
+'''estimatedurationwithfilesizebr'''
+def estimatedurationwithfilesizebr(file_size_bytes: int, br_kbps: float) -> str:
+    if not file_size_bytes or not br_kbps or br_kbps <= 0: return "-:-:-"
+    total_bits = file_size_bytes * 8
+    duration_seconds = int(total_bits / (br_kbps * 1000))
+    hours = duration_seconds // 3600
+    minutes = (duration_seconds % 3600) // 60
+    seconds = duration_seconds % 60
+    return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+
+
 '''cookies2dict'''
 def cookies2dict(cookies: str | dict = None):
     if not cookies: cookies = {}
