@@ -29,7 +29,7 @@ class GDStudioMusicClient(BaseMusicClient):
     def __init__(self, **kwargs):
         super(GDStudioMusicClient, self).__init__(**kwargs)
         self.default_search_headers = {
-            'Content-Type': 'application/x-www-form-urlencoded',
+            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
         }
         self.default_download_headers = {
@@ -43,10 +43,20 @@ class GDStudioMusicClient(BaseMusicClient):
         timestamp = int(time.time() * 1000)
         return f"jQuery{random_num}_{timestamp}"
     '''_yieldcrc32'''
-    def _yieldcrc32(self, id, timestamp=None):
-        if timestamp is None: timestamp = int(time.time() * 1000)
-        combined = f"music.gdstudio.xyz|20251104|{str(timestamp)[:9]}|{quote(id)}"
-        return hashlib.md5(combined.encode()).hexdigest()[-8:].upper()
+    def _yieldcrc32(self, id_value: str, hostname: str = 'music.gdstudio.xyz', version: str = "2025.11.4"):
+        # timestamp
+        ts_ms = int(time.time() * 1000)
+        ts9 = str(ts_ms)[:9]
+        # version
+        parts = version.split(".")
+        padded = [p if len(p) != 1 else "0" + p for p in parts]
+        ver_padded = "".join(padded)
+        # id
+        id_str = quote(str(id_value))
+        # src
+        src = f"{hostname}|{ver_padded}|{ts9}|{id_str}"
+        # return
+        return hashlib.md5(src.encode("utf-8")).hexdigest()[-8:].upper()
     '''_constructsearchurls'''
     def _constructsearchurls(self, keyword: str, rule: dict = None, request_overrides: dict = None):
         # init
@@ -67,6 +77,7 @@ class GDStudioMusicClient(BaseMusicClient):
                 page_rule['s'] = self._yieldcrc32(keyword)
                 search_urls.append({'url': base_url, 'data': page_rule, 'params': {'callback': self._yieldcallback()}})
                 count += page_size
+        self.search_size_per_source = self.search_size_per_source * len(SUPPORTED_SITES)
         # return
         return search_urls
     '''_search'''
@@ -80,6 +91,7 @@ class GDStudioMusicClient(BaseMusicClient):
         try:
             # --search results
             resp = self.post(search_url, **search_meta, **request_overrides)
+            print(resp.text)
             resp.raise_for_status()
             json_str = resp.text[resp.text.index('(')+1: resp.text.rindex(')')]
             search_results = json_repair.loads(json_str)
@@ -88,7 +100,7 @@ class GDStudioMusicClient(BaseMusicClient):
                 if (not isinstance(search_result, dict)) or ('id' not in search_result) or ('url_id' not in search_result) or ('source' not in search_result):
                     continue
                 song_info = SongInfo(source=self.source, root_source=search_result['source'])
-                for br in [320, 192, 128, 96, 64]: # it seems only up to br=320 for all sources and music files
+                for br in [320, 192, 128]: # it seems only up to br=320 for all sources and music files
                     params = {'callback': self._yieldcallback()}
                     data_json = {'types': 'url', 'id': search_result['id'], 'source': search_result['source'], 'br': br, 's': self._yieldcrc32(search_result['id'])}
                     try:
@@ -109,7 +121,6 @@ class GDStudioMusicClient(BaseMusicClient):
                         album=legalizestring(search_result.get('album', 'NULL'), replace_null_string='NULL'), root_source=search_result['source'],
                     )
                     if song_info.with_valid_download_url: break
-                    return
                 if not song_info.with_valid_download_url: continue
                 song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
                 ext, file_size = song_info.download_url_status['probe_status']['ext'], song_info.download_url_status['probe_status']['file_size']
@@ -132,10 +143,11 @@ class GDStudioMusicClient(BaseMusicClient):
                 # --judgement for search_size
                 if self.strict_limit_search_size_per_page and len(song_infos) >= self.search_size_per_page: break
             # --update progress
-            progress.advance(progress_id, 1)
             progress.update(progress_id, description=f"{self.source}.search >>> {search_url} (Success)")
         # failure
         except Exception as err:
             progress.update(progress_id, description=f"{self.source}.search >>> {search_url} (Error: {err})")
+        # advance progress
+        progress.advance(progress_id, 1)
         # return
         return song_infos

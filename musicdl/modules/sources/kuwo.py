@@ -153,10 +153,11 @@ class KuwoMusicClient(BaseMusicClient):
                 # --judgement for search_size
                 if self.strict_limit_search_size_per_page and len(song_infos) >= self.search_size_per_page: break
             # --update progress
-            progress.advance(progress_id, 1)
             progress.update(progress_id, description=f"{self.source}.search >>> {search_url} (Success)")
         # failure
         except Exception as err:
             progress.update(progress_id, description=f"{self.source}.search >>> {search_url} (Error: {err})")
+        # advance progress
+        progress.advance(progress_id, 1)
         # return
         return song_infos
