@@ -530,18 +530,18 @@ It is important to note that to download Apple Music audio files (including decr
 We’ve added `GDStudioMusicClient` to musicdl as a practical solution for users who are on a tight budget or who find it difficult to configure extra command-line tools/arguments for musicdl. 
 With only the basic installation of musicdl, you can search for and download high-quality music files from the following music platforms:
 
-| Music Platforms (EN)    | Music Platforms (CN)               | Official Website                      | `music_sources`      |
-| -----------------       | -------------------                | -----------------------------------   | -------------------  |
-| Spotify                 | Spotify                            | https://www.spotify.com               | `spotify`            |
-| Tencent (QQ Music)      | QQ音乐                             | https://y.qq.com                      | `tencent`            |
-| NetEase Cloud Music     | 网易云音乐                         | https://music.163.com                 | `netease`            |
-| Kuwo                    | 酷我音乐                           | https://www.kuwo.cn                   | `kuwo`               |
-| TIDAL                   | TIDAL                              | https://tidal.com                     | `tidal`              |
-| Qobuz                   | Qobuz                              | https://www.qobuz.com                 | `qobuz`              |
-| JOOX                    | JOOX                               | https://www.joox.com                  | `joox`               |
-| Bilibili                | 哔哩哔哩                           | https://www.bilibili.com              | `bilibili`           |
-| Apple Music             | 苹果音乐                           | https://www.apple.com/apple-music/    | `apple`              |
-| YouTube Music           | 油管音乐                           | https://music.youtube.com             | `ytmusic`            |
+| Music Platforms (EN)    | Music Platforms (CN)               | Official Websites                     | `allowed_music_sources`      |
+| -----------------       | -------------------                | -----------------------------------   | -------------------          |
+| Spotify                 | Spotify                            | https://www.spotify.com               | `spotify`                    |
+| Tencent (QQ Music)      | QQ音乐                             | https://y.qq.com                      | `tencent`                    |
+| NetEase Cloud Music     | 网易云音乐                         | https://music.163.com                 | `netease`                    |
+| Kuwo                    | 酷我音乐                           | https://www.kuwo.cn                   | `kuwo`                       |
+| TIDAL                   | TIDAL                              | https://tidal.com                     | `tidal`                      |
+| Qobuz                   | Qobuz                              | https://www.qobuz.com                 | `qobuz`                      |
+| JOOX                    | JOOX                               | https://www.joox.com                  | `joox`                       |
+| Bilibili                | 哔哩哔哩                           | https://www.bilibili.com              | `bilibili`                   |
+| Apple Music             | 苹果音乐                           | https://www.apple.com/apple-music/    | `apple`                      |
+| YouTube Music           | 油管音乐                           | https://music.youtube.com             | `ytmusic`                    |
 
 Specifically, you just need to write and run a few lines of code like this:
 
