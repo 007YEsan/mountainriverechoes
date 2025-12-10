@@ -61,7 +61,7 @@ class MusicClient():
             self.music_clients[music_source] = BuildMusicClient(module_cfg=init_music_client_cfg)
             self.work_dirs[music_source] = init_music_client_cfg['work_dir']
             if music_source not in self.clients_threadings:
-                self.clients_threadings[music_source] = 5
+                self.clients_threadings[music_source] = 5 if music_source not in ['GDStudioMusicClient'] else 10
             if music_source not in self.requests_overrides:
                 self.requests_overrides[music_source] = {}
             if music_source not in self.search_rules:

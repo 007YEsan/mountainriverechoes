@@ -36,7 +36,7 @@ SITE_TO_API_MAPPER = {
 class GDStudioMusicClient(BaseMusicClient):
     source = 'GDStudioMusicClient'
     def __init__(self, **kwargs):
-        self.allowed_music_sources = kwargs.pop('allowed_music_sources', SUPPORTED_SITES[:-1])
+        self.allowed_music_sources = list(set(kwargs.pop('allowed_music_sources', SUPPORTED_SITES[:-1])))
         super(GDStudioMusicClient, self).__init__(**kwargs)
         self.default_search_headers = {
             'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
@@ -106,7 +106,6 @@ class GDStudioMusicClient(BaseMusicClient):
                         'url': SITE_TO_API_MAPPER[source], 'params': page_rule_get, 'method': 'get'
                     })
                 count += page_size
-        self.search_size_per_source = self.search_size_per_source * len(SUPPORTED_SITES)
         # return
         return search_urls
     '''_search'''
@@ -116,6 +115,7 @@ class GDStudioMusicClient(BaseMusicClient):
         request_overrides = request_overrides or {}
         search_meta = copy.deepcopy(search_url)
         search_url, method = search_meta.pop('url'), search_meta.pop('method')
+        self.default_headers, request_overrides = copy.deepcopy(self.default_headers), copy.deepcopy(request_overrides)
         # successful
         try:
             # --search results

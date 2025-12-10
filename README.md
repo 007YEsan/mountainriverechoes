@@ -55,6 +55,7 @@
 
 # 🎉 What's New
 
+- 2025-12-11: Released musicdl v2.7.1 — added support for two new sites and fixed several potential bugs.
 - 2025-12-10: Released musicdl v2.7.0 — the code has been further refactored, with a large amount of redundant code removed or merged; all supported sites can now download lossless music (for some sites, you need to set your membership cookies in the command line or in the code), the search speed has been greatly optimized, and several problematic sites have been fixed.
 - 2025-12-02: Released musicdl v2.6.2 — support parsing `AppleMusicClient` encrypted audio streams, along with some minor optimizations.
 - 2025-12-01: Released musicdl v2.6.1 — we have provided more comprehensive documentation and added four new music search and download sources, *i.e.*, `MituMusicClient`, `GequbaoMusicClient`, `YinyuedaoMusicClient`, and `BuguyyMusicClient`, which allow you to download a large collection of lossless tracks.
@@ -530,7 +531,7 @@ It is important to note that to download Apple Music audio files (including decr
 We’ve added `GDStudioMusicClient` to musicdl as a practical solution for users who are on a tight budget or who find it difficult to configure extra command-line tools/arguments for musicdl. 
 With only the basic installation of musicdl, you can search for and download high-quality music files from the following music platforms:
 
-| Music Platforms (EN)    | Music Platforms (CN)               | Official Websites                     | `allowed_music_sources`      |
+| Source (EN)             | Source (CN)                        | Official Websites                     | `allowed_music_sources`      |
 | -----------------       | -------------------                | -----------------------------------   | -------------------          |
 | Spotify                 | Spotify                            | https://www.spotify.com               | `spotify`                    |
 | Tencent (QQ Music)      | QQ音乐                             | https://y.qq.com                      | `tencent`                    |
@@ -563,10 +564,7 @@ The screenshot of the running result is as follows:
 
 <div align="center">
   <div>
-    <img src="https://github.com/CharlesPikachu/musicdl/raw/master/docs/gdstudioscreenshot1.png" width="600"/>
-  </div>
-  <div>
-    <img src="https://github.com/CharlesPikachu/musicdl/raw/master/docs/gdstudioscreenshot2.png" width="600"/>
+    <img src="https://github.com/CharlesPikachu/musicdl/raw/master/docs/gdstudioscreenshot.png" width="600"/>
   </div>
 </div>
 <br />
@@ -578,15 +576,14 @@ If you still wish to perform a full-platform search, we recommend modifying the 
 from musicdl import musicdl
 
 init_music_clients_cfg = {'GDStudioMusicClient': {'search_size_per_source': 2}}
-clients_threadings = {'GDStudioMusicClient': 1}
-music_client = musicdl.MusicClient(music_sources=['GDStudioMusicClient'], init_music_clients_cfg=init_music_clients_cfg, clients_threadings=clients_threadings)
+music_client = musicdl.MusicClient(music_sources=['GDStudioMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
 music_client.startcmdui()
 ```
 
 The equivalent command in the command line is:
 
 ```bash
-musicdl -m GDStudioMusicClient -i "{'GDStudioMusicClient': {'search_size_per_source': 2}}" -c "{'GDStudioMusicClient': 1}"
+musicdl -m GDStudioMusicClient -i "{'GDStudioMusicClient': {'search_size_per_source': 2}}"
 ```
 
 Or, an even better option is to manually specify a few platforms where you believe your desired music files are likely to be found, for example:
