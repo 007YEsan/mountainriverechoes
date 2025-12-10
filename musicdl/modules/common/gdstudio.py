@@ -20,8 +20,16 @@ from ..utils import legalizestring, resp2json, usesearchheaderscookies, byte2mb,
 
 '''SUPPORTED_SITES'''
 SUPPORTED_SITES = [
-    'spotify', 'tencent', 'netease', 'kuwo', 'tidal', 'qobuz', 'joox', 'bilibili', 'apple', 'ytmusic'
-]
+    'spotify', 'tencent', 'netease', 'kuwo', 'tidal', 'qobuz', 'joox', 'bilibili', 'apple', 'ytmusic', # 'kugou', 'ximalaya', 'migu',
+][:-1] # disable ytmusic as it is too slowly and often useless in GDStudioMusicClient
+SITE_TO_API_MAPPER = {
+    'kuwo': 'https://music.gdstudio.xyz/api.php', 'tencent': 'https://music.gdstudio.xyz/api.php', 'tidal': 'https://music.gdstudio.xyz/api.php',
+    'spotify': 'https://music.gdstudio.xyz/api.php', 'netease': 'https://music.gdstudio.xyz/api.php', 'bilibili': 'https://music.gdstudio.xyz/api.php',
+    'apple': 'https://music.gdstudio.xyz/api.php',
+    'migu': 'https://music-api-cn.gdstudio.xyz/api.php', 'kugou': 'https://music-api-cn.gdstudio.xyz/api.php', 'ximalaya': 'https://music-api-cn.gdstudio.xyz/api.php', # useless with error code 503 
+    'joox': 'https://music-api-hk.gdstudio.xyz/api.php',
+    'qobuz': 'https://music-api-us.gdstudio.xyz/api.php', 'ytmusic': 'https://music-api-us.gdstudio.xyz/api.php',
+}
 
 
 '''GDStudioMusicClient'''
@@ -76,23 +84,24 @@ class GDStudioMusicClient(BaseMusicClient):
             source_default_rule = copy.deepcopy(default_rule)
             source_default_rule['source'], count = source, 0
             while self.search_size_per_source > count:
-                # --post rule
-                page_rule_post = copy.deepcopy(source_default_rule)
-                page_rule_post['pages'] = str(int(count // page_size) + 1)
-                page_rule_post['count'] = str(page_size)
-                page_rule_post['s'] = self._yieldcrc32(keyword)
-                # --get rule
-                page_rule_get = copy.deepcopy(source_default_rule)
-                page_rule_get['pages'] = str(int(count // page_size) + 1)
-                page_rule_get['count'] = str(page_size)
-                page_rule_get['s'] = self._yieldcrc32(keyword)
-                page_rule_get['callback'] = self._yieldcallback()
-                page_rule_get['_'] = str(int(time.time() * 1000))
-                # --all append
-                search_urls.append({
-                    f'https://music.gdstudio.xyz/api.php': {'data': page_rule_post, 'params': {'callback': self._yieldcallback()}, 'method': 'post'},
-                    f'https://music-api-us.gdstudio.xyz/api.php': {'params': page_rule_get, 'method': 'get'},
-                })
+                if SITE_TO_API_MAPPER[source] in ['https://music.gdstudio.xyz/api.php']:
+                    page_rule_post = copy.deepcopy(source_default_rule)
+                    page_rule_post['pages'] = str(int(count // page_size) + 1)
+                    page_rule_post['count'] = str(page_size)
+                    page_rule_post['s'] = self._yieldcrc32(keyword)
+                    search_urls.append({
+                        'url': SITE_TO_API_MAPPER[source], 'data': page_rule_post, 'params': {'callback': self._yieldcallback()}, 'method': 'post'
+                    })
+                else:
+                    page_rule_get = copy.deepcopy(source_default_rule)
+                    page_rule_get['pages'] = str(int(count // page_size) + 1)
+                    page_rule_get['count'] = str(page_size)
+                    page_rule_get['s'] = self._yieldcrc32(keyword)
+                    page_rule_get['callback'] = self._yieldcallback()
+                    page_rule_get['_'] = str(int(time.time() * 1000))
+                    search_urls.append({
+                        'url': SITE_TO_API_MAPPER[source], 'params': page_rule_get, 'method': 'get'
+                    })
                 count += page_size
         self.search_size_per_source = self.search_size_per_source * len(SUPPORTED_SITES)
         # return
@@ -103,40 +112,35 @@ class GDStudioMusicClient(BaseMusicClient):
         # init
         request_overrides = request_overrides or {}
         search_meta = copy.deepcopy(search_url)
+        search_url, method = search_meta.pop('url'), search_meta.pop('method')
         # successful
         try:
             # --search results
-            for search_url, search_url_info in search_meta.items():
-                assert isinstance(search_url_info, dict)
-                method = search_url_info.pop('method')
-                try:
-                    resp: requests.Response = getattr(self, method)(search_url, **search_url_info, **request_overrides)
-                    resp.raise_for_status()
-                    json_str = resp.text[resp.text.index('(')+1: resp.text.rindex(')')]
-                    search_results = json_repair.loads(json_str)
-                except:
-                    continue
-                if not isinstance(search_results, list) or len(search_results) < 1: continue
-                break
+            resp: requests.Response = getattr(self, method)(search_url, **search_meta, **request_overrides)
+            resp.raise_for_status()
+            json_str = resp.text[resp.text.index('(')+1: resp.text.rindex(')')]
+            search_results = json_repair.loads(json_str)
             for search_result in search_results:
                 # --download results
                 if (not isinstance(search_result, dict)) or ('id' not in search_result) or ('url_id' not in search_result) or ('source' not in search_result): continue
                 song_info = SongInfo(source=self.source, root_source=search_result['source'])
-                for br in [320, 192, 128]: # it seems only up to br=320 for all sources and music files
+                for br in [999, 740, 320, 192, 128]: # 999 and 740 mean lossless
                     params = {'callback': self._yieldcallback()}
                     data_json = {'types': 'url', 'id': search_result['id'], 'source': search_result['source'], 'br': br, 's': self._yieldcrc32(search_result['id'])}
                     try:
                         if method == 'post':
-                            resp = self.post(f'https://music.gdstudio.xyz/api.php?', params=params, data=data_json, **request_overrides)
+                            resp = self.post(SITE_TO_API_MAPPER[search_result['source']], params=params, data=data_json, **request_overrides)
                         else:
-                            resp = self.get(f'https://music-api-us.gdstudio.xyz/api.php?', params={**params, **data_json, '_': str(int(time.time() * 1000))}, **request_overrides)
+                            resp = self.get(SITE_TO_API_MAPPER[search_result['source']], params={**params, **data_json, '_': str(int(time.time() * 1000))}, **request_overrides)
                         resp.raise_for_status()
-                        download_result = resp2json(resp=resp)
+                        json_str = resp.text[resp.text.index('(')+1: resp.text.rindex(')')]
+                        download_result = json_repair.loads(json_str)
                     except:
                         continue
                     if not download_result.get('url'): continue
                     download_url = download_result['url']
                     if not download_url.startswith('http'): download_url = f'https://music.gdstudio.xyz/' + download_url
+                    if search_result['source'] in ['bilibili']: download_url = f'https://music-proxy.gdstudio.org/{download_url}'
                     song_info = SongInfo(
                         source=self.source, download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
                         ext=download_url.split('.')[-1].split('?')[0], file_size_bytes=download_result.get('size', 0), file_size=byte2mb(download_result.get('size', 0)),
@@ -147,22 +151,25 @@ class GDStudioMusicClient(BaseMusicClient):
                         singers=legalizestring(', '.join(search_result.get('artist', 'NULL')), replace_null_string='NULL'),
                         album=legalizestring(search_result.get('album', 'NULL'), replace_null_string='NULL'), root_source=search_result['source'],
                     )
+                    if search_result['source'] in ['bilibili']: song_info.download_url_status['ok'] = True if song_info.download_url_status['clen'] > 0 else False # use proxy url, general test method will fail
                     if song_info.with_valid_download_url: break
                 if not song_info.with_valid_download_url: continue
                 song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
                 ext, file_size = song_info.download_url_status['probe_status']['ext'], song_info.download_url_status['probe_status']['file_size']
                 if file_size and file_size != 'NULL': song_info.file_size = file_size
                 if ext and ext != 'NULL': song_info.ext = ext
+                if song_info.ext == 'm4s': song_info.ext = 'm4a'
                 # --lyric results
                 try:
                     params = {'callback': self._yieldcallback()}
                     data_json = {'types': 'lyric', 'id': search_result['lyric_id'], 'source': search_result['source'], 's': self._yieldcrc32(search_result['lyric_id'])}
                     if method == 'post':
-                        resp = self.post(f'https://music.gdstudio.xyz/api.php', data=data_json, params=params, **request_overrides)
+                        resp = self.post(SITE_TO_API_MAPPER[search_result['source']], data=data_json, params=params, **request_overrides)
                     else:
-                        resp = self.get(f'https://music-api-us.gdstudio.xyz/api.php', params={**params, **data_json, '_': str(int(time.time() * 1000))}, **request_overrides)
+                        resp = self.get(SITE_TO_API_MAPPER[search_result['source']], params={**params, **data_json, '_': str(int(time.time() * 1000))}, **request_overrides)
                     resp.raise_for_status()
-                    lyric_result = resp2json(resp=resp)
+                    json_str = resp.text[resp.text.index('(')+1: resp.text.rindex(')')]
+                    lyric_result = json_repair.loads(json_str)
                     lyric = lyric_result.get('lyric') or lyric_result.get('tlyric') or 'NULL'
                 except:
                     lyric_result, lyric = dict(), 'NULL'
