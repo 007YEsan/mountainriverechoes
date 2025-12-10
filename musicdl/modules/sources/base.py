@@ -124,9 +124,9 @@ class BaseMusicClient():
             song_infos, submitted_tasks = {}, []
             with ThreadPoolExecutor(max_workers=num_threadings) as pool:
                 for search_url_idx, search_url in enumerate(search_urls):
-                    song_infos[search_url_idx] = []
+                    song_infos[str(search_url_idx)] = []
                     submitted_tasks.append(pool.submit(
-                        self._search, keyword, search_url, request_overrides, song_infos[search_url], progress, progress_id
+                        self._search, keyword, search_url, request_overrides, song_infos[str(search_url_idx)], progress, progress_id
                     ))
                 for _ in as_completed(submitted_tasks):
                     num_searched_urls = int(progress.tasks[progress_id].completed)
