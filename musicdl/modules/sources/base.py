@@ -123,8 +123,8 @@ class BaseMusicClient():
             progress_id = progress.add_task(f"{self.source}.search >>> completed (0/{len(search_urls)})", total=len(search_urls))
             song_infos, submitted_tasks = {}, []
             with ThreadPoolExecutor(max_workers=num_threadings) as pool:
-                for search_url in search_urls:
-                    song_infos[search_url] = []
+                for search_url_idx, search_url in enumerate(search_urls):
+                    song_infos[search_url_idx] = []
                     submitted_tasks.append(pool.submit(
                         self._search, keyword, search_url, request_overrides, song_infos[search_url], progress, progress_id
                     ))
