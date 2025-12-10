@@ -11,6 +11,7 @@ import copy
 import pickle
 import requests
 from rich.text import Text
+from itertools import chain
 from datetime import datetime
 from rich.progress import Task
 from freeproxy import freeproxy
@@ -120,15 +121,17 @@ class BaseMusicClient():
         # multi threadings for searching music files
         with Progress(TextColumn("{task.description}"), BarColumn(bar_width=None), MofNCompleteColumn(), TimeRemainingColumn()) as progress:
             progress_id = progress.add_task(f"{self.source}.search >>> completed (0/{len(search_urls)})", total=len(search_urls))
-            song_infos, submitted_tasks = [], []
+            song_infos, submitted_tasks = {}, []
             with ThreadPoolExecutor(max_workers=num_threadings) as pool:
                 for search_url in search_urls:
+                    song_infos[search_url] = []
                     submitted_tasks.append(pool.submit(
-                        self._search, keyword, search_url, request_overrides, song_infos, progress, progress_id
+                        self._search, keyword, search_url, request_overrides, song_infos[search_url], progress, progress_id
                     ))
                 for _ in as_completed(submitted_tasks):
                     num_searched_urls = int(progress.tasks[progress_id].completed)
                     progress.update(progress_id, description=f"{self.source}.search >>> completed ({num_searched_urls}/{len(search_urls)})")
+        song_infos = list(chain.from_iterable(song_infos.values()))
         song_infos = self._removeduplicates(song_infos=song_infos)
         work_dir = self._constructuniqueworkdir(keyword=keyword)
         for song_info in song_infos: song_info.work_dir = work_dir
