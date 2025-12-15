@@ -15,6 +15,7 @@ from ..utils import BaseModuleBuilder
 from .netease import NeteaseMusicClient
 from .youtube import YouTubeMusicClient
 from .gequbao import GequbaoMusicClient
+from .jamendo import JamendoMusicClient
 from ..common import GDStudioMusicClient
 from .mp3juice import MP3JuiceMusicClient
 from .fivesing import FiveSingMusicClient
@@ -31,6 +32,7 @@ class MusicClientBuilder(BaseModuleBuilder):
         'JooxMusicClient': JooxMusicClient, 'KuwoMusicClient': KuwoMusicClient, 'KugouMusicClient': KugouMusicClient, 'FiveSingMusicClient': FiveSingMusicClient,
         'QianqianMusicClient': QianqianMusicClient, 'MiguMusicClient': MiguMusicClient, 'NeteaseMusicClient': NeteaseMusicClient, 'YouTubeMusicClient': YouTubeMusicClient,
         'TIDALMusicClient': TIDALMusicClient, 'AppleMusicClient': AppleMusicClient, 'FangpiMusicClient': FangpiMusicClient, 'GDStudioMusicClient': GDStudioMusicClient,
+        'JamendoMusicClient': JamendoMusicClient,
     }
 
 

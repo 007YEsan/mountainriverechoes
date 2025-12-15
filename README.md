@@ -55,6 +55,7 @@
 
 # 🎉 What's New
 
+- 2025-12-15: Released musicdl v2.7.2 — added support for jamendo and make some improvements.
 - 2025-12-11: Released musicdl v2.7.1 — added support for two new sites and fixed several potential bugs.
 - 2025-12-10: Released musicdl v2.7.0 — the code has been further refactored, with a large amount of redundant code removed or merged; all supported sites can now download lossless music (for some sites, you need to set your membership cookies in the command line or in the code), the search speed has been greatly optimized, and several problematic sites have been fixed.
 - 2025-12-02: Released musicdl v2.6.2 — support parsing `AppleMusicClient` encrypted audio streams, along with some minor optimizations.
@@ -98,6 +99,7 @@ If you are a rights holder and believe this repository infringes your rights, pl
 |  [BuguyyMusicClient](https://buguyy.top/)                            |  [布谷音乐](https://buguyy.top/)                                                  |   ✓                |  ✓                   |    [buguyy.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/buguyy.py)            |
 |  [FangpiMusicClient](https://www.fangpi.net/)                        |  [放屁音乐](https://www.fangpi.net/)                                              |   ✓                |  ✓                   |    [fangpi.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/fangpi.py)            |
 |  [GDStudioMusicClient](https://music.gdstudio.xyz/)                  |  [GD音乐台 (Spotify, Qobuz, B站等10个音乐源)](https://music.gdstudio.xyz/)        |   ✓                |  ✓                   |    [gdstudio.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/gdstudio.py)        |
+|  [JamendoMusicClient](https://www.jamendo.com/)                      |  [简音乐 (欧美流行音乐)](https://www.jamendo.com/)                                |   ✓                |  ✓                   |    [jamendo.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/jamendo.py)          |
 
 
 # 🧪 Playground
