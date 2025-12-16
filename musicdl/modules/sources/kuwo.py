@@ -7,7 +7,6 @@ WeChat Official Account (微信公众号):
     Charles的皮卡丘
 '''
 import copy
-import uuid
 from .base import BaseMusicClient
 from urllib.parse import urlencode
 from rich.progress import Progress
@@ -27,6 +26,38 @@ class KuwoMusicClient(BaseMusicClient):
         }
         self.default_headers = self.default_search_headers
         self._initsession()
+    '''_parsewithflacmusicapi'''
+    def _parsewithflacmusicapi(self, search_result: dict, request_overrides: dict = None):
+        # init
+        request_overrides, song_id = request_overrides or {}, search_result['MUSICRID'].removeprefix('MUSIC_')
+        headers = copy.deepcopy(self.default_search_headers)
+        headers['origin'] = "https://flac.music.hi.cn"
+        headers['cookie'] = 'sl-session=Arb4XF1mQmlUkvJAhAps2g==; sl-challenge-server=cloud; sl_jwt_session=Ob+9V4oyQWkappXP5u8Trw==; sl_jwt_sign='
+        # parse
+        for quality in [('flac', '2000', '2000kflac'), ('mp3', '320', '320kmp3')]:
+            try:
+                data = {'platform': 'kuwo', 'songid': song_id, 'format': quality[0], 'bitrate': quality[1]}
+                resp = self.post('https://flac.music.hi.cn/ajax.php?act=getUrl', headers=headers, data=data, timeout=10, **request_overrides)
+                resp.raise_for_status()
+                download_result = resp2json(resp=resp)
+                if 'data' not in download_result: continue
+            except:
+                continue
+            download_url: str = download_result['data'].get('url', '')
+            if not download_url: continue
+            song_info = SongInfo(
+                source=self.source, download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+                ext=download_url.split('.')[-1].split('?')[0], raw_data={'search': search_result, 'download': download_result},
+                duration_s=download_result['data'].get('duration', 0), duration=seconds2hms(download_result['data'].get('duration', 0)),
+            )
+            song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
+            ext, file_size = song_info.download_url_status['probe_status']['ext'], song_info.download_url_status['probe_status']['file_size']
+            if file_size and file_size != 'NULL': song_info.file_size = file_size
+            if not song_info.file_size: song_info.file_size = 'NULL'
+            if ext and ext != 'NULL': song_info.ext = ext
+            if song_info.with_valid_download_url: break
+        # return
+        return song_info, quality
     '''_constructsearchurls'''
     def _constructsearchurls(self, keyword: str, rule: dict = None, request_overrides: dict = None):
         # init
@@ -66,8 +97,14 @@ class KuwoMusicClient(BaseMusicClient):
                     continue
                 song_info = SongInfo(source=self.source)
                 brs = ['4000kflac', '2000kflac', 'flac', '320kmp3', '192kmp3', '128kmp3']
-                # ----try "https://mobi.kuwo.cn/mobi.s" first
-                for br in brs:
+                # ----try _parsewithflacmusicapi first
+                try:
+                    song_info_flac, quality_flac = self._parsewithflacmusicapi(search_result, request_overrides)
+                except:
+                    song_info_flac, quality_flac = SongInfo(source=self.source), ('mp3', '128', '128kmp3')
+                # ----try "https://mobi.kuwo.cn/mobi.s" second
+                for br_idx, br in enumerate(brs):
+                    if song_info_flac.with_valid_download_url and br_idx >= brs.index(quality_flac[-1]): song_info = song_info_flac; break
                     try:
                         resp = self.get(f"https://mobi.kuwo.cn/mobi.s?f=web&source=kwplayercar_ar_6.0.0.9_B_jiakong_vh.apk&from=PC&type=convert_url_with_sign&br={br}&rid={search_result['MUSICRID'].removeprefix('MUSIC_')}&&user=C_APK_guanwang_12609069939969033731", **request_overrides)
                         resp.raise_for_status()
@@ -75,13 +112,13 @@ class KuwoMusicClient(BaseMusicClient):
                         download_url = download_result['data']['url']
                         song_info = SongInfo(
                             source=self.source, download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
-                            ext=download_result['data']['format'], duration_s=download_result['data']['duration'], duration=seconds2hms(download_result['data']['duration']),
-                            raw_data={'search': search_result, 'download': download_result},
+                            ext=download_result['data'].get('format', br[-4:].removeprefix('k')), duration_s=download_result['data'].get('duration', 0), 
+                            duration=seconds2hms(download_result['data'].get('duration', 0)), raw_data={'search': search_result, 'download': download_result},
                         )
                         if song_info.with_valid_download_url: break
                     except:
                         continue
-                # ----try "https://www.kuwo.cn/api/v1/www/music/playUrl", second
+                # ----try "https://www.kuwo.cn/api/v1/www/music/playUrl", third
                 if not song_info.with_valid_download_url:
                     headers = {
                         "Cookie": (
