@@ -21,6 +21,7 @@ from .mp3juice import MP3JuiceMusicClient
 from .fivesing import FiveSingMusicClient
 from .qianqian import QianqianMusicClient
 from .ximalaya import XimalayaMusicClient
+from .bilibili import BilibiliMusicClient
 from .yinyuedao import YinyuedaoMusicClient
 
 
@@ -32,7 +33,7 @@ class MusicClientBuilder(BaseModuleBuilder):
         'JooxMusicClient': JooxMusicClient, 'KuwoMusicClient': KuwoMusicClient, 'KugouMusicClient': KugouMusicClient, 'FiveSingMusicClient': FiveSingMusicClient,
         'QianqianMusicClient': QianqianMusicClient, 'MiguMusicClient': MiguMusicClient, 'NeteaseMusicClient': NeteaseMusicClient, 'YouTubeMusicClient': YouTubeMusicClient,
         'TIDALMusicClient': TIDALMusicClient, 'AppleMusicClient': AppleMusicClient, 'FangpiMusicClient': FangpiMusicClient, 'GDStudioMusicClient': GDStudioMusicClient,
-        'JamendoMusicClient': JamendoMusicClient,
+        'JamendoMusicClient': JamendoMusicClient, 'BilibiliMusicClient': BilibiliMusicClient,
     }
 
 
