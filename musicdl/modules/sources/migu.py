@@ -39,8 +39,12 @@ class MiguMusicClient(BaseMusicClient):
             except: return 0
         # parse
         try:
-            resp = self.get(url=f'https://api-v1.cenguigui.cn/api/mg_music/api.php?id={song_id}', **request_overrides)
-            resp.raise_for_status()
+            try:
+                resp = self.get(url=f'https://api-v1.cenguigui.cn/api/mg_music/api.php?id={song_id}', timeout=10, **request_overrides)
+                resp.raise_for_status()
+            except:
+                resp = self.get(url=f'https://api.cenguigui.cn/api/mg_music/api.php?id={song_id}', timeout=10, **request_overrides)
+                resp.raise_for_status()
             download_result = resp2json(resp=resp)
         except:
             return SongInfo(source=self.source)

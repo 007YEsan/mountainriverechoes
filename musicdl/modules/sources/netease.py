@@ -44,8 +44,12 @@ class NeteaseMusicClient(BaseMusicClient):
         # parse
         for quality in ['jymaster', 'sky', 'jyeffect', 'hires', 'lossless', 'exhigh', 'standard']:
             try:
-                resp = self.get(url=f'https://api-v1.cenguigui.cn/api/netease/music_v1.php?id={song_id}&type=json&level={quality}', **request_overrides)
-                resp.raise_for_status()
+                try:
+                    resp = self.get(url=f'https://api-v1.cenguigui.cn/api/netease/music_v1.php?id={song_id}&type=json&level={quality}', timeout=10, **request_overrides)
+                    resp.raise_for_status()
+                except:
+                    resp = self.get(url=f'https://api.cenguigui.cn/api/netease/music_v1.php?id={song_id}&type=json&level={quality}', timeout=10, **request_overrides)
+                    resp.raise_for_status()
                 download_result = resp2json(resp=resp)
                 if 'data' not in download_result or (_safefetchfilesize(download_result['data']) < 0.01): continue
             except:
