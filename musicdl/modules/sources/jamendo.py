@@ -74,6 +74,7 @@ class JamendoMusicClient(BaseMusicClient):
                 # --download results
                 if not isinstance(search_result, dict) or ('id' not in search_result) or ('stream' not in search_result and 'download' not in search_result):
                     continue
+                song_info = SongInfo(source=self.source)
                 streams: dict = search_result.get('download') or search_result.get('stream')
                 for quality in ['flac', 'ogg', 'mp3']:
                     download_url = streams.get(quality, "")
