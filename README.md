@@ -59,6 +59,7 @@
 
 # 🎉 What's New
 
+- 2025-12-19: Released musicdl v2.7.4 — supports music search and download using TuneHubMusicClient.
 - 2025-12-17: Released musicdl v2.7.3 — supports native Bilibili music search and downloads, improves the search speed of some third-party APIs, refactors the Ximalaya music platform code, and includes several other minor code optimizations.
 - 2025-12-15: Released musicdl v2.7.2 — added support for jamendo and make some improvements.
 - 2025-12-11: Released musicdl v2.7.1 — added support for two new sites and fixed several potential bugs.
@@ -564,7 +565,7 @@ Or, equivalently, run the following command in the command line:
 musicdl -m GDStudioMusicClient
 ```
 
-By default, the above code will search for and download music from nine music platforms, excluding YouTube Music.
+By default, the above code will search for and download music from nine music platforms, excluding YouTube Music (as using `GDStudioMusicClient` for search and download on this platform seems to be unstable).
 The screenshot of the running result is as follows:
 
 <div align="center">
@@ -607,6 +608,42 @@ The way to run it from the command line is similar:
 ```bash
 musicdl -m GDStudioMusicClient -i "{'GDStudioMusicClient': {'search_size_per_source': 5, 'allowed_music_sources': ['spotify', 'qobuz', 'tidal', 'apple']}}"
 ```
+
+#### TuneHub Music Download
+
+`TuneHubMusicClient` is actually quite similar to `GDStudioMusicClient`, as it allows music search and download from multiple music platforms. 
+However, it primarily supports music platforms in Mainland China and offers fewer music sources compared to `GDStudioMusicClient`. 
+Specifically, the list of platforms it currently supports is as follows:
+
+| Source (EN)             | Source (CN)                        | Official Websites                     | `allowed_music_sources`      |
+| -----------------       | -------------------                | -----------------------------------   | -------------------          |
+| Tencent (QQ Music)      | QQ音乐                             | https://y.qq.com                      | `qq`                         |
+| NetEase Cloud Music     | 网易云音乐                         | https://music.163.com                 | `netease`                    |
+| Kuwo                    | 酷我音乐                           | https://www.kuwo.cn                   | `kuwo`                       |
+
+Specifically, you can call it using the following code:
+
+```python
+from musicdl import musicdl
+
+music_client = musicdl.MusicClient(music_sources=['TuneHubMusicClient'])
+music_client.startcmdui()
+```
+
+Alternatively, you can directly run the following command in the terminal:
+
+```python
+musicdl -m TuneHubMusicClient
+```
+
+The screenshot of the running result is as follows:
+
+<div align="center">
+  <div>
+    <img src="https://github.com/CharlesPikachu/musicdl/raw/master/docs/tunehubscreenshot.png" width="600"/>
+  </div>
+</div>
+<br />
 
 For more details, please refer to the [official documentation](https://musicdl.readthedocs.io/).
 
