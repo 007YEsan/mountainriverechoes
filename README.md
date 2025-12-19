@@ -138,7 +138,7 @@ python setup.py install
 ```
 
 Some of the music downloaders supported by `musicdl` require additional CLI tools to function properly, mainly for decrypting encrypted search/download requests and audio files.
-These CLI tools include [FFmpeg](https://www.ffmpeg.org/) and [Node.js](https://nodejs.org/en). Specifically,
+These CLI tools include,
 
 - [FFmpeg](https://www.ffmpeg.org/): At the moment, only `TIDALMusicClient` and `AppleMusicClient` depends on FFmpeg for audio file decoding.
   If you don’t need to use `TIDALMusicClient` and `AppleMusicClient` when working with `musicdl`, you don’t need to install FFmpeg.
