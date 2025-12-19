@@ -210,6 +210,23 @@ Of course, you can also run musicdl by entering the following equivalent command
 musicdl -m NeteaseMusicClient,MiguMusicClient,QQMusicClient,KugouMusicClient,KuwoMusicClient,QianqianMusicClient
 ```
 
+Please note that musicdl uses six Mainland China music sources by default for searching. 
+If you need to use overseas music sources, you must manually specify the music platform each time you run the program. 
+For example:
+
+```bash
+musicdl -m GDStudioMusicClient,JamendoMusicClient
+```
+
+In addition, searching and downloading from many music sources simultaneously can be relatively slow. 
+Each run may take about 5–6 minutes. 
+If you are confident that your song can be found on a specific platform or a few platforms, for example, `NeteaseMusicClient`, `QQMusicClient or `KuwoMusicClient`,
+it is recommended to directly specify those platforms:
+
+```bash
+musicdl -m NeteaseMusicClient,QQMusicClient,KuwoMusicClient
+```
+
 The demonstration is as follows,
 
 <div align="center">
