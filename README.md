@@ -105,7 +105,7 @@ If you are a rights holder and believe this repository infringes your rights, pl
 |  [JamendoMusicClient](https://www.jamendo.com/)                      |  [简音乐 (欧美流行音乐)](https://www.jamendo.com/)                                |   ✓                |  ✓                   |    [jamendo.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/jamendo.py)          |
 |  [BilibiliMusicClient](https://www.bilibili.com/audio/home/?type=9)  |  [Bilibili音乐](https://www.bilibili.com/audio/home/?type=9)                      |   ✓                |  ✓                   |    [bilibili.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/bilibili.py)        |
 |  [TuneHubMusicClient](https://music-dl.sayqz.com/)                   |  [TuneHub音乐 (QQ网易云酷狗音乐源)](https://music-dl.sayqz.com/)                  |   ✓                |  ✓                   |    [tunehub.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/common/tunehub.py)           |
-|  [GequhaiMusicClient](https://www.gequhai.com/)                      |  [歌曲海](https://www.gequhai.com/))                                              |   ✓                |  ✓                   |    [gequhai.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/common/gequhai.py)           |
+|  [GequhaiMusicClient](https://www.gequhai.com/)                      |  [歌曲海](https://www.gequhai.com/)                                               |   ✓                |  ✓                   |    [gequhai.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/common/gequhai.py)           |
 
 
 # 🧪 Playground
