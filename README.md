@@ -59,6 +59,7 @@
 
 # 🎉 What's New
 
+- 2025-12-24: Released musicdl v2.7.6 — add support for MissEvan FM, and fix bugs on the Geqihai site.
 - 2025-12-24: Released musicdl v2.7.5 — add support for lossless music search and parsing for the gequhai site, and optimize parts of the code.
 - 2025-12-19: Released musicdl v2.7.4 — supports music search and download using TuneHubMusicClient.
 - 2025-12-17: Released musicdl v2.7.3 — supports native Bilibili music search and downloads, improves the search speed of some third-party APIs, refactors the Ximalaya music platform code, and includes several other minor code optimizations.
@@ -105,6 +106,7 @@ If you are a rights holder and believe this repository infringes your rights, pl
 |  [BilibiliMusicClient](https://www.bilibili.com/audio/home/?type=9)  |  [Bilibili音乐](https://www.bilibili.com/audio/home/?type=9)                      |   ✓                |  ✓                   |    [bilibili.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/bilibili.py)        |
 |  [TuneHubMusicClient](https://music-dl.sayqz.com/)                   |  [TuneHub音乐 (QQ网易云酷狗音乐源)](https://music-dl.sayqz.com/)                  |   ✓                |  ✓                   |    [tunehub.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/common/tunehub.py)           |
 |  [GequhaiMusicClient](https://www.gequhai.com/)                      |  [歌曲海](https://www.gequhai.com/)                                               |   ✓                |  ✓                   |    [gequhai.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/common/gequhai.py)           |
+|  [MissEvanMusicClient](https://www.missevan.com/)                    |  [猫耳FM](https://www.missevan.com/)                                              |   ✓                |  ✓                   |    [missevan.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/common/missevan.py)         |
 
 
 # 🧪 Playground

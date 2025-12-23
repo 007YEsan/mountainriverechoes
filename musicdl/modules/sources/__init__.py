@@ -22,6 +22,7 @@ from .fivesing import FiveSingMusicClient
 from .qianqian import QianqianMusicClient
 from .ximalaya import XimalayaMusicClient
 from .bilibili import BilibiliMusicClient
+from .missevan import MissEvanMusicClient
 from .yinyuedao import YinyuedaoMusicClient
 from ..common import GDStudioMusicClient, TuneHubMusicClient
 
@@ -35,6 +36,7 @@ class MusicClientBuilder(BaseModuleBuilder):
         'QianqianMusicClient': QianqianMusicClient, 'MiguMusicClient': MiguMusicClient, 'NeteaseMusicClient': NeteaseMusicClient, 'YouTubeMusicClient': YouTubeMusicClient,
         'TIDALMusicClient': TIDALMusicClient, 'AppleMusicClient': AppleMusicClient, 'FangpiMusicClient': FangpiMusicClient, 'GDStudioMusicClient': GDStudioMusicClient,
         'JamendoMusicClient': JamendoMusicClient, 'BilibiliMusicClient': BilibiliMusicClient, 'TuneHubMusicClient': TuneHubMusicClient, 'GequhaiMusicClient': GequhaiMusicClient,
+        'MissEvanMusicClient': MissEvanMusicClient,
     }
 
 
