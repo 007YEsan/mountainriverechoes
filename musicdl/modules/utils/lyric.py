@@ -10,6 +10,32 @@ import os
 import re
 import tempfile
 import requests
+from typing import Optional
+
+
+'''Settings'''
+_TIME_RE = re.compile(
+    r"\[(?:(\d{1,2}):)?(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?\]"
+)
+
+
+'''fractoseconds'''
+def fractoseconds(frac: str | None) -> float:
+    if not frac: return 0.0
+    scale = 10 ** len(frac)
+    return int(frac) / scale
+
+
+'''extractdurationsecondsfromlrc'''
+def extractdurationsecondsfromlrc(lrc: str) -> Optional[float]:
+    max_t = None
+    for h, m, s, frac in _TIME_RE.findall(lrc):
+        hh = int(h) if h else 0
+        mm = int(m)
+        ss = int(s)
+        t = hh * 3600 + mm * 60 + ss + fractoseconds(frac)
+        max_t = t if (max_t is None or t > max_t) else max_t
+    return max_t
 
 
 '''WhisperLRC'''

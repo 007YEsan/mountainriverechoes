@@ -6,12 +6,11 @@ Author:
 WeChat Official Account (微信公众号):
     Charles的皮卡丘
 '''
-import re
 import copy
 from rich.progress import Progress
 from urllib.parse import urlencode
 from ..sources import BaseMusicClient
-from ..utils import legalizestring, resp2json, usesearchheaderscookies, seconds2hms, SongInfo
+from ..utils import legalizestring, resp2json, usesearchheaderscookies, seconds2hms, extractdurationsecondsfromlrc, SongInfo
 
 
 '''SUPPORTED_SITES'''
@@ -104,15 +103,8 @@ class TuneHubMusicClient(BaseMusicClient):
                     lyric_result, lyric = dict(), 'NULL'
                 if lyric and lyric != 'NULL':
                     try:
-                        time_pattern = r"\[(\d{2}):(\d{2})\.(\d{3})\]"
-                        timestamps = re.findall(time_pattern, lyric)
-                        last_timestamp = timestamps[-1]
-                        minutes = int(last_timestamp[0])
-                        seconds = int(last_timestamp[1])
-                        milliseconds = int(last_timestamp[2])
-                        total_seconds = minutes * 60 + seconds + milliseconds / 1000
-                        song_info.duration_s = total_seconds
-                        song_info.duration = seconds2hms(total_seconds)
+                        song_info.duration_s = extractdurationsecondsfromlrc(lyric)
+                        song_info.duration = seconds2hms(song_info.duration_s)
                     except:
                         pass
                 song_info.lyric = lyric
