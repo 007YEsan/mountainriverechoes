@@ -59,7 +59,7 @@
 
 # 🎉 What's New
 
-- 2025-12-24: Released musicdl v2.7.6 — add support for MissEvan FM, and fix bugs on the Geqihai site.
+- 2025-12-24: Released musicdl v2.7.6 — add support for MissEvan FM, and fix bugs on the Gequhai site.
 - 2025-12-24: Released musicdl v2.7.5 — add support for lossless music search and parsing for the gequhai site, and optimize parts of the code.
 - 2025-12-19: Released musicdl v2.7.4 — supports music search and download using TuneHubMusicClient.
 - 2025-12-17: Released musicdl v2.7.3 — supports native Bilibili music search and downloads, improves the search speed of some third-party APIs, refactors the Ximalaya music platform code, and includes several other minor code optimizations.

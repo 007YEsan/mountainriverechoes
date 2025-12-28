@@ -40,10 +40,9 @@ class KuwoMusicClient(BaseMusicClient):
                 resp = self.post('https://flac.music.hi.cn/ajax.php?act=getUrl', headers=headers, data=data, timeout=10, **request_overrides)
                 resp.raise_for_status()
                 download_result = resp2json(resp=resp)
-                if 'data' not in download_result: continue
+                download_url = download_result['data']['url']
             except:
                 continue
-            download_url: str = download_result['data'].get('url', '')
             if not download_url: continue
             song_info = SongInfo(
                 source=self.source, download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
@@ -57,6 +56,35 @@ class KuwoMusicClient(BaseMusicClient):
             if ext and ext != 'NULL': song_info.ext = ext
             if song_info.with_valid_download_url: break
         # return
+        return song_info, quality
+    '''_parsewithcggapi'''
+    def _parsewithcggapi(self, search_result: dict, request_overrides: dict = None):
+        formats = [
+            "acc", "wma", "ogg", "standard", "exhigh", "ape", "lossless", "hires", "zp", "hifi", "sur", "jymaster"
+        ] # TODO: seems hard to support [hifi, sur, jymaster] as they require decrypt with QQMusic APP
+        for fmt in formats[::-1][3:]:
+            try:
+                resp = self.get(f"https://kw-api.cenguigui.cn/?id={search_result['MUSICRID'].removeprefix('MUSIC_')}&type=song&level={fmt}&format=json", timeout=10, **request_overrides)
+                resp.raise_for_status()
+                download_result = resp2json(resp=resp)
+                download_url = download_result['data']['url']
+            except:
+                continue
+            if not download_url: continue
+            bitrate = download_result['data'].get('bitrate', 128)
+            if bitrate > 400: quality = ('flac', str(bitrate), f'{bitrate}kflac')
+            else: quality = ('mp3', str(bitrate), f'{bitrate}kmp3')
+            song_info = SongInfo(
+                source=self.source, download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+                ext=download_url.split('.')[-1].split('?')[0], raw_data={'search': search_result, 'download': download_result, 'lyric': {}},
+                duration_s=download_result['data'].get('duration', 0), duration=seconds2hms(download_result['data'].get('duration', 0)),
+                lyric=download_result['data'].get('lyric', 'NULL'), file_size=download_result['data'].get('size', 'NULL'),
+            )
+            song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
+            ext, file_size = song_info.download_url_status['probe_status']['ext'], song_info.download_url_status['probe_status']['file_size']
+            if file_size and file_size != 'NULL': song_info.file_size = file_size
+            if ext and ext != 'NULL': song_info.ext = ext
+            if song_info.with_valid_download_url: break
         return song_info, quality
     '''_constructsearchurls'''
     def _constructsearchurls(self, keyword: str, rule: dict = None, request_overrides: dict = None):
@@ -96,15 +124,17 @@ class KuwoMusicClient(BaseMusicClient):
                 if not isinstance(search_result, dict) or ('MUSICRID' not in search_result):
                     continue
                 song_info = SongInfo(source=self.source)
-                brs = ['4000kflac', '2000kflac', 'flac', '320kmp3', '192kmp3', '128kmp3']
-                # ----try _parsewithflacmusicapi first
-                try:
-                    song_info_flac, quality_flac = self._parsewithflacmusicapi(search_result, request_overrides)
-                except:
-                    song_info_flac, quality_flac = SongInfo(source=self.source), ('mp3', '128', '128kmp3')
+                brs = [(4000, '4000kflac'), (2000, '2000kflac'), (1000, 'flac'), (320, '320kmp3'), (192, '192kmp3'), (128, '128kmp3')]
+                # ----try _parsewithflacmusicapi first although in fact "https://mobi.kuwo.cn/mobi.s" also return flac music
+                for imp_func in [self._parsewithcggapi, self._parsewithflacmusicapi]:
+                    try:
+                        song_info_flac, quality_flac = imp_func(search_result, request_overrides)
+                        break
+                    except:
+                        song_info_flac, quality_flac = SongInfo(source=self.source), ('mp3', '128', '128kmp3')
                 # ----try "https://mobi.kuwo.cn/mobi.s" second
-                for br_idx, br in enumerate(brs):
-                    if song_info_flac.with_valid_download_url and br_idx >= brs.index(quality_flac[-1]): song_info = song_info_flac; break
+                for (br_n, br) in brs:
+                    if song_info_flac.with_valid_download_url and int(quality_flac[1]) >= int(br_n): song_info = song_info_flac; break
                     try:
                         resp = self.get(f"https://mobi.kuwo.cn/mobi.s?f=web&source=kwplayercar_ar_6.0.0.9_B_jiakong_vh.apk&from=PC&type=convert_url_with_sign&br={br}&rid={search_result['MUSICRID'].removeprefix('MUSIC_')}&&user=C_APK_guanwang_12609069939969033731", **request_overrides)
                         resp.raise_for_status()
@@ -129,7 +159,7 @@ class KuwoMusicClient(BaseMusicClient):
                         "secret": "4932e2c95746126c945fe2fb3f88d3455b85b69a4fbdfa6c44b501d7dfe50cff04eb9a8e",
                         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36 Edg/136.0.0.0",
                     } # TODO: implement secret generate algorithm
-                    for br in brs:
+                    for (_, br) in brs:
                         params = {'mid': search_result['MUSICRID'].removeprefix('MUSIC_'), 'type': 'music', 'httpsStatus': '1', 'br': br}
                         try:
                             resp = self.get('https://www.kuwo.cn/api/v1/www/music/playUrl', params=params, headers=headers, **request_overrides)
