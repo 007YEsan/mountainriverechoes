@@ -46,7 +46,7 @@ class AudioAwareColumn(ProgressColumn):
 '''BaseMusicClient'''
 class BaseMusicClient():
     source = 'BaseMusicClient'
-    def __init__(self, search_size_per_source: int = 5, auto_set_proxies: bool = False, random_update_ua: bool = False, max_retries: int = 5, maintain_session: bool = False, 
+    def __init__(self, search_size_per_source: int = 5, auto_set_proxies: bool = False, random_update_ua: bool = False, max_retries: int = 3, maintain_session: bool = False, 
                  logger_handle: LoggerHandle = None, disable_print: bool = False, work_dir: str = 'musicdl_outputs', proxy_sources: list = None, default_search_cookies: dict | str = None,
                  default_download_cookies: dict | str = None, search_size_per_page: int = 10, strict_limit_search_size_per_page: bool = True, quark_parser_config: dict = None):
         # set up work dir

@@ -59,7 +59,7 @@
 
 # 🎉 What's New
 
-- 2025-12-29: Released musicdl v2.7.7 — added support for two additional sites, improved the stability and metadata completeness when fetching lossless tracks from some sites, and optimized certain default arguments (prioritize search speed).
+- 2025-12-29: Released musicdl v2.7.7 — added support for two additional sites, improved the search speed, stability and metadata completeness when fetching lossless tracks from some sites, and optimized certain default arguments (prioritize search speed).
 - 2025-12-24: Released musicdl v2.7.6 — add support for MissEvan FM, and fix bugs on the Gequhai site.
 - 2025-12-24: Released musicdl v2.7.5 — add support for lossless music search and parsing for the gequhai site, and optimize parts of the code.
 - 2025-12-19: Released musicdl v2.7.4 — supports music search and download using TuneHubMusicClient.
@@ -203,19 +203,19 @@ If you want the quickest way to run musicdl to verify that your environment meet
 ```python
 from musicdl import musicdl
 
-music_client = musicdl.MusicClient(music_sources=['MiguMusicClient', 'NeteaseMusicClient', 'QQMusicClient', 'KuwoMusicClient'])
+music_client = musicdl.MusicClient(music_sources=['MiguMusicClient', 'NeteaseMusicClient', 'QQMusicClient', 'KugouMusicClient', 'KuwoMusicClient', 'QianqianMusicClient'])
 music_client.startcmdui()
 ```
 
-The above code runs musicdl using `MiguMusicClient`, `NeteaseMusicClient`, `QQMusicClient` and `KuwoMusicClient` as both the search sources and download sources.
+The above code runs musicdl using `MiguMusicClient`, `NeteaseMusicClient`, `QQMusicClient`, `KugouMusicClient`, `KuwoMusicClient` and `QianqianMusicClient` as both the search sources and download sources.
 
 Of course, you can also run musicdl by entering the following equivalent command directly in the command line,
 
 ```bash
-musicdl -m NeteaseMusicClient,MiguMusicClient,QQMusicClient,KuwoMusicClient
+musicdl -m NeteaseMusicClient,MiguMusicClient,QQMusicClient,KugouMusicClient,KuwoMusicClient,QianqianMusicClient
 ```
 
-Please note that musicdl uses four Mainland China music sources by default for searching. 
+Please note that musicdl uses six Mainland China music sources by default for searching. 
 If you need to use overseas music sources, you must manually specify the music platform each time you run the program. 
 For example:
 
@@ -223,8 +223,8 @@ For example:
 musicdl -m GDStudioMusicClient,JamendoMusicClient
 ```
 
-In addition, searching and downloading from many music sources simultaneously can be relatively slow. 
-Each run may take about 5–6 minutes. 
+In addition, searching and downloading from many music sources simultaneously may be relatively slow. 
+Each run may take about 30–60 seconds. 
 If you are confident that your song can be found on a specific platform or a few platforms, for example, `NeteaseMusicClient`, `QQMusicClient` or `KuwoMusicClient`,
 it is recommended to directly specify those platforms:
 
@@ -621,7 +621,7 @@ Or, an even better option is to manually specify a few platforms where you belie
 from musicdl import musicdl
 
 # allowed_music_sources can be set to any subset (i.e., any combination) of ['spotify', 'tencent', 'netease', 'kuwo', 'tidal', 'qobuz', 'joox', 'bilibili', 'apple', 'ytmusic']
-init_music_clients_cfg = {'GDStudioMusicClient': {'search_size_per_source': 3, 'allowed_music_sources': ['spotify', 'qobuz', 'tidal', 'apple']}}
+init_music_clients_cfg = {'GDStudioMusicClient': {'search_size_per_source': 5, 'allowed_music_sources': ['spotify', 'qobuz', 'tidal', 'apple']}}
 music_client = musicdl.MusicClient(music_sources=['GDStudioMusicClient'], init_music_clients_cfg=init_music_clients_cfg, clients_threadings=clients_threadings)
 music_client.startcmdui()
 ```
@@ -629,7 +629,7 @@ music_client.startcmdui()
 The way to run it from the command line is similar:
 
 ```bash
-musicdl -m GDStudioMusicClient -i "{'GDStudioMusicClient': {'search_size_per_source': 3, 'allowed_music_sources': ['spotify', 'qobuz', 'tidal', 'apple']}}"
+musicdl -m GDStudioMusicClient -i "{'GDStudioMusicClient': {'search_size_per_source': 5, 'allowed_music_sources': ['spotify', 'qobuz', 'tidal', 'apple']}}"
 ```
 
 #### TuneHub Music Download

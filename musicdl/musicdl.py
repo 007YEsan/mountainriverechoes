@@ -10,6 +10,7 @@ import sys
 import copy
 import click
 import json_repair
+from concurrent.futures import ThreadPoolExecutor
 if __name__ == '__main__':
     from __init__ import __version__
     from modules import BuildMusicClient, LoggerHandle, MusicClientBuilder, smarttrunctable, colorize, printfullline
@@ -29,7 +30,7 @@ Instructions:
 Music Files Save Path:
     %s (root dir is the current directory if using relative path).'''
 '''DEFAULT_MUSIC_SOURCES'''
-DEFAULT_MUSIC_SOURCES = ['MiguMusicClient', 'NeteaseMusicClient', 'QQMusicClient', 'KuwoMusicClient']
+DEFAULT_MUSIC_SOURCES = ['MiguMusicClient', 'NeteaseMusicClient', 'QQMusicClient', 'KuwoMusicClient', 'QianqianMusicClient', 'KugouMusicClient']
 
 
 '''MusicClient'''
@@ -52,7 +53,7 @@ class MusicClient():
         for music_source in self.music_sources:
             if music_source not in MusicClientBuilder.REGISTERED_MODULES.keys(): continue
             init_music_client_cfg = {
-                'search_size_per_source': 3, 'auto_set_proxies': False, 'random_update_ua': False, 'max_retries': 3,
+                'search_size_per_source': 5, 'auto_set_proxies': False, 'random_update_ua': False, 'max_retries': 3,
                 'maintain_session': False, 'logger_handle': self.logger_handle, 'disable_print': True, 'work_dir': 'musicdl_outputs',
                 'proxy_sources': None, 'default_search_cookies': {}, 'default_download_cookies': {}, 'type': music_source,
                 'search_size_per_page': 10, 'strict_limit_search_size_per_page': True, 'quark_parser_config': {}
@@ -107,13 +108,17 @@ class MusicClient():
     '''search'''
     def search(self, keyword):
         self.logger_handle.info(f'Searching {colorize(keyword, "highlight")} From {colorize("|".join(self.music_sources), "highlight")}')
-        search_results = dict()
-        for music_source in self.music_sources:
-            search_results[music_source] = self.music_clients[music_source].search(
-                keyword=keyword, num_threadings=self.clients_threadings[music_source], 
-                request_overrides=self.requests_overrides[music_source], rule=self.search_rules[music_source]
-            )
-        return search_results
+        def _search(ms):
+            try:
+                return ms, self.music_clients[ms].search(
+                    keyword=keyword, num_threadings=self.clients_threadings[ms], request_overrides=self.requests_overrides[ms], rule=self.search_rules[ms],
+                )
+            except Exception as err:
+                self.logger_handle.error(f'MusicClient.{ms}.search >>> {keyword} (Error: {err})')
+                return ms, []
+        max_workers = min(len(self.music_sources), 10)
+        with ThreadPoolExecutor(max_workers=max_workers) as ex:
+            return dict(ex.map(_search, self.music_sources))
     '''download'''
     def download(self, song_infos):
         classified_song_infos = {}
