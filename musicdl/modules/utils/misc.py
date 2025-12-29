@@ -219,6 +219,18 @@ def usesearchheaderscookies(func):
     return wrapper
 
 
+'''searchdictbykey'''
+def searchdictbykey(obj, target_key: str):
+    results = []
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            if k == target_key: results.append(v)
+            results.extend(searchdictbykey(v, target_key))
+    elif isinstance(obj, list):
+        for item in obj: results.extend(searchdictbykey(item, target_key))
+    return results
+
+
 '''AudioLinkTester'''
 class AudioLinkTester(object):
     MAGIC = [

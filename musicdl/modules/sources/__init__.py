@@ -18,6 +18,7 @@ from .youtube import YouTubeMusicClient
 from .gequbao import GequbaoMusicClient
 from .jamendo import JamendoMusicClient
 from .gequhai import GequhaiMusicClient
+from .fivesong import FiveSongMusicClient
 from .mp3juice import MP3JuiceMusicClient
 from .fivesing import FiveSingMusicClient
 from .qianqian import QianqianMusicClient
@@ -37,7 +38,7 @@ class MusicClientBuilder(BaseModuleBuilder):
         'QianqianMusicClient': QianqianMusicClient, 'MiguMusicClient': MiguMusicClient, 'NeteaseMusicClient': NeteaseMusicClient, 'YouTubeMusicClient': YouTubeMusicClient,
         'TIDALMusicClient': TIDALMusicClient, 'AppleMusicClient': AppleMusicClient, 'FangpiMusicClient': FangpiMusicClient, 'GDStudioMusicClient': GDStudioMusicClient,
         'JamendoMusicClient': JamendoMusicClient, 'BilibiliMusicClient': BilibiliMusicClient, 'TuneHubMusicClient': TuneHubMusicClient, 'GequhaiMusicClient': GequhaiMusicClient,
-        'MissEvanMusicClient': MissEvanMusicClient, 'HTQYYMusicClient': HTQYYMusicClient,
+        'MissEvanMusicClient': MissEvanMusicClient, 'HTQYYMusicClient': HTQYYMusicClient, 'FiveSongMusicClient': FiveSongMusicClient,
     }
 
 
