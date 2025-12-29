@@ -141,7 +141,8 @@ class MiguMusicClient(BaseMusicClient):
                         download_result = resp2json(resp=resp)
                     except:
                         continue
-                    download_url = safeextractfromdict(download_result, ['data', 'url'], "")
+                    download_url = safeextractfromdict(download_result, ['data', 'url'], "") or \
+                                   f"https://app.pd.nf.migu.cn/MIGUM3.0/v1.0/content/sub/listenSong.do?channel=mx&copyrightId={search_result['copyrightId']}&contentId={search_result['contentId']}&toneFlag={rate['formatType']}&resourceType={rate['resourceType']}&userId=15548614588710179085069&netType=00"
                     if not download_url: continue
                     song_info = SongInfo(
                         source=self.source, download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
@@ -170,7 +171,7 @@ class MiguMusicClient(BaseMusicClient):
                     album=legalizestring(', '.join([singer.get('name', 'NULL') for singer in search_result.get('albums', [])]), replace_null_string='NULL'),
                     identifier=f"{search_result['contentId']}"
                 ))
-                # --lyric results
+                # --lyric results, TODO: fix the bugs in lyric fetch
                 try:
                     lyric_url = safeextractfromdict(search_result, ['lyricUrl'], '') or safeextractfromdict(search_result, ['trcUrl'], '')
                     lyric_url = lyric_url.replace('http://', 'https://')
