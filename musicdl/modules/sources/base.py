@@ -229,10 +229,10 @@ class BaseMusicClient():
                 self.session.proxies = {}
             try:
                 resp = self.session.get(url, **kwargs)
+                resp.raise_for_status()
             except Exception as err:
                 self.logger_handle.error(f'{self.source}.get >>> {url} (Error: {err})', disable_print=self.disable_print)
                 continue
-            if resp.status_code != 200: continue
             return resp
         return resp
     '''post'''
@@ -253,10 +253,10 @@ class BaseMusicClient():
                 self.session.proxies = {}
             try:
                 resp = self.session.post(url, **kwargs)
+                resp.raise_for_status()
             except Exception as err:
                 self.logger_handle.error(f'{self.source}.post >>> {url} (Error: {err})', disable_print=self.disable_print)
                 continue
-            if resp.status_code != 200: continue
             return resp
         return resp
     '''_savetopkl'''

@@ -444,8 +444,11 @@ music_client = musicdl.MusicClient(music_sources=['MituMusicClient', 'YinyuedaoM
 music_client.startcmdui()
 ```
 
-Please note that musicdl does not provide any speed-limit bypass for Quark Netdisk. 
+Please note that musicdl does not provide any speed-limit bypass for Quark Netdisk.
 If the cookies you supply belong to a non-VIP Quark account, the download speed may be limited to only a few hundred KB/s.
+
+Also note that Quark Drive will first save the music file to your own Quark account (usually in the "From: Shares (来自: 分享)" folder) and then start the download.
+Therefore, if your Quark storage is insufficient, the download may fail.
 
 #### TIDAL High-Quality Music Download
 
