@@ -199,22 +199,24 @@ class KuwoMusicClient(BaseMusicClient):
                     album=legalizestring(search_result.get('ALBUM', 'NULL'), replace_null_string='NULL'),
                     identifier=search_result['MUSICRID'],
                 ))
-                song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
-                ext, file_size = song_info.download_url_status['probe_status']['ext'], song_info.download_url_status['probe_status']['file_size']
-                if file_size and file_size != 'NULL': song_info.file_size = file_size
-                if not song_info.file_size: song_info.file_size = 'NULL'
-                if ext and ext != 'NULL': song_info.ext = ext
+                if not song_info.download_url_status.get('probe_status'):
+                    song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
+                    ext, file_size = song_info.download_url_status['probe_status']['ext'], song_info.download_url_status['probe_status']['file_size']
+                    if file_size and file_size != 'NULL': song_info.file_size = file_size
+                    if not song_info.file_size: song_info.file_size = 'NULL'
+                    if ext and ext != 'NULL': song_info.ext = ext
                 # --lyric results
-                params = {'musicId': search_result['MUSICRID'].removeprefix('MUSIC_'), 'httpsStatus': '1'}
-                try:
-                    resp = self.get('http://m.kuwo.cn/newh5/singles/songinfoandlrc', params=params, **request_overrides)
-                    resp.raise_for_status()
-                    lyric_result: dict = resp2json(resp)
-                    lyric = lyric_result.get('data', {}).get('lrclist', []) or 'NULL'
-                except:
-                    lyric_result, lyric = {}, 'NULL'
-                song_info.raw_data['lyric'] = lyric_result
-                song_info.lyric = lyric
+                if not song_info.lyric or song_info.lyric == 'NULL':
+                    params = {'musicId': search_result['MUSICRID'].removeprefix('MUSIC_'), 'httpsStatus': '1'}
+                    try:
+                        resp = self.get('http://m.kuwo.cn/newh5/singles/songinfoandlrc', params=params, **request_overrides)
+                        resp.raise_for_status()
+                        lyric_result: dict = resp2json(resp)
+                        lyric = lyric_result.get('data', {}).get('lrclist', []) or 'NULL'
+                    except:
+                        lyric_result, lyric = {}, 'NULL'
+                    song_info.raw_data['lyric'] = lyric_result
+                    song_info.lyric = lyric
                 # --append to song_infos
                 song_infos.append(song_info)
                 # --judgement for search_size
