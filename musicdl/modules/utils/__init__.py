@@ -1,5 +1,6 @@
 '''initialize'''
 from .data import SongInfo
+from .ip import RandomIPGenerator
 from .quarkparser import QuarkParser
 from .songinfoutils import SongInfoUtils
 from .modulebuilder import BaseModuleBuilder

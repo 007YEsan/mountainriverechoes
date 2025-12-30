@@ -13,6 +13,7 @@ from .tidal import TIDALMusicClient
 from .lizhi import LizhiMusicClient
 from .apple import AppleMusicClient
 from .kugou import KugouMusicClient
+from .twot58 import TowT58MusicClient
 from .fangpi import FangpiMusicClient
 from .buguyy import BuguyyMusicClient
 from ..utils import BaseModuleBuilder
@@ -43,6 +44,7 @@ class MusicClientBuilder(BaseModuleBuilder):
         'JamendoMusicClient': JamendoMusicClient, 'BilibiliMusicClient': BilibiliMusicClient, 'TuneHubMusicClient': TuneHubMusicClient, 'GequhaiMusicClient': GequhaiMusicClient,
         'MissEvanMusicClient': MissEvanMusicClient, 'HTQYYMusicClient': HTQYYMusicClient, 'FiveSongMusicClient': FiveSongMusicClient, 'FLMP3MusicClient': FLMP3MusicClient,
         'JCPOOMusicClient': JCPOOMusicClient, 'KKWSMusicClient': KKWSMusicClient, 'MyFreeMP3MusicClient': MyFreeMP3MusicClient, 'LivePOOMusicClient': LivePOOMusicClient,
+        'TowT58MusicClient': TowT58MusicClient
     }
 
 
