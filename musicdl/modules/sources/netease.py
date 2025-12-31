@@ -9,10 +9,16 @@ WeChat Official Account (微信公众号):
 import json
 import copy
 import random
+import warnings
 from .base import BaseMusicClient
 from rich.progress import Progress
 from ..utils.neteaseutils import EapiCryptoUtils
 from ..utils import resp2json, seconds2hms, legalizestring, safeextractfromdict, usesearchheaderscookies, SongInfo
+warnings.filterwarnings('ignore')
+
+
+'''settings'''
+WY_QUALITIES = ['jymaster', 'dolby', 'sky', 'jyeffect', 'hires', 'lossless', 'exhigh', 'standard']
 
 
 '''NeteaseMusicClient'''
@@ -30,6 +36,30 @@ class NeteaseMusicClient(BaseMusicClient):
         if not self.default_search_cookies: self.default_search_cookies = default_cookies
         if not self.default_download_cookies: self.default_download_cookies = default_cookies
         self._initsession()
+    '''_parsewithxiaoqinapi'''
+    def _parsewithxiaoqinapi(self, search_result: dict, request_overrides: dict = None):
+        # init
+        request_overrides, song_id = request_overrides or {}, search_result['id']
+        # parse
+        for quality in WY_QUALITIES:
+            try:
+                resp = self.post('https://wyapi-1.toubiec.cn/api/music/url', json={'id': song_id, 'level': quality}, timeout=10, verify=False, **request_overrides)
+                resp.raise_for_status()
+                download_result = resp2json(resp=resp)
+                if 'data' not in download_result: continue
+            except:
+                continue
+            download_url: str = download_result['data'][0].get('url', '')
+            if not download_url: continue
+            song_info = SongInfo(
+                source=self.source, download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+                ext=download_url.split('?')[0].split('.')[-1], raw_data={'search': search_result, 'download': download_result}, file_size='NULL'
+            )
+            song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
+            song_info.file_size = song_info.download_url_status['probe_status']['file_size']
+            if song_info.with_valid_download_url: break
+        # return
+        return song_info, quality
     '''_parsewithcggapi'''
     def _parsewithcggapi(self, search_result: dict, request_overrides: dict = None):
         # init
@@ -42,7 +72,7 @@ class NeteaseMusicClient(BaseMusicClient):
             try: return float(file_size)
             except: return 0
         # parse
-        for quality in ['jymaster', 'sky', 'jyeffect', 'hires', 'lossless', 'exhigh', 'standard']:
+        for quality in WY_QUALITIES:
             try:
                 for prefix in ['api-v2', 'api-v1', 'api', 'player']:
                     try:
@@ -59,13 +89,10 @@ class NeteaseMusicClient(BaseMusicClient):
             if not download_url: continue
             song_info = SongInfo(
                 source=self.source, download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
-                ext=download_url.split('?')[0].split('.')[-1], raw_data={'search': search_result, 'download': download_result},
+                ext=download_url.split('?')[0].split('.')[-1], raw_data={'search': search_result, 'download': download_result}, file_size='NULL'
             )
             song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
-            ext, file_size = song_info.download_url_status['probe_status']['ext'], song_info.download_url_status['probe_status']['file_size']
-            if file_size and file_size != 'NULL': song_info.file_size = file_size
-            if not song_info.file_size: song_info.file_size = 'NULL'
-            if ext and ext != 'NULL': song_info.ext = ext
+            song_info.file_size = song_info.download_url_status['probe_status']['file_size']
             if song_info.with_valid_download_url: break
         # return
         return song_info, quality
@@ -105,15 +132,17 @@ class NeteaseMusicClient(BaseMusicClient):
                 if not isinstance(search_result, dict) or ('id' not in search_result):
                     continue
                 song_info = SongInfo(source=self.source)
-                # ----try _parsewithcggapi first
-                try:
-                    song_info_cgg, quality_cgg = self._parsewithcggapi(search_result, request_overrides)
-                except:
-                    song_info_cgg, quality_cgg = SongInfo(source=self.source), "standard"
+                # ----try thirdpart apis first
+                candidated_thirdpart_apis = [self._parsewithxiaoqinapi, self._parsewithcggapi]
+                for imp_func in candidated_thirdpart_apis:
+                    try:
+                        song_info_flac, quality_flac = imp_func(search_result, request_overrides)
+                        if song_info_flac.with_valid_download_url: break
+                    except:
+                        song_info_flac, quality_flac = SongInfo(source=self.source), WY_QUALITIES[-1]
                 # ----general parse with official API
-                qualties = ["jymaster", "jyeffect", "sky", "hires", "lossless", "exhigh", "standard"]
-                for quality_idx, quality in enumerate(qualties):
-                    if quality_idx >= qualties.index(quality_cgg) and song_info_cgg.with_valid_download_url: song_info = song_info_cgg; break
+                for quality_idx, quality in enumerate(WY_QUALITIES):
+                    if quality_idx >= WY_QUALITIES.index(quality_flac) and song_info_flac.with_valid_download_url: song_info = song_info_flac; break
                     header = {"os": "pc", "appver": "", "osver": "", "deviceId": "pyncm!"}
                     header["requestId"] = str(random.randrange(20000000, 30000000))
                     params = {'ids': [search_result['id']], 'level': quality, 'encodeType': 'flac', 'header': json.dumps(header)}
