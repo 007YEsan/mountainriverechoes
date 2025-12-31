@@ -57,7 +57,7 @@ class KugouMusicClient(BaseMusicClient):
             resp.raise_for_status()
             search_results = resp2json(resp)['data']['lists']
             for search_result in search_results:
-                # --download results
+                # --download results (http://trackercdn.kugou.com/i/?cmd=4&hash={hash}&key={MD5({hash}kgcloud)}&pid=1&forceDown=0&vip=1)
                 if not isinstance(search_result, dict) or ('FileHash' not in search_result):
                     continue
                 song_info = SongInfo(source=self.source)
@@ -68,8 +68,10 @@ class KugouMusicClient(BaseMusicClient):
                 except:
                     continue
                 better_hashes = [
-                    safeextractfromdict(download_result_default, ['extra', 'highhash'], ""), safeextractfromdict(download_result_default, ['extra', 'sqhash'], ""),
-                    safeextractfromdict(download_result_default, ['extra', '320hash'], ""), safeextractfromdict(download_result_default, ['extra', '128hash'], ""),
+                    safeextractfromdict(download_result_default, ['extra', 'sqhash'], ""), safeextractfromdict(download_result_default, ['extra', 'highhash'], ""),
+                    safeextractfromdict(download_result_default, ['extra', '320hash'], ""), safeextractfromdict(download_result_default, ['trans_param', 'ogg_320_hash'], ""),
+                    safeextractfromdict(download_result_default, ['extra', '128hash'], ""), safeextractfromdict(download_result_default, ['trans_param', 'ogg_128_hash'], ""),
+                    safeextractfromdict(download_result_default, ['trans_param', 'hash_multitrack'], ""),
                 ]
                 for better_hash in better_hashes:
                     if not better_hash: continue
