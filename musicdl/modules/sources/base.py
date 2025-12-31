@@ -15,7 +15,6 @@ from rich.text import Text
 from itertools import chain
 from datetime import datetime
 from rich.progress import Task
-from freeproxy import freeproxy
 from fake_useragent import UserAgent
 from pathvalidate import sanitize_filepath
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -48,7 +47,7 @@ class AudioAwareColumn(ProgressColumn):
 class BaseMusicClient():
     source = 'BaseMusicClient'
     def __init__(self, search_size_per_source: int = 5, auto_set_proxies: bool = False, random_update_ua: bool = False, max_retries: int = 3, maintain_session: bool = False, 
-                 logger_handle: LoggerHandle = None, disable_print: bool = False, work_dir: str = 'musicdl_outputs', proxy_sources: list = None, default_search_cookies: dict | str = None,
+                 logger_handle: LoggerHandle = None, disable_print: bool = False, work_dir: str = 'musicdl_outputs', freeproxy_settings: dict = None, default_search_cookies: dict | str = None,
                  default_download_cookies: dict | str = None, search_size_per_page: int = 10, strict_limit_search_size_per_page: bool = True, quark_parser_config: dict = None):
         # set up work dir
         touchdir(work_dir)
@@ -61,7 +60,7 @@ class BaseMusicClient():
         self.logger_handle = logger_handle if logger_handle else LoggerHandle()
         self.disable_print = disable_print
         self.work_dir = work_dir
-        self.proxy_sources = proxy_sources
+        self.freeproxy_settings = freeproxy_settings or {}
         self.default_search_cookies = cookies2dict(default_search_cookies)
         self.default_download_cookies = cookies2dict(default_download_cookies)
         self.default_cookies = self.default_search_cookies
@@ -79,10 +78,12 @@ class BaseMusicClient():
         self.default_headers = self.default_search_headers
         self._initsession()
         # proxied_session_client
-        self.proxied_session_client = freeproxy.ProxiedSessionClient(
-            proxy_sources=['ProxiflyProxiedSession'] if proxy_sources is None else proxy_sources, 
-            disable_print=True
-        ) if auto_set_proxies else None
+        self.proxied_session_client = None
+        if auto_set_proxies:
+            from freeproxy import freeproxy
+            default_freeproxy_settings = dict(disable_print=True, proxy_sources=['ProxiflyProxiedSession'], max_retries=20, init_proxied_session_cfg={})
+            default_freeproxy_settings.update(self.freeproxy_settings)
+            self.proxied_session_client = freeproxy.ProxiedSessionClient(**default_freeproxy_settings)
     '''_initsession'''
     def _initsession(self):
         self.session = requests.Session()

@@ -341,7 +341,15 @@ If you want to use the [pyfreeproxy](https://github.com/CharlesPikachu/freeproxy
 from musicdl import musicdl
 
 init_music_clients_cfg = dict()
-init_music_clients_cfg['NeteaseMusicClient'] = {'search_size_per_source': 1000, 'auto_set_proxies': True, 'proxy_sources': ['QiyunipProxiedSession', 'ProxydailyProxiedSession']}
+init_music_clients_cfg['NeteaseMusicClient'] = {
+    'search_size_per_source': 1000, 'auto_set_proxies': True, 
+	'freeproxy_settings': dict(
+	    proxy_sources=["ProxyScrapeProxiedSession","ProxylistProxiedSession"], 
+		init_proxied_session_cfg={"max_pages":2,"filter_rule":{"country_code":["CN"],"anonymity":["elite"],"protocol":["http","https"]}}, 
+		disable_print=True, 
+		max_tries=20
+	)
+}
 music_client = musicdl.MusicClient(music_sources=['NeteaseMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
 music_client.startcmdui()
 ```
@@ -349,7 +357,7 @@ music_client.startcmdui()
 The command-line usage is similar:
 
 ```bash
-musicdl -m NeteaseMusicClient -i "{'NeteaseMusicClient': {'search_size_per_source': 1000, 'auto_set_proxies': True, 'proxy_sources': ['QiyunipProxiedSession', 'ProxydailyProxiedSession']}}"
+musicdl -m NeteaseMusicClient -i "{'NeteaseMusicClient': {'search_size_per_source': 1000, 'auto_set_proxies': True, 'freeproxy_settings': {'proxy_sources':['ProxyScrapeProxiedSession','ProxylistProxiedSession'],'init_proxied_session_cfg':{'max_pages':2,'filter_rule':{'country_code':['CN'],'anonymity':['elite'],'protocol':['http','https']}},'disable_print':True,'max_tries':20}}}"
 ```
 
 #### Separating Search and Download Results
