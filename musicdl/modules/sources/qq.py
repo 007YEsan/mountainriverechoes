@@ -39,6 +39,42 @@ class QQMusicClient(BaseMusicClient):
         }
         self.default_headers = self.default_search_headers
         self._initsession()
+    '''_parsewithvkeysapi'''
+    def _parsewithvkeysapi(self, search_result: dict, request_overrides: dict = None):
+        # init
+        request_overrides, song_id = request_overrides or {}, search_result['mid']
+        qualities = {
+            0: "trial_listen", 1: "lossy_quality", 2: "lossy_quality", 3: "lossy_quality", 4: "standard_quality", 5: "standard_quality", 6: "standard_quality", 
+            7: "standard_quality", 8: "hq_quality", 9: "hq_quality_enhanced", 10: "sq_lossless_quality", 11: "hi_res_quality", 12: "dolby_atmos", 
+            13: "premium_spatial_audio", 14: "premium_master_2_0", 15: "ai_accompaniment_mode_4track", 16: "ai_5_1_quality_6track",
+        }
+        # _safefetchfilesize
+        def _safefetchfilesize(meta: dict):
+            if not isinstance(meta, dict): return 0
+            file_size = str(meta.get('size', '0.00MB'))
+            file_size = file_size.removesuffix('MB').strip()
+            try: return float(file_size)
+            except: return 0
+        # parse
+        for quality in list(qualities.keys())[::-1]:
+            try:
+                resp = self.get(f"https://api.vkeys.cn/v2/music/tencent?mid={song_id}&quality={quality}", timeout=10, **request_overrides)
+                resp.raise_for_status()
+                download_result = resp2json(resp=resp)
+                if 'data' not in download_result or (_safefetchfilesize(download_result['data']) < 1): continue
+            except:
+                continue
+            download_url: str = download_result['data'].get('url', '')
+            if not download_url: continue
+            song_info = SongInfo(
+                source=self.source, download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+                ext=download_url.split('?')[0].split('.')[-1], raw_data={'search': search_result, 'download': download_result}, file_size='NULL',
+            )
+            song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
+            song_info.file_size = song_info.download_url_status['probe_status']['file_size']
+            if song_info.with_valid_download_url: break
+        # return
+        return song_info
     '''_randomsearchid'''
     def _randomsearchid(self):
         e = random.randint(1, 20)
@@ -139,6 +175,9 @@ class QQMusicClient(BaseMusicClient):
                             continue
                 # ----common user in post try
                 if not song_info.with_valid_download_url:
+                    for imp_func in [self._parsewithvkeysapi]:
+                        try: song_info_flac = imp_func(search_result, request_overrides); break
+                        except: song_info_flac = SongInfo(source=self.source)
                     default_rule = {
                         'comm': {
                             'cv': self.version_info['version_code'], 'v': self.version_info['version_code'], 'QIMEI36': self.qimei_info['q36'], 'ct': '11', 
@@ -156,6 +195,11 @@ class QQMusicClient(BaseMusicClient):
                     ]
                     for quality, default_file_size in zip(list(DEFAULT_QUALITIES.values()), default_file_sizes):
                         song_info = SongInfo(source=self.source)
+                        if song_info_flac.with_valid_download_url and song_info_flac.file_size != 'NULL':
+                            file_size_flac = float(song_info_flac.file_size.removesuffix('MB').strip())
+                            try: file_size_official = float(byte2mb(default_file_size).removesuffix('MB').strip())
+                            except: file_size_official = 0
+                            if file_size_flac + 1 >= file_size_official: song_info = song_info_flac; break
                         try:
                             current_rule = copy.deepcopy(default_rule)
                             current_rule['music.vkey.GetVkey.UrlGetVkey']['param']['filename'] = [f"{quality[0]}{search_result['mid']}{search_result['mid']}{quality[1]}"]

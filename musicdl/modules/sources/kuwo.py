@@ -46,7 +46,7 @@ class KuwoMusicClient(BaseMusicClient):
             if not download_url: continue
             song_info = SongInfo(
                 source=self.source, download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
-                ext=download_url.split('.')[-1].split('?')[0], raw_data={'search': search_result, 'download': download_result},
+                ext=download_url.split('?')[0].split('.')[-1], raw_data={'search': search_result, 'download': download_result},
                 duration_s=download_result['data'].get('duration', 0), duration=seconds2hms(download_result['data'].get('duration', 0)),
             )
             song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
@@ -76,7 +76,7 @@ class KuwoMusicClient(BaseMusicClient):
             else: quality = ('mp3', str(bitrate), f'{bitrate}kmp3')
             song_info = SongInfo(
                 source=self.source, download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
-                ext=download_url.split('.')[-1].split('?')[0], raw_data={'search': search_result, 'download': download_result, 'lyric': {}},
+                ext=download_url.split('?')[0].split('.')[-1], raw_data={'search': search_result, 'download': download_result, 'lyric': {}},
                 duration_s=download_result['data'].get('duration', 0), duration=seconds2hms(download_result['data'].get('duration', 0)),
                 lyric=download_result['data'].get('lyric', 'NULL'), file_size=download_result['data'].get('size', 'NULL'),
             )
@@ -166,7 +166,7 @@ class KuwoMusicClient(BaseMusicClient):
                             resp.raise_for_status()
                             download_result = resp2json(resp=resp)
                             download_url = download_result['data']['url']
-                            ext = download_url.split('.')[-1].split('?')[0] or 'mp3'
+                            ext = download_url.split('?')[0].split('.')[-1] or 'mp3'
                             song_info = SongInfo(
                                 source=self.source, download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
                                 ext=ext, duration_s=search_result.get('DURATION', 0), duration=seconds2hms(search_result.get('DURATION', 0)),
@@ -183,7 +183,7 @@ class KuwoMusicClient(BaseMusicClient):
                         resp.raise_for_status()
                         download_result = resp2json(resp=resp)
                         download_url = download_result['url']
-                        ext = download_url.split('.')[-1].split('?')[0] or 'mp3'
+                        ext = download_url.split('?')[0].split('.')[-1] or 'mp3'
                         song_info = SongInfo(
                             source=self.source, download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
                             ext=ext, duration_s=search_result.get('DURATION', 0), duration=seconds2hms(search_result.get('DURATION', 0)),

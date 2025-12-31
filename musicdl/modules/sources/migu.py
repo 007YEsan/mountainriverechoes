@@ -77,7 +77,7 @@ class MiguMusicClient(BaseMusicClient):
             download_url = safeextractfromdict(download_result, ['data', 'url'], '')
             song_info = SongInfo(
                 source=self.source, download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
-                ext=download_url.split('.')[-1].split('?')[0], raw_data={'search': search_result, 'download': download_result},
+                ext=download_url.split('?')[0].split('.')[-1], raw_data={'search': search_result, 'download': download_result},
             )
         # return
         return song_info

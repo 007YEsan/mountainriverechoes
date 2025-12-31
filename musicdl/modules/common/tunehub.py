@@ -82,7 +82,7 @@ class TuneHubMusicClient(BaseMusicClient):
                         continue
                     song_info = SongInfo(
                         source=self.source, download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
-                        ext=download_url.split('.')[-1].split('?')[0], file_size='NULL', duration='NULL',
+                        ext=download_url.split('?')[0].split('.')[-1], file_size='NULL', duration='NULL',
                         raw_data={'search': search_result, 'download': {}}, identifier=f"{search_result['platform']}_{search_result['id']}",
                         song_name=legalizestring(search_result.get('name', 'NULL'), replace_null_string='NULL'),
                         singers=legalizestring(search_result.get('artist', 'NULL'), replace_null_string='NULL'),

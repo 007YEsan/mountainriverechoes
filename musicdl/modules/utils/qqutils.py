@@ -36,9 +36,9 @@ DEFAULT_VIP_QUALITIES = {
 }
 DEFAULT_QUALITIES = {
     "MASTER": ("AI00", ".flac"), "ATMOS_2": ("Q000", ".flac"), "ATMOS_51": ("Q001", ".flac"), "FLAC": ("F000", ".flac"), 
-    "OGG_640":  ("O801", ".ogg"), "OGG_320": ("O800", ".ogg"), "OGG_192": ("O600", ".ogg"), "OGG_96": ("O400", ".ogg"), 
+    "OGG_640": ("O801", ".ogg"), "OGG_320": ("O800", ".ogg"), "OGG_192": ("O600", ".ogg"), "OGG_96": ("O400", ".ogg"), 
     "MP3_320": ("M800", ".mp3"), "MP3_128": ("M500", ".mp3"), "ACC_192": ("C600", ".m4a"), "ACC_96": ("C400", ".m4a"),
-    "ACC_48":   ("C200", ".m4a"),
+    "ACC_48": ("C200", ".m4a"),
 }
 
 

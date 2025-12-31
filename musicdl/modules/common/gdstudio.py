@@ -146,7 +146,7 @@ class GDStudioMusicClient(BaseMusicClient):
                     if search_result['source'] in ['bilibili']: download_url = f'https://music-proxy.gdstudio.org/{download_url}'
                     song_info = SongInfo(
                         source=self.source, download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
-                        ext=download_url.split('.')[-1].split('?')[0], file_size_bytes=download_result.get('size', 0), file_size=byte2mb(download_result.get('size', 0)),
+                        ext=download_url.split('?')[0].split('.')[-1], file_size_bytes=download_result.get('size', 0), file_size=byte2mb(download_result.get('size', 0)),
                         duration=estimatedurationwithfilesizebr(download_result.get('size', 0), download_result.get('br', br)),
                         duration_s=estimatedurationwithfilesizebr(download_result.get('size', 0), download_result.get('br', br), return_seconds=True),
                         raw_data={'search': search_result, 'download': download_result}, identifier=f"{search_result['source']}_{search_result['id']}",
