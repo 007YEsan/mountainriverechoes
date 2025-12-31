@@ -81,7 +81,7 @@ class BaseMusicClient():
         self.proxied_session_client = None
         if auto_set_proxies:
             from freeproxy import freeproxy
-            default_freeproxy_settings = dict(disable_print=True, proxy_sources=['ProxiflyProxiedSession'], max_retries=20, init_proxied_session_cfg={})
+            default_freeproxy_settings = dict(disable_print=True, proxy_sources=['ProxiflyProxiedSession'], max_tries=20, init_proxied_session_cfg={})
             default_freeproxy_settings.update(self.freeproxy_settings)
             self.proxied_session_client = freeproxy.ProxiedSessionClient(**default_freeproxy_settings)
     '''_initsession'''
