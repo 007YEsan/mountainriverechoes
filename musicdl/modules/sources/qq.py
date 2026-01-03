@@ -75,6 +75,16 @@ class QQMusicClient(BaseMusicClient):
             if song_info.with_valid_download_url: break
         # return
         return song_info
+    '''_parsewiththirdpartapis'''
+    def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
+        if self.default_cookies: return SongInfo(source=self.source)
+        for imp_func in [self._parsewithvkeysapi]:
+            try:
+                song_info_flac = imp_func(search_result, request_overrides)
+                if song_info_flac.with_valid_download_url: break
+            except:
+                song_info_flac = SongInfo(source=self.source)
+        return song_info_flac
     '''_randomsearchid'''
     def _randomsearchid(self):
         e = random.randint(1, 20)
@@ -137,6 +147,7 @@ class QQMusicClient(BaseMusicClient):
                     size_192aac=safeextractfromdict(search_result, ['file', 'size_192aac'], '0'), size_96aac=safeextractfromdict(search_result, ['file', 'size_96aac'], '0'),
                     size_48aac=safeextractfromdict(search_result, ['file', 'size_48aac'], '0'),
                 ), SongInfo(source=self.source)
+                song_info_flac = self._parsewiththirdpartapis(search_result=search_result, request_overrides=request_overrides)
                 # ----if cookies exits, assume user with vip first
                 if self.default_cookies or request_overrides.get('cookies', {}):
                     default_vip_rule = {
@@ -175,12 +186,6 @@ class QQMusicClient(BaseMusicClient):
                             continue
                 # ----common user in post try
                 if not song_info.with_valid_download_url:
-                    for imp_func in [self._parsewithvkeysapi]:
-                        try:
-                            song_info_flac = imp_func(search_result, request_overrides)
-                            if song_info_flac.with_valid_download_url: break
-                        except:
-                            song_info_flac = SongInfo(source=self.source)
                     default_rule = {
                         'comm': {
                             'cv': self.version_info['version_code'], 'v': self.version_info['version_code'], 'QIMEI36': self.qimei_info['q36'], 'ct': '11', 
