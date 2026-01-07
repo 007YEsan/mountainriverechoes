@@ -87,6 +87,7 @@ def replacefile(src: str, dest: str):
 
 '''legalizestring'''
 def legalizestring(string: str, fit_gbk: bool = True, max_len: int = 255, fit_utf8: bool = True, replace_null_string: str = 'NULL'):
+    if not string: return replace_null_string
     string = str(string)
     string = string.replace(r'\"', '"')
     string = re.sub(r"<\\/", "</", string)
