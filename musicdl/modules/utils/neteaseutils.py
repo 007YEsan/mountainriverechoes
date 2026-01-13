@@ -18,6 +18,11 @@ from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 
+'''settings'''
+MUSIC_QUALITIES = ['jymaster', 'dolby', 'sky', 'jyeffect', 'hires', 'lossless', 'exhigh', 'standard']
+DEFAULT_COOKIES = {'MUSIC_U': '1eb9ce22024bb666e99b6743b2222f29ef64a9e88fda0fd5754714b900a5d70d993166e004087dd3b95085f6a85b059f5e9aba41e3f2646e3cebdbec0317df58c119e5'}
+
+
 '''EapiCryptoUtils'''
 class EapiCryptoUtils(object):
     '''hexdigest'''

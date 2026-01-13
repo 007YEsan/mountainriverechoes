@@ -182,10 +182,9 @@ class Credential:
     def fromcookiesdict(cls, cookies: dict[str, Any]):
         return cls(
             openid=cookies.get("openid") or cookies.get("psrf_qqopenid") or cookies.get("wxopenid"), refresh_token=cookies.get("refresh_token") or cookies.get("psrf_qqrefresh_token") or cookies.get("wxrefresh_token"),
-            access_token=cookies.get("access_token") or cookies.get("psrf_qqaccess_token") or cookies.get("wxaccess_token"), expired_at=cookies.get("expired_at") or cookies.get("psrf_access_token_expiresAt"),
+            access_token=cookies.get("access_token") or cookies.get("psrf_qqaccess_token") or cookies.get("wxaccess_token"), expired_at=cookies.get("expired_at") or cookies.get("psrf_access_token_expiresAt"), extra_fields=cookies,
             musicid=int(cookies.get("musicid", 0) or cookies.get("uin", 0)), musickey=cookies.get("musickey") or cookies.get("qqmusic_key"), unionid=cookies.get("unionid") or cookies.get("psrf_qqunionid") or cookies.get("wxunionid"),
-            str_musicid=cookies.get("str_musicid") or cookies.get("musicid") or cookies.get("uin"), refresh_key=cookies.get("refresh_key"), encrypt_uin=cookies.get("encryptUin"), 
-            login_type=cookies.get("loginType") or cookies.get("tmeLoginType"), extra_fields=cookies,
+            str_musicid=cookies.get("str_musicid") or cookies.get("musicid") or cookies.get("uin"), refresh_key=cookies.get("refresh_key"), encrypt_uin=cookies.get("encryptUin"), login_type=cookies.get("loginType") or cookies.get("tmeLoginType"), 
         )
 
 

@@ -175,8 +175,7 @@ class QQMusicClient(BaseMusicClient):
                     resp = self.get('https://c.y.qq.com/lyric/fcgi-bin/fcg_query_lyric_new.fcg', headers={'Referer': 'https://y.qq.com/portal/player.html'}, params=params, **request_overrides)
                     lyric_result: dict = resp2json(resp) or {'lyric': ''}
                     lyric = lyric_result.get('lyric', '')
-                    if not lyric: lyric = 'NULL'
-                    else: lyric = cleanlrc(base64.b64decode(lyric).decode('utf-8'))
+                    lyric = 'NULL' if not lyric else cleanlrc(base64.b64decode(lyric).decode('utf-8'))
                 except:
                     lyric_result, lyric = {}, "NULL"
                 song_info.raw_data['lyric'], song_info.lyric = lyric_result, lyric
