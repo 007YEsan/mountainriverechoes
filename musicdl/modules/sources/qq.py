@@ -99,7 +99,7 @@ class QQMusicClient(BaseMusicClient):
         # init
         search_meta, request_overrides = copy.deepcopy(search_url), request_overrides or {}
         search_url = search_meta.pop('url')
-        safe_fetch_filesize_func = lambda meta: (lambda s: (lambda: float(s))() if s.replace('.', '', 1).isdigit() else 0)(str(meta.get('size', '0.00MB')).removesuffix('MB').strip()) if isinstance(meta, dict) else 0
+        safe_fetch_filesize_func = lambda size: (lambda s: (lambda: float(s))() if s.replace('.', '', 1).isdigit() else 0)(size.removesuffix('MB').strip()) if isinstance(size, str) else 0
         # successful
         try:
             # --search results

@@ -4,8 +4,8 @@ from .ip import RandomIPGenerator
 from .quarkparser import QuarkParser
 from .songinfoutils import SongInfoUtils
 from .modulebuilder import BaseModuleBuilder
-from .lyric import WhisperLRC, extractdurationsecondsfromlrc, cleanlrc
 from .logger import LoggerHandle, colorize, printtable, printfullline, smarttrunctable
+from .lyric import WhisperLRC, extractdurationsecondsfromlrc, lyricslisttolrc, cleanlrc
 from .misc import (
     AudioLinkTester, legalizestring, touchdir, seconds2hms, byte2mb, cachecookies, resp2json, isvalidresp, safeextractfromdict, replacefile,
     usedownloadheaderscookies, useparseheaderscookies, usesearchheaderscookies, cookies2dict, cookies2string, estimatedurationwithfilesizebr,
