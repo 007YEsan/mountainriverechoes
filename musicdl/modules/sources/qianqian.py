@@ -13,26 +13,29 @@ import hashlib
 from .base import BaseMusicClient
 from urllib.parse import urlencode
 from rich.progress import Progress
-from ..utils import byte2mb, resp2json, seconds2hms, legalizestring, safeextractfromdict, usesearchheaderscookies, SongInfo
+from ..utils import byte2mb, resp2json, seconds2hms, legalizestring, safeextractfromdict, usesearchheaderscookies, cookies2string, cleanlrc, SongInfo
 
 
 '''QianqianMusicClient'''
 class QianqianMusicClient(BaseMusicClient):
     source = 'QianqianMusicClient'
+    APPID = '16073360'
+    MUSIC_QUALITIES = ['3000', '320', '128', '64']
     def __init__(self, **kwargs):
         super(QianqianMusicClient, self).__init__(**kwargs)
-        self.appid = '16073360'
         self.default_search_headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36',
-            'Referer': 'https://music.91q.com/',
-            'From': 'Web',
-            'Accept': 'application/json, text/plain, */*',
-            'Accept-Encoding': 'gzip, deflate, br, zstd',
-            'Accept-Language': 'zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7',
+            "accept": "*/*", "accept-encoding": "gzip, deflate, br, zstd", "accept-language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7", "from": "web",
+            "priority": "u=1, i", "referer": "https://music.91q.com/player", "sec-ch-ua": "\"Google Chrome\";v=\"143\", \"Chromium\";v=\"143\", \"Not A(Brand\";v=\"24\"",
+            "sec-ch-ua-mobile": "?0", "sec-ch-ua-platform": "\"Windows\"", "sec-fetch-dest": "empty", "sec-fetch-mode": "cors", "sec-fetch-site": "same-origin",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36",
         }
+        if self.default_search_cookies: self.default_search_headers['authorization'] = f"access_token {self.default_search_cookies.get('access_token', '')}"
+        if self.default_search_cookies: self.default_search_headers['cookie'] = cookies2string(self.default_search_cookies)
         self.default_download_headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36',
         }
+        if self.default_download_cookies: self.default_download_headers['authorization'] = f"access_token {self.default_download_cookies.get('access_token', '')}"
+        if self.default_download_cookies: self.default_download_headers['cookie'] = cookies2string(self.default_download_cookies)
         self.default_headers = self.default_search_headers
         self._initsession()
     '''_addsignandtstoparams'''
@@ -48,7 +51,7 @@ class QianqianMusicClient(BaseMusicClient):
         # init
         rule, request_overrides = rule or {}, request_overrides or {}
         # search rules
-        default_rule = {'word': keyword, 'type': '1', 'pageNo': '1', 'pageSize': '10', 'appid': self.appid}
+        default_rule = {'word': keyword, 'type': '1', 'pageNo': '1', 'pageSize': '10', 'appid': QianqianMusicClient.APPID}
         default_rule.update(rule)
         # construct search urls based on search rules
         base_url = 'https://music.91q.com/v1/search?'
@@ -75,50 +78,39 @@ class QianqianMusicClient(BaseMusicClient):
             search_results = resp2json(resp)['data']['typeTrack']
             for search_result in search_results:
                 # --download results
-                if not isinstance(search_result, dict) or ('TSID' not in search_result):
-                    continue
+                if not isinstance(search_result, dict) or ('TSID' not in search_result): continue
                 song_info = SongInfo(source=self.source)
-                for rate in ['64', '128', '320', '3000'][::-1]:
-                    params = {'TSID': search_result['TSID'], 'appid': self.appid, 'rate': rate}
-                    params = self._addsignandtstoparams(params=params)
+                for rate in QianqianMusicClient.MUSIC_QUALITIES:
+                    params = self._addsignandtstoparams(params={'TSID': search_result['TSID'], 'appid': QianqianMusicClient.APPID, 'rate': rate})
                     try:
                         resp = self.get("https://music.91q.com/v1/song/tracklink", params=params, **request_overrides)
                         resp.raise_for_status()
                         download_result: dict = resp2json(resp)
-                        download_url = safeextractfromdict(download_result, ['data', 'path'], '')
-                        if not download_url: continue
-                        song_info = SongInfo(
-                            source=self.source, download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
-                            raw_data={'search': search_result, 'download': download_result}, file_size_bytes=download_result['data'].get('size', 0), 
-                            file_size=byte2mb(download_result['data'].get('size', 0)), duration_s=download_result['data'].get('duration', 0),
-                            duration = seconds2hms(download_result['data'].get('duration', 0)), ext=download_result['data'].get('format', 'mp3')
-                        )
-                        if song_info.with_valid_download_url: break
                     except:
                         continue
+                    download_url = safeextractfromdict(download_result, ['data', 'path'], '') or safeextractfromdict(download_result, ['data', 'trail_audio_info', 'path'], '')
+                    if not download_url: continue
+                    song_info = SongInfo(
+                        raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(search_result, ['title'], None)),
+                        singers=', '.join([singer.get('name') for singer in safeextractfromdict(search_result, ['artist'], []) if isinstance(singer, dict) and singer.get('name')]),
+                        album=legalizestring(safeextractfromdict(search_result, ['albumTitle'], None)), ext=safeextractfromdict(download_result, ['data', 'format'], 'mp3'), 
+                        file_size_bytes=safeextractfromdict(download_result, ['data', 'size'], 0), file_size=byte2mb(safeextractfromdict(download_result, ['data', 'size'], 0)), identifier=search_result['TSID'], 
+                        duration_s=safeextractfromdict(download_result, ['data', 'duration'], 0), duration=seconds2hms(safeextractfromdict(download_result, ['data', 'duration'], 0)),
+                        lyric=None, cover_url=safeextractfromdict(search_result, ['pic'], None), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+                    )
+                    song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
+                    song_info.file_size = song_info.download_url_status['probe_status']['file_size']
+                    song_info.ext = song_info.download_url_status['probe_status']['ext'] if (song_info.download_url_status['probe_status']['ext'] and song_info.download_url_status['probe_status']['ext'] != 'NULL') else song_info.ext
+                    if song_info.with_valid_download_url: break
                 if not song_info.with_valid_download_url: continue
-                song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
-                ext, file_size = song_info.download_url_status['probe_status']['ext'], song_info.download_url_status['probe_status']['file_size']
-                if file_size and file_size != 'NULL': song_info.file_size = file_size
-                if ext and ext != 'NULL': song_info.ext = ext
-                song_info.update(dict(
-                    song_name=legalizestring(search_result.get('title', 'NULL'), replace_null_string='NULL'), 
-                    singers=legalizestring(', '.join([singer.get('name', 'NULL') for singer in search_result.get('artist', [])]), replace_null_string='NULL'), 
-                    album=legalizestring(search_result.get('albumTitle', 'NULL'), replace_null_string='NULL'),
-                    identifier=search_result['TSID'],
-                ))
                 # --lyric results
                 try:
                     resp = self.get(search_result['lyric'], **request_overrides)
                     resp.raise_for_status()
                     resp.encoding = 'utf-8'
-                    lyric = resp.text or 'NULL'
+                    lyric = cleanlrc(resp.text) or 'NULL'
                     lyric_result = dict(lyric=lyric)
-                    if song_info.singers == 'NULL':
-                        try:
-                            song_info.singers = re.findall(r'\[ar:(.*?)\]', lyric)[0]
-                        except:
-                            song_info.singers = 'NULL'
+                    if song_info.singers == 'NULL': song_info.singers = (m.group(1) if (m := re.search(r'\[ar:(.*?)\]', lyric)) else 'NULL')
                 except:
                     lyric_result, lyric = dict(), 'NULL'
                 song_info.raw_data['lyric'] = lyric_result
