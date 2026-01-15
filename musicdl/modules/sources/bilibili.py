@@ -101,7 +101,7 @@ class BilibiliMusicClient(BaseMusicClient):
                     if isinstance(download_url, list): download_url = download_url[0]
                     song_info = SongInfo(
                         raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(episode_name), singers=legalizestring(safeextractfromdict(search_result, ['author'], None)), 
-                        album=search_result['bvid'], ext='m4a', file_size='NULL', identifier=cid, duration_s=safeextractfromdict(download_result, ['data', 'dash', 'duration'], 0), duration=seconds2hms(safeextractfromdict(download_result, ['data', 'dash', 'duration'], 0)),
+                        album=legalizestring(search_result['bvid']), ext='m4a', file_size='NULL', identifier=cid, duration_s=safeextractfromdict(download_result, ['data', 'dash', 'duration'], 0), duration=seconds2hms(safeextractfromdict(download_result, ['data', 'dash', 'duration'], 0)),
                         lyric=None, cover_url=safeextractfromdict(search_result, ['pic'], None), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
                     )
                     if not song_info.cover_url.startswith('http'): song_info.cover_url = f'https:{song_info.cover_url}'

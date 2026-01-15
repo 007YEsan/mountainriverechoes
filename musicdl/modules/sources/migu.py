@@ -88,8 +88,8 @@ class MiguMusicClient(BaseMusicClient):
                     download_url = re.sub(r'(?<=/)MP3_128_16_Stero(?=/)', 'MP3_320_16_Stero', download_url)
                     song_info = SongInfo(
                         raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(search_result, ['name'], None)),
-                        singers=', '.join([singer.get('name') for singer in (safeextractfromdict(search_result, ['singers'], []) or []) if isinstance(singer, dict) and singer.get('name')]),
-                        album=', '.join([album.get('name') for album in (safeextractfromdict(search_result, ['albums'], []) or []) if isinstance(album, dict) and album.get('name')]),
+                        singers=legalizestring(', '.join([singer.get('name') for singer in (safeextractfromdict(search_result, ['singers'], []) or []) if isinstance(singer, dict) and singer.get('name')])),
+                        album=legalizestring(', '.join([album.get('name') for album in (safeextractfromdict(search_result, ['albums'], []) or []) if isinstance(album, dict) and album.get('name')])),
                         ext=MiguMusicClient.MUSIC_QUALITIES.get(rate['formatType'], 'mp3'), file_size='NULL', identifier=search_result['contentId'], duration_s=safeextractfromdict(download_result, ['data', 'song', 'duration'], 0),
                         duration=seconds2hms(safeextractfromdict(download_result, ['data', 'song', 'duration'], 0)), lyric=None, cover_url=safeextractfromdict(search_result, ['imgItems', -1, 'img'], None), 
                         download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),

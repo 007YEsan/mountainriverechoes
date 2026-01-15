@@ -92,7 +92,7 @@ class QianqianMusicClient(BaseMusicClient):
                     if not download_url: continue
                     song_info = SongInfo(
                         raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(search_result, ['title'], None)),
-                        singers=', '.join([singer.get('name') for singer in (safeextractfromdict(search_result, ['artist'], []) or []) if isinstance(singer, dict) and singer.get('name')]),
+                        singers=legalizestring(', '.join([singer.get('name') for singer in (safeextractfromdict(search_result, ['artist'], []) or []) if isinstance(singer, dict) and singer.get('name')])),
                         album=legalizestring(safeextractfromdict(search_result, ['albumTitle'], None)), ext=safeextractfromdict(download_result, ['data', 'format'], 'mp3'), 
                         file_size_bytes=safeextractfromdict(download_result, ['data', 'size'], 0), file_size=byte2mb(safeextractfromdict(download_result, ['data', 'size'], 0)), identifier=search_result['TSID'], 
                         duration_s=safeextractfromdict(download_result, ['data', 'duration'], 0), duration=seconds2hms(safeextractfromdict(download_result, ['data', 'duration'], 0)),
