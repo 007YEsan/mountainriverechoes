@@ -14,6 +14,8 @@ from typing import Optional, Union, Dict, Any, List
 
 
 '''settings'''
+_LINE_RE = re.compile(r"^\[(\d+),(\d+)\]")
+_TOKEN_RE = re.compile(r"<(\d+),(\d+),(\d+)>")
 _TIME_RE = re.compile(r"\[(?:(\d{1,2}):)?(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?\]")
 cleanlrc = lambda text: "\n".join(line for raw in re.sub(r"\r\n?", "\n", text).split("\n") if (line := raw.strip("\ufeff\u200b\u200c\u200d\u2060\u00a0 \t").strip()) and not re.fullmatch(r"\[(\d{2}:)?\d{2}:\d{2}(?:\.\d{1,3})?\]", line))
 
@@ -65,6 +67,47 @@ def lyricslisttolrc(items: List[Dict[str, Any]], *, time_key: str = "time", lyri
         norm = merged
     lines = [f"[{sectolrcts(t, centis=centis)}]{lyric}" for t, lyric in norm]
     return "\n".join(lines)
+
+
+'''TimedLyricsParser'''
+class TimedLyricsParser:
+    '''parsetimedlyrics'''
+    @staticmethod
+    def parsetimedlyrics(text: str) -> List[Dict[str, Any]]:
+        if not text: return []
+        text = text.replace(r"\u003C", "<").replace(r"\u003E", ">")
+        lines_out: List[Dict[str, Any]] = []
+        for raw_line in text.splitlines():
+            raw_line = raw_line.rstrip("\n")
+            if not raw_line.strip(): continue
+            m = _LINE_RE.match(raw_line.strip())
+            if not m: continue
+            line_start, line_dur = int(m.group(1)), int(m.group(2))
+            line_end, rest, tokens, pieces = line_start + line_dur, raw_line[m.end():], [], []
+            matches = list(_TOKEN_RE.finditer(rest))
+            for i, tm in enumerate(matches):
+                offset, dur, flag, seg_start = int(tm.group(1)), int(tm.group(2)), int(tm.group(3)), tm.end()
+                seg_end = matches[i + 1].start() if i + 1 < len(matches) else len(rest)
+                token_text = rest[seg_start: seg_end].replace("\r", "")
+                if token_text == "": continue
+                abs_start, abs_end = line_start + offset, line_start + offset + dur
+                tokens.append({"text": token_text, "offset_ms": offset, "duration_ms": dur, "flag": flag, "start_ms": abs_start, "end_ms": abs_end}); pieces.append(token_text)
+            lines_out.append({"line_start_ms": line_start, "line_duration_ms": line_dur, "line_end_ms": line_end, "text": "".join(pieces), "tokens": tokens, "raw": rest})
+        return lines_out
+    '''toplaintext'''
+    @staticmethod
+    def toplaintext(parsed: List[Dict[str, Any]]) -> str:
+        if not parsed: return
+        return "\n".join(line["text"] for line in parsed)
+    '''tolrclinelevel'''
+    @staticmethod
+    def tolrclinelevel(parsed: List[Dict[str, Any]], use_centiseconds: bool = True) -> str:
+        if not parsed: return
+        def fmt(ms: int) -> str:
+            mm, ss = ms // 60000, (ms % 60000) // 1000
+            if use_centiseconds: xx = (ms % 1000) // 10; return f"{mm:02d}:{ss:02d}.{xx:02d}"
+            else: return f"{mm:02d}:{ss:02d}"
+        return "\n".join(f"[{fmt(line['line_start_ms'])}]{line['text']}" for line in parsed)
 
 
 '''WhisperLRC'''

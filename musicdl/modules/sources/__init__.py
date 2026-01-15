@@ -6,6 +6,7 @@ from .base import BaseMusicClient
 from .kuwo import KuwoMusicClient
 from .migu import MiguMusicClient
 from .kkws import KKWSMusicClient
+from .soda import SodaMusicClient
 from .jcpoo import JCPOOMusicClient
 from .flmp3 import FLMP3MusicClient
 from .htqyy import HTQYYMusicClient
@@ -44,7 +45,7 @@ class MusicClientBuilder(BaseModuleBuilder):
         'JamendoMusicClient': JamendoMusicClient, 'BilibiliMusicClient': BilibiliMusicClient, 'TuneHubMusicClient': TuneHubMusicClient, 'GequhaiMusicClient': GequhaiMusicClient,
         'MissEvanMusicClient': MissEvanMusicClient, 'HTQYYMusicClient': HTQYYMusicClient, 'FiveSongMusicClient': FiveSongMusicClient, 'FLMP3MusicClient': FLMP3MusicClient,
         'JCPOOMusicClient': JCPOOMusicClient, 'KKWSMusicClient': KKWSMusicClient, 'MyFreeMP3MusicClient': MyFreeMP3MusicClient, 'LivePOOMusicClient': LivePOOMusicClient,
-        'TwoT58MusicClient': TwoT58MusicClient
+        'TwoT58MusicClient': TwoT58MusicClient, 'SodaMusicClient': SodaMusicClient,
     }
 
 
