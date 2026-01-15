@@ -109,7 +109,9 @@ class BilibiliMusicClient(BaseMusicClient):
                     song_info.file_size = song_info.download_url_status['probe_status']['file_size']
                     song_info.ext = song_info.download_url_status['probe_status']['ext'] if (song_info.download_url_status['probe_status']['ext'] and song_info.download_url_status['probe_status']['ext'] not in ('NULL', 'm4s')) else song_info.ext
                     if not song_info.with_valid_download_url: continue
+                    # --append to song_infos
                     song_infos.append(song_info)
+                    # --judgement for search_size
                     if self.strict_limit_search_size_per_page and len(song_infos) >= self.search_size_per_page: break
                 if self.strict_limit_search_size_per_page and len(song_infos) >= self.search_size_per_page: break
             # --update progress
