@@ -49,7 +49,7 @@ class NeteaseMusicClient(BaseMusicClient):
             if not download_url: continue
             song_info = SongInfo(
                 raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'quality': quality}, source=self.source, song_name=legalizestring(safeextractfromdict(search_result, ['name'], None)),
-                singers=', '.join([singer.get('name') for singer in safeextractfromdict(search_result, ['ar'], []) if isinstance(singer, dict) and singer.get('name')]), album=legalizestring(safeextractfromdict(search_result, ['al', 'name'], None)), 
+                singers=', '.join([singer.get('name') for singer in (safeextractfromdict(search_result, ['ar'], []) or []) if isinstance(singer, dict) and singer.get('name')]), album=legalizestring(safeextractfromdict(search_result, ['al', 'name'], None)), 
                 ext=download_url.split('?')[0].split('.')[-1], file_size='NULL', identifier=search_result['id'], duration_s=search_result.get('dt', 0) / 1000 if isinstance(search_result.get('dt', 0), (int, float)) else 0,
                 duration=seconds2hms(search_result.get('dt', 0) / 1000 if isinstance(search_result.get('dt', 0), (int, float)) else 0), lyric=None, cover_url=safeextractfromdict(search_result, ['al', 'picUrl'], None), 
                 download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
@@ -159,7 +159,7 @@ class NeteaseMusicClient(BaseMusicClient):
                     if not download_url: continue
                     song_info = SongInfo(
                         raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'quality': quality}, source=self.source, song_name=legalizestring(safeextractfromdict(search_result, ['name'], None)),
-                        singers=', '.join([singer.get('name') for singer in safeextractfromdict(search_result, ['ar'], []) if isinstance(singer, dict) and singer.get('name')]), album=legalizestring(safeextractfromdict(search_result, ['al', 'name'], None)), 
+                        singers=', '.join([singer.get('name') for singer in (safeextractfromdict(search_result, ['ar'], []) or []) if isinstance(singer, dict) and singer.get('name')]), album=legalizestring(safeextractfromdict(search_result, ['al', 'name'], None)), 
                         ext=download_url.split('?')[0].split('.')[-1], file_size='NULL', identifier=search_result['id'], duration_s=search_result.get('dt', 0) / 1000 if isinstance(search_result.get('dt', 0), (int, float)) else 0,
                         duration=seconds2hms(search_result.get('dt', 0) / 1000 if isinstance(search_result.get('dt', 0), (int, float)) else 0), lyric=None, cover_url=safeextractfromdict(search_result, ['al', 'picUrl'], None), 
                         download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),

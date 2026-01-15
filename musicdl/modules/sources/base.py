@@ -18,11 +18,11 @@ from rich.progress import Task
 from fake_useragent import UserAgent
 from pathvalidate import sanitize_filepath
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from ..utils import (
-    LoggerHandle, AudioLinkTester, SongInfo, SongInfoUtils, touchdir, usedownloadheaderscookies, usesearchheaderscookies, cookies2dict, cookies2string
-)
 from rich.progress import (
     Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn, DownloadColumn, TransferSpeedColumn, TimeRemainingColumn, MofNCompleteColumn, ProgressColumn,
+)
+from ..utils import (
+    LoggerHandle, AudioLinkTester, SongInfo, SongInfoUtils, touchdir, usedownloadheaderscookies, usesearchheaderscookies, cookies2dict, cookies2string, shortenpathsinsonginfos
 )
 
 
@@ -137,9 +137,7 @@ class BaseMusicClient():
         with ThreadPoolExecutor(max_workers=num_threadings) as pool:
             for search_url_idx, search_url in enumerate(search_urls):
                 song_infos[str(search_url_idx)] = []
-                submitted_tasks.append(pool.submit(
-                    self._search, keyword, search_url, request_overrides, song_infos[str(search_url_idx)], main_process_context, progress_id
-                ))
+                submitted_tasks.append(pool.submit(self._search, keyword, search_url, request_overrides, song_infos[str(search_url_idx)], main_process_context, progress_id))
             for future in as_completed(submitted_tasks):
                 future.result()
                 with main_progress_lock:
@@ -197,12 +195,12 @@ class BaseMusicClient():
     def download(self, song_infos: list[SongInfo], num_threadings=5, request_overrides: dict = None):
         # init
         request_overrides = request_overrides or {}
+        shortenpathsinsonginfos(song_infos=song_infos)
         # logging
         self.logger_handle.info(f'Start to download music files using {self.source}.', disable_print=self.disable_print)
         # multi threadings for downloading music files
         columns = [
-            SpinnerColumn(), TextColumn("{task.description}"), BarColumn(bar_width=None), TaskProgressColumn(),
-            AudioAwareColumn(), TransferSpeedColumn(), TimeRemainingColumn(),
+            SpinnerColumn(), TextColumn("{task.description}"), BarColumn(bar_width=None), TaskProgressColumn(), AudioAwareColumn(), TransferSpeedColumn(), TimeRemainingColumn(),
         ]
         with Progress(*columns, refresh_per_second=20, expand=True) as progress:
             songs_progress_id = progress.add_task(f"{self.source}.download >>> completed (0/{len(song_infos)})", total=len(song_infos), kind='overall')
@@ -212,9 +210,7 @@ class BaseMusicClient():
                 song_progress_ids.append(progress.add_task(desc, total=None, kind='download'))
             with ThreadPoolExecutor(max_workers=num_threadings) as pool:
                 for song_progress_id, song_info in zip(song_progress_ids, song_infos):
-                    submitted_tasks.append(pool.submit(
-                        self._download, song_info, request_overrides, downloaded_song_infos, progress, song_progress_id
-                    ))
+                    submitted_tasks.append(pool.submit(self._download, song_info, request_overrides, downloaded_song_infos, progress, song_progress_id))
                 for _ in as_completed(submitted_tasks):
                     progress.advance(songs_progress_id, 1)
                     num_downloaded_songs = int(progress.tasks[songs_progress_id].completed)

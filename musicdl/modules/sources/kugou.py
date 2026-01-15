@@ -103,7 +103,7 @@ class KugouMusicClient(BaseMusicClient):
                 # --download results
                 if not isinstance(search_result, dict) or ('hash' not in search_result): continue
                 song_info = SongInfo(source=self.source)
-                num_groups = len(search_result.get('group', []))
+                num_groups = len(search_result.get('group', []) or [])
                 hash_list = (
                     [safeextractfromdict(search_result, ['sqhash'], "")] + [safeextractfromdict(search_result, ['group', i, 'sqhash'], "") for i in range(num_groups)] + 
                     [safeextractfromdict(search_result, ['320hash'], "")] + [safeextractfromdict(search_result, ['group', i, '320hash'], "") for i in range(num_groups)] + 

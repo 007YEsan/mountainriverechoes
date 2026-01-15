@@ -129,7 +129,7 @@ class QQMusicClient(BaseMusicClient):
                         download_url = QQMusicClientUtils.music_domain + download_url
                         song_info = SongInfo(
                             raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'ekey': ekey}, source=self.source, song_name=legalizestring(search_result.get('title')),
-                            singers=legalizestring(', '.join([singer.get('name') for singer in search_result.get('singer', []) if isinstance(singer, dict) and singer.get('name')])),
+                            singers=legalizestring(', '.join([singer.get('name') for singer in (search_result.get('singer', []) or []) if isinstance(singer, dict) and singer.get('name')])),
                             album=legalizestring(safeextractfromdict(search_result, ['album', 'title'], None)), ext=quality[1][1:], file_size='NULL', identifier=search_result['mid'], duration_s=search_result.get('interval', 0),
                             duration=seconds2hms(search_result.get('interval', 0)), lyric=None, cover_url=None, download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
                         )
@@ -155,7 +155,7 @@ class QQMusicClient(BaseMusicClient):
                         download_url = QQMusicClientUtils.music_domain + download_url
                         song_info = SongInfo(
                             raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('title')),
-                            singers=legalizestring(', '.join([singer.get('name') for singer in search_result.get('singer', []) if isinstance(singer, dict) and singer.get('name')])),
+                            singers=legalizestring(', '.join([singer.get('name') for singer in (search_result.get('singer', []) or []) if isinstance(singer, dict) and singer.get('name')])),
                             album=legalizestring(safeextractfromdict(search_result, ['album', 'title'], None)), ext=quality[1][1:], file_size='NULL', identifier=search_result['mid'], duration_s=search_result.get('interval', 0),
                             duration=seconds2hms(search_result.get('interval', 0)), lyric=None, cover_url=None, download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
                         )

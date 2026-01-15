@@ -15,11 +15,13 @@ import errno
 import pickle
 import shutil
 import bleach
+import hashlib
 import requests
 import functools
 import json_repair
 import unicodedata
 from io import BytesIO
+from pathlib import Path
 from bs4 import BeautifulSoup
 from mutagen import File as MutagenFile
 from pathvalidate import sanitize_filepath, sanitize_filename
@@ -99,10 +101,8 @@ def legalizestring(string: str, fit_gbk: bool = True, max_len: int = 255, fit_ut
         if new_string == string: break
         string = new_string
     # bleach.clean
-    try:
-        string = BeautifulSoup(string, "lxml").get_text(separator="")
-    except:
-        string = bleach.clean(string, tags=[], attributes={}, strip=True)
+    try: string = BeautifulSoup(string, "lxml").get_text(separator="")
+    except: string = bleach.clean(string, tags=[], attributes={}, strip=True)
     # unicodedata.normalize
     string = unicodedata.normalize("NFC", string)
     # emoji.replace_emoji
@@ -118,6 +118,27 @@ def legalizestring(string: str, fit_gbk: bool = True, max_len: int = 255, fit_ut
     string = re.sub(r"\s+", " ", string).strip()
     if not string: string = replace_null_string
     return string
+
+
+'''shortenpathsinsonginfos'''
+def shortenpathsinsonginfos(song_infos: list, max_path: int = 240, keep_ext: bool = True, with_hash_suffix: bool = False):
+    used_paths = set()
+    for info in song_infos:
+        raw_path = (info.save_path or "").strip()
+        if not raw_path or raw_path.upper() == "NULL": continue
+        src_path = Path(raw_path)
+        output_dir = src_path.parent.resolve(); output_dir.mkdir(parents=True, exist_ok=True)
+        ext = src_path.suffix if keep_ext else ""
+        stem = src_path.stem
+        digest = hashlib.md5(str(src_path).encode("utf-8")).hexdigest()
+        for hash_len in (8, 10):
+            hash_suffix = f"-{digest[:hash_len]}" if with_hash_suffix else ""
+            max_stem_len = max(1, max_path - (len(str(output_dir)) + 1 + len(hash_suffix) + len(ext)))
+            safe_stem = (stem[:max_stem_len].rstrip(" .") or "NULL")
+            out_path = str(output_dir / f"{safe_stem}{hash_suffix}{ext}")
+            if out_path.lower() not in used_paths: break
+        used_paths.add(out_path.lower()); info._save_path = out_path
+    return song_infos
 
 
 '''seconds2hms'''
@@ -248,31 +269,25 @@ class AudioLinkTester(object):
     def __init__(self, timeout=(5, 15), headers: dict = None, cookies: dict = None):
         self.session = requests.Session()
         self.timeout = timeout
-        self.headers = {
-            'Accept': '*/*',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36',
-        }
+        self.headers = {'Accept': '*/*', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36'}
         self.headers.update(headers or {})
         self.cookies = cookies or {}
     '''isaudioct'''
     @staticmethod
     def isaudioct(ct: str):
-        if not ct:
-            return False
+        if not ct: return False
         ct = ct.lower().split(";", 1)[0].strip()
         return ct.startswith(AudioLinkTester.AUDIO_CT_PREFIX) or ct in AudioLinkTester.AUDIO_CT_EXTRA
     '''sniffmagic'''
     @staticmethod
     def sniffmagic(b: str):
         for sig, fmt in AudioLinkTester.MAGIC:
-            if b.startswith(sig):
-                return fmt
-        if len(b) >= 2 and b[0] == 0xFF and (b[1] & 0xF0) == 0xF0:
-            return "aac/adts"
+            if b.startswith(sig): return fmt
+        if len(b) >= 2 and b[0] == 0xFF and (b[1] & 0xF0) == 0xF0: return "aac/adts"
         return None
     '''probe'''
     def probe(self, url: str, request_overrides: dict = None):
-        request_overrides = request_overrides or {}
+        request_overrides, naive_guess_ext = request_overrides or {}, url.split('?')[0].split('.')[-1]
         if 'headers' not in request_overrides: request_overrides['headers'] = self.headers
         if 'timeout' not in request_overrides: request_overrides['timeout'] = self.timeout
         if 'cookies' not in request_overrides: request_overrides['cookies'] = self.cookies
@@ -284,13 +299,13 @@ class AudioLinkTester(object):
             resp_headers, final_url = resp.headers, resp.url
             resp.close()
             file_size, ctype = byte2mb(resp_headers.get('content-length')), resp_headers.get('content-type')
-            if ctype == 'image/jpg; charset=UTF-8' or ctype == 'image/jpg':
-                ctype = 'audio/mpeg'
+            if ctype == 'image/jpg; charset=UTF-8' or ctype == 'image/jpg': ctype = 'audio/mpeg'
+            if ctype == 'text/plain' and naive_guess_ext == 'm4s': ctype = 'audio/mp4'
             ext = self.CTYPE_TO_EXT.get(ctype, 'NULL')
             outputs = dict(file_size=file_size, ctype=ctype, ext=ext, download_url=url, final_url=final_url)
         except:
             outputs = dict(file_size='NULL', ctype='NULL', ext='NULL', download_url=url, final_url='NULL')
-        if outputs['file_size'] not in ['NULL']: return outputs
+        if outputs['file_size'] and outputs['file_size'] not in ('NULL',): return outputs
         # GETSTREAM probe
         try:
             resp = self.session.get(url, allow_redirects=True, stream=True, **request_overrides)
@@ -298,8 +313,8 @@ class AudioLinkTester(object):
             resp_headers, final_url = resp.headers, resp.url
             resp.close()
             file_size, ctype = byte2mb(resp_headers.get('content-length')), resp_headers.get('content-type')
-            if ctype == 'image/jpg; charset=UTF-8' or ctype == 'image/jpg':
-                ctype = 'audio/mpeg'
+            if ctype == 'image/jpg; charset=UTF-8' or ctype == 'image/jpg': ctype = 'audio/mpeg'
+            if ctype == 'text/plain' and naive_guess_ext == 'm4s': ctype = 'audio/mp4'
             ext = self.CTYPE_TO_EXT.get(ctype, 'NULL')
             outputs = dict(file_size=file_size, ctype=ctype, ext=ext, download_url=url, final_url=final_url)
         except:
@@ -307,7 +322,7 @@ class AudioLinkTester(object):
         return outputs
     '''test'''
     def test(self, url: str, request_overrides: dict = None):
-        request_overrides = request_overrides or {}
+        request_overrides, naive_guess_ext = request_overrides or {}, url.split('?')[0].split('.')[-1]
         if 'headers' not in request_overrides: request_overrides['headers'] = self.headers
         if 'timeout' not in request_overrides: request_overrides['timeout'] = self.timeout
         if 'cookies' not in request_overrides: request_overrides['cookies'] = self.cookies
@@ -317,14 +332,10 @@ class AudioLinkTester(object):
             resp = self.session.head(url, allow_redirects=True, **request_overrides)
             clen = resp.headers.get("Content-Length")
             clen = int(clen) if clen and clen.isdigit() else None
-            outputs.update(dict(
-                status=resp.status_code, method="HEAD", final_url=str(resp.url), ctype=resp.headers.get("Content-Type"),
-                clen=clen, range=(resp.headers.get("Accept-Ranges") or "").lower() == "bytes",
-            ))
-            if 200 <= resp.status_code < 300 and (self.isaudioct(outputs["ctype"]) and (outputs["clen"] or outputs["range"])):
-                outputs.update(dict(
-                    ok=True, reason="HEAD success"
-                ))
+            outputs.update(dict(status=resp.status_code, method="HEAD", final_url=str(resp.url), ctype=resp.headers.get("Content-Type"), clen=clen, range=(resp.headers.get("Accept-Ranges") or "").lower() == "bytes"))
+            if outputs["ctype"] == 'text/plain' and naive_guess_ext == 'm4s': outputs["ctype"] = 'audio/mp4'
+            if 200 <= resp.status_code < 300 and ((self.isaudioct(outputs["ctype"]) or (naive_guess_ext in ('m4s',))) and (outputs["clen"] or outputs["range"])):
+                outputs.update(dict(ok=True, reason="HEAD success"))
                 return outputs
         except Exception as err:
             outputs["reason"] = f"HEAD error: {err}"
@@ -333,31 +344,19 @@ class AudioLinkTester(object):
             headers = copy.deepcopy(self.headers)
             headers["Range"] = "bytes=0-15"
             resp = self.session.get(url, stream=True, allow_redirects=True, **request_overrides)
-            outputs.update(dict(
-                status=resp.status_code, method="RANGEGET", final_url=str(resp.url),
-            ))
-            if resp.status_code not in (200, 206):
-                outputs["reason"] = f"RANGEGET error: response status {resp.status_code}"
-                return outputs
+            outputs.update(dict(status=resp.status_code, method="RANGEGET", final_url=str(resp.url)))
+            if resp.status_code not in (200, 206): outputs["reason"] = f"RANGEGET error: response status {resp.status_code}"; return outputs
             chunk = b""
-            for b in resp.iter_content(chunk_size=16):
-                chunk = b
-                break
+            for b in resp.iter_content(chunk_size=16): chunk = b; break
             resp.close()
             outputs["ctype"] = outputs["ctype"] or resp.headers.get("Content-Type")
+            if outputs["ctype"] == 'text/plain' and naive_guess_ext == 'm4s': outputs["ctype"] = 'audio/mp4'
             outputs["range"] = outputs["range"] or (resp.status_code == 206) or (resp.headers.get("Content-Range") is not None)
             clen = resp.headers.get("Content-Length") or (resp.headers.get("Content-Range") or "").split("/")[-1]
-            if clen and clen.isdigit():
-                outputs["clen"] = int(clen)
+            if clen and clen.isdigit(): outputs["clen"] = int(clen)
             outputs["fmt"] = self.sniffmagic(chunk)
-            if self.isaudioct(outputs["ctype"]) or outputs["fmt"]:
-                outputs.update(dict(
-                    ok=True, reason="RANGEGET success"
-                ))
-            else:
-                outputs.update(dict(
-                    ok=False, reason="RANGEGET error: Not audio-like (CT/magic)"
-                ))
+            if self.isaudioct(outputs["ctype"]) or outputs["fmt"] or (naive_guess_ext in ('m4s',)): outputs.update(dict(ok=True, reason="RANGEGET success"))
+            else: outputs.update(dict(ok=False, reason="RANGEGET error: Not audio-like (CT/magic)"))
         except Exception as err:
             outputs["reason"] = f"RANGEGET error: {err}"
         # return

@@ -16,7 +16,6 @@ av
 tabulate
 mutagen
 ytmusicapi
-nodejs-wheel
 m3u8
 pywidevine
 tinytag

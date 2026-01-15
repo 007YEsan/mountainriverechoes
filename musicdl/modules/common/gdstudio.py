@@ -18,7 +18,7 @@ from ..sources import BaseMusicClient
 from ..utils import legalizestring, resp2json, usesearchheaderscookies, byte2mb, estimatedurationwithfilesizebr, estimatedurationwithfilelink, seconds2hms, SongInfo
 
 
-'''SUPPORTED_SITES'''
+'''settings'''
 SUPPORTED_SITES = [
     'spotify', 'tencent', 'netease', 'kuwo', 'tidal', 'qobuz', 'joox', 'bilibili', 'apple', 'ytmusic', # 'kugou', 'ximalaya', 'migu',
 ]

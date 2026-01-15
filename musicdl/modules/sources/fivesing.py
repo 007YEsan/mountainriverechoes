@@ -10,7 +10,7 @@ import copy
 from .base import BaseMusicClient
 from urllib.parse import urlencode
 from rich.progress import Progress
-from ..utils import legalizestring, byte2mb, resp2json, usesearchheaderscookies, SongInfo
+from ..utils import legalizestring, byte2mb, resp2json, usesearchheaderscookies, safeextractfromdict, SongInfo
 
 
 '''FiveSingMusicClient'''
