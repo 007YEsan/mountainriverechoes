@@ -81,6 +81,7 @@ class BilibiliMusicClient(BaseMusicClient):
                     resp = self.get(f"https://api.bilibili.com/x/web-interface/view?bvid={search_result['bvid']}", **request_overrides)
                     resp.raise_for_status()
                     pages = resp2json(resp=resp)['data']['pages']
+                    root_title = resp2json(resp=resp)['data']['title']
                 except:
                     continue
                 episodes = [(page["cid"], page["part"]) for page in pages if isinstance(page, dict) and page.get("cid") and page.get("part")]
@@ -100,7 +101,7 @@ class BilibiliMusicClient(BaseMusicClient):
                     if not download_url: continue
                     if isinstance(download_url, list): download_url = download_url[0]
                     song_info = SongInfo(
-                        raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(episode_name), singers=legalizestring(safeextractfromdict(search_result, ['author'], None)), 
+                        raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(episode_name if episode_name == root_title else f'{root_title}-{episode_name}'), singers=legalizestring(safeextractfromdict(search_result, ['author'], None)), 
                         album=legalizestring(search_result['bvid']), ext='m4a', file_size='NULL', identifier=cid, duration_s=safeextractfromdict(download_result, ['data', 'dash', 'duration'], 0), duration=seconds2hms(safeextractfromdict(download_result, ['data', 'dash', 'duration'], 0)),
                         lyric=None, cover_url=safeextractfromdict(search_result, ['pic'], None), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
                     )
