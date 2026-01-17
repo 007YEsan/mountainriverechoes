@@ -20,3 +20,5 @@ m3u8
 pywidevine
 tinytag
 curl_cffi
+platformdirs
+lxml
