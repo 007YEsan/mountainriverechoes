@@ -95,7 +95,7 @@ class BaseMusicClient():
     '''_constructuniqueworkdir'''
     def _constructuniqueworkdir(self, keyword: str):
         time_stamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-        work_dir = os.path.join(self.work_dir, self.source, f'{time_stamp} {keyword.replace(" ", "")}')
+        work_dir = sanitize_filepath(os.path.join(self.work_dir, self.source, f'{time_stamp} {keyword.replace(" ", "")}'))
         touchdir(work_dir)
         return work_dir
     '''_removeduplicates'''

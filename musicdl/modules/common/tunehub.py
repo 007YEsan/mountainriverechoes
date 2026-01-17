@@ -10,20 +10,15 @@ import copy
 from rich.progress import Progress
 from urllib.parse import urlencode
 from ..sources import BaseMusicClient
-from ..utils import legalizestring, resp2json, usesearchheaderscookies, seconds2hms, extractdurationsecondsfromlrc, SongInfo
-
-
-'''SUPPORTED_SITES'''
-SUPPORTED_SITES = [
-    'netease', 'kuwo', 'qq', 'kugou', 'migu' # it seems kugou and migu are useless, recorded in 2025-12-19
-]
+from ..utils import legalizestring, resp2json, usesearchheaderscookies, seconds2hms, extractdurationsecondsfromlrc, safeextractfromdict, cleanlrc, SongInfo
 
 
 '''TuneHubMusicClient'''
 class TuneHubMusicClient(BaseMusicClient):
     source = 'TuneHubMusicClient'
+    ALLOWED_SITES = ['netease', 'kuwo', 'qq', 'kugou', 'migu'] # it seems kugou and migu are useless, recorded in 2026-01-18
     def __init__(self, **kwargs):
-        self.allowed_music_sources = list(set(kwargs.pop('allowed_music_sources', SUPPORTED_SITES[:-2])))
+        self.allowed_music_sources = list(set(kwargs.pop('allowed_music_sources', TuneHubMusicClient.ALLOWED_SITES[:-2])))
         super(TuneHubMusicClient, self).__init__(**kwargs)
         self.default_search_headers = {
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
@@ -45,7 +40,7 @@ class TuneHubMusicClient(BaseMusicClient):
         # construct search urls based on search rules
         base_url = 'https://music-dl.sayqz.com/api?'
         search_urls, page_size = [], self.search_size_per_page
-        for source in SUPPORTED_SITES:
+        for source in TuneHubMusicClient.ALLOWED_SITES:
             if source not in allowed_music_sources: continue
             source_default_rule = copy.deepcopy(default_rule)
             source_default_rule['source'], count = source, 0
@@ -80,33 +75,31 @@ class TuneHubMusicClient(BaseMusicClient):
                         download_url = resp.url
                     except:
                         continue
+                    try:
+                        resp = self.session.head(safeextractfromdict(search_result, ['pic'], None), timeout=10, allow_redirects=True, **request_overrides)
+                        resp.raise_for_status()
+                        cover_url = resp.url
+                    except:
+                        cover_url = safeextractfromdict(search_result, ['pic'], None) or ""
                     song_info = SongInfo(
-                        source=self.source, download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
-                        ext=download_url.split('?')[0].split('.')[-1], file_size='NULL', duration='NULL',
-                        raw_data={'search': search_result, 'download': {}}, identifier=f"{search_result['platform']}_{search_result['id']}",
-                        song_name=legalizestring(search_result.get('name', 'NULL'), replace_null_string='NULL'),
-                        singers=legalizestring(search_result.get('artist', 'NULL'), replace_null_string='NULL'),
-                        album=legalizestring(search_result.get('album', 'NULL'), replace_null_string='NULL'), root_source=search_result['platform'],
+                        raw_data={'search': search_result, 'download': {}, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(search_result, ['name'], None)),
+                        singers=legalizestring(safeextractfromdict(search_result, ['artist'], None)), album=legalizestring(safeextractfromdict(search_result, ['album'], None)),
+                        ext=download_url.split('?')[0].split('.')[-1], file_size='NULL', identifier=search_result['id'], duration='-:-:-', lyric=None, cover_url=cover_url, 
+                        download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides), root_source=search_result['platform'],
                     )
+                    song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
+                    song_info.file_size = song_info.download_url_status['probe_status']['file_size']
+                    song_info.ext = song_info.download_url_status['probe_status']['ext'] if (song_info.download_url_status['probe_status']['ext'] and song_info.download_url_status['probe_status']['ext'] not in ('NULL', )) else song_info.ext
                     if song_info.with_valid_download_url: break
-                if not song_info.with_valid_download_url: continue
-                song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
-                ext, file_size = song_info.download_url_status['probe_status']['ext'], song_info.download_url_status['probe_status']['file_size']
-                if file_size and file_size != 'NULL': song_info.file_size = file_size
-                if ext and ext != 'NULL': song_info.ext = ext
                 # --lyric results
                 try:
                     resp = self.get(search_result['lrc'], **request_overrides)
                     resp.raise_for_status()
-                    lyric, lyric_result = resp.text, {'lyric': resp.text}
+                    lyric, lyric_result = cleanlrc(resp.text), {'lyric': resp.text}
+                    song_info.duration_s = extractdurationsecondsfromlrc(lyric)
+                    song_info.duration = seconds2hms(song_info.duration_s)
                 except:
                     lyric_result, lyric = dict(), 'NULL'
-                if lyric and lyric != 'NULL':
-                    try:
-                        song_info.duration_s = extractdurationsecondsfromlrc(lyric)
-                        song_info.duration = seconds2hms(song_info.duration_s)
-                    except:
-                        pass
                 song_info.lyric = lyric
                 song_info.raw_data['lyric'] = lyric_result
                 # --append to song_infos
