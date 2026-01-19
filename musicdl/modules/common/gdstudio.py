@@ -172,16 +172,21 @@ class GDStudioMusicClient(BaseMusicClient):
                 song_info.lyric = lyric
                 song_info.raw_data['lyric'] = lyric_result
                 # --cover results
-                try:
-                    data_json = {'types': 'pic', 'id': search_result['pic_id'], 'source': search_result['source'], 'size': 300, 's': self._yieldcrc32(search_result['pic_id'])}
-                    if method == 'post': resp = self.post(GDStudioMusicClient.SITE_TO_API_MAPPER[search_result['source']], data=data_json, params={'callback': self._yieldcallback()}, **request_overrides)
-                    else: resp = self.get(GDStudioMusicClient.SITE_TO_API_MAPPER[search_result['source']], params={**{'callback': self._yieldcallback()}, **data_json, '_': str(int(time.time() * 1000))}, **request_overrides)
-                    resp.raise_for_status()
-                    json_str = resp.text[resp.text.index('(')+1: resp.text.rindex(')')]
-                    cover_result = json_repair.loads(json_str)
-                    song_info.cover_url = cover_result['url']
-                except:
-                    pass
+                if search_result['source'] in {'kuwo'}:
+                    cdn_hosts = ["http://img1.kwcdn.kuwo.cn/star/albumcover/", "http://img2.kwcdn.kuwo.cn/star/albumcover/", "http://img3.kwcdn.kuwo.cn/star/albumcover/"]
+                    if search_result['pic_id'].startswith('120/'): search_result['pic_id'] = '300/' + search_result['pic_id'][4:]
+                    song_info.cover_url = cdn_hosts[0] + search_result['pic_id']
+                else:
+                    try:
+                        data_json = {'types': 'pic', 'id': search_result['pic_id'], 'source': search_result['source'], 'size': 300, 's': self._yieldcrc32(search_result['pic_id'])}
+                        if method == 'post': resp = self.post(GDStudioMusicClient.SITE_TO_API_MAPPER[search_result['source']], data=data_json, params={'callback': self._yieldcallback()}, **request_overrides)
+                        else: resp = self.get(GDStudioMusicClient.SITE_TO_API_MAPPER[search_result['source']], params={**{'callback': self._yieldcallback()}, **data_json, '_': str(int(time.time() * 1000))}, **request_overrides)
+                        resp.raise_for_status()
+                        json_str = resp.text[resp.text.index('(')+1: resp.text.rindex(')')]
+                        cover_result = json_repair.loads(json_str)
+                        song_info.cover_url = cover_result['url']
+                    except:
+                        pass
                 # --append to song_infos
                 song_infos.append(song_info)
                 # --judgement for search_size
