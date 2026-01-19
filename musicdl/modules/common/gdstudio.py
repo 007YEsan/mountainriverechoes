@@ -21,7 +21,7 @@ from ..utils import legalizestring, resp2json, usesearchheaderscookies, byte2mb,
 '''GDStudioMusicClient'''
 class GDStudioMusicClient(BaseMusicClient):
     source = 'GDStudioMusicClient'
-    SUPPORTED_SITES = ['spotify', 'tencent', 'netease', 'kuwo', 'tidal', 'qobuz', 'joox', 'bilibili', 'apple', 'ytmusic'] # 'kugou', 'ximalaya', 'migu'
+    SUPPORTED_SITES = ['spotify', 'netease', 'kuwo', 'tidal', 'qobuz', 'joox', 'bilibili', 'apple', 'tencent', 'ytmusic'] # 'kugou', 'ximalaya', 'migu'
     SITE_TO_API_MAPPER = {
         'kuwo': 'https://music.gdstudio.xyz/api.php', 'tencent': 'https://music.gdstudio.xyz/api.php', 'tidal': 'https://music.gdstudio.xyz/api.php',
         'spotify': 'https://music.gdstudio.xyz/api.php', 'netease': 'https://music.gdstudio.xyz/api.php', 'bilibili': 'https://music.gdstudio.xyz/api.php',
@@ -31,7 +31,7 @@ class GDStudioMusicClient(BaseMusicClient):
         'qobuz': 'https://music-api-us.gdstudio.xyz/api.php', 'ytmusic': 'https://music-api-us.gdstudio.xyz/api.php',
     }
     def __init__(self, **kwargs):
-        self.allowed_music_sources = list(set(kwargs.pop('allowed_music_sources', GDStudioMusicClient.SUPPORTED_SITES[:-1])))
+        self.allowed_music_sources = list(set(kwargs.pop('allowed_music_sources', GDStudioMusicClient.SUPPORTED_SITES[:-2])))
         super(GDStudioMusicClient, self).__init__(**kwargs)
         self.default_search_headers = {
             'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
