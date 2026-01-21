@@ -54,7 +54,7 @@ class QQMusicClient(BaseMusicClient):
             song_info = SongInfo(
                 raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(download_result['data'], ['song'], None)),
                 singers=legalizestring(safeextractfromdict(download_result['data'], ['singer'], None)), album=legalizestring(safeextractfromdict(download_result['data'], ['album'], None)), 
-                ext=download_url.split('?')[0].split('.')[-1], file_size=safeextractfromdict(download_result['data'], ['size'], "").removesuffix('MB').strip() + ' MB', identifier=search_result['mid'],
+                ext=download_url.split('?')[0].split('.')[-1], file_size=str(safeextractfromdict(download_result['data'], ['size'], "")).removesuffix('MB').strip() + ' MB', identifier=search_result['mid'],
                 duration_s=to_seconds_func(safeextractfromdict(download_result['data'], ['interval'], "")), duration=seconds2hms(to_seconds_func(safeextractfromdict(download_result['data'], ['interval'], ""))), 
                 lyric=None, cover_url=safeextractfromdict(download_result['data'], ['cover'], ""), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
             )
