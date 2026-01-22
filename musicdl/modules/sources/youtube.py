@@ -66,8 +66,8 @@ class YouTubeMusicClient(BaseMusicClient):
     '''_parsewithmp3youtube'''
     def _parsvidewithmp3youtube(self, search_result: dict, request_overrides: dict = None):
         # init
-        MUSIC_QUALITIES = ['320', '256', '192', '128', '64']
-        request_overrides, song_id = request_overrides or {}, search_result['videoId']
+        MUSIC_QUALITIES = ['320', '256', '128', '96']
+        request_overrides, song_id, song_info = request_overrides or {}, search_result['videoId'], SongInfo(source=self.source)
         format_duration_func = lambda d: "{:02}:{:02}:{:02}".format(*([0] * (3 - len(str(d).split(":"))) + list(map(int, str(d).split(":")))))
         resp = self.get('https://api.mp3youtube.cc/v2/sanity/key', headers={"Content-Type": "application/json", "Origin": "https://iframe.y2meta-uk.com", "Accept": "*/*"}, timeout=10, **request_overrides)
         resp.raise_for_status()
@@ -84,7 +84,7 @@ class YouTubeMusicClient(BaseMusicClient):
             except: continue
             song_info = SongInfo(
                 raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(search_result, ['title'], None)),
-                singers=legalizestring(search_result.get('author') or (', '.join([singer.get('name') for singer in (search_result.get('artist') or []) if isinstance(singer, dict) and singer.get('name')]))),
+                singers=legalizestring(search_result.get('author') or (', '.join([singer.get('name') for singer in (search_result.get('artists') or []) if isinstance(singer, dict) and singer.get('name')]))),
                 album=legalizestring(safeextractfromdict(search_result, ['album'], None)), ext='mp3', file_size_bytes=resp.content.__sizeof__(), file_size=byte2mb(resp.content.__sizeof__()), identifier=song_id,
                 duration_s=safeextractfromdict(search_result, ['duration_seconds'], 0), duration=format_duration_func(safeextractfromdict(search_result, ['duration'], '0:00') or '0:00'), lyric='NULL',
                 cover_url=safeextractfromdict(search_result, ['thumbnail'], "") or safeextractfromdict(search_result, ['thumbnails', -1, 'url'], ""), download_url=download_url, download_url_status={'ok': True}, 
@@ -93,12 +93,6 @@ class YouTubeMusicClient(BaseMusicClient):
             if song_info.with_valid_download_url: break
         # return
         return song_info
-    '''_parsewithy2mate'''
-    def _parsewithy2mate(self, search_result: dict, request_overrides: dict = None):
-        pass
-    '''_parsewithcafepia'''
-    def _parsewithcafepia(self, search_result: dict, request_overrides: dict = None):
-        pass
     '''_parsewithofficialapi'''
     def _parsewithofficialapi(self, search_result: dict, request_overrides: dict = None):
         request_overrides, song_id = request_overrides or {}, search_result['videoId']
@@ -159,7 +153,7 @@ class YouTubeMusicClient(BaseMusicClient):
                 # --download results
                 if not isinstance(search_result, dict) or 'videoId' not in search_result: continue
                 song_info = SongInfo(source=self.source)
-                for parser in [self._parsewithofficialapi, self._parsvidewithmp3youtube]:
+                for parser in [self._parsvidewithmp3youtube, self._parsewithofficialapi]:
                     try: song_info = parser(search_result, request_overrides); assert song_info.with_valid_download_url
                     except: continue
                 if not song_info.with_valid_download_url: continue
