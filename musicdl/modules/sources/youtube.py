@@ -21,8 +21,8 @@ class YouTubeMusicClient(BaseMusicClient):
     source = 'YouTubeMusicClient'
     def __init__(self, **kwargs):
         super(YouTubeMusicClient, self).__init__(**kwargs)
-        self.default_search_headers = {}
-        self.default_download_headers = {}
+        self.default_search_headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"}
+        self.default_download_headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"}
         self.default_headers = self.default_search_headers
         self._initsession()
     '''_download'''
@@ -93,6 +93,34 @@ class YouTubeMusicClient(BaseMusicClient):
             if song_info.with_valid_download_url: break
         # return
         return song_info
+    '''_parsewithclipto'''
+    def _parsewithclipto(self, search_result: dict, request_overrides: dict = None):
+        # init
+        request_overrides, song_id, song_info = request_overrides or {}, search_result['videoId'], SongInfo(source=self.source)
+        # parse
+        headers = {
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36",
+            "content-type": "application/json", "origin": "https://www.clipto.com", "referer": "https://www.clipto.com/media-downloader/"
+        }
+        resp = self.post('https://www.clipto.com/api/youtube', json={"url": f"https://www.youtube.com/watch?v={song_id}"}, headers=headers, **request_overrides)
+        resp.raise_for_status()
+        download_result = resp2json(resp=resp)
+        medias = [dr for dr in download_result['medias'] if isinstance(dr, dict) and (dr.get('type') in ('audio',) or 'audio' in dr.get('mimeType'))]
+        medias = sorted(medias, key=lambda x: int(float(x.get('contentLength', 0) or 0)), reverse=True)
+        for media in medias:
+            download_url: str = media.get('url')
+            if not download_url or not str(download_url).startswith('http'): continue
+            song_info = SongInfo(
+                raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(search_result, ['title'], None)),
+                singers=legalizestring(search_result.get('author') or (', '.join([singer.get('name') for singer in (search_result.get('artists') or []) if isinstance(singer, dict) and singer.get('name')]))),
+                album=legalizestring(safeextractfromdict(search_result, ['album'], None)), ext=media.get('extension', 'm4a'), file_size_bytes=int(float(media.get('contentLength', 0) or 0)),
+                file_size=byte2mb(int(float(media.get('contentLength', 0) or 0))), identifier=song_id, duration_s=download_result.get('duration'), duration=seconds2hms(download_result.get('duration')),
+                lyric='NULL', cover_url=safeextractfromdict(search_result, ['thumbnail'], "") or safeextractfromdict(search_result, ['thumbnails', -1, 'url'], ""), download_url=download_url,
+                download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+            )
+            if song_info.with_valid_download_url: break
+        # return
+        return song_info
     '''_parsewithofficialapi'''
     def _parsewithofficialapi(self, search_result: dict, request_overrides: dict = None):
         request_overrides, song_id = request_overrides or {}, search_result['videoId']
@@ -153,7 +181,7 @@ class YouTubeMusicClient(BaseMusicClient):
                 # --download results
                 if not isinstance(search_result, dict) or 'videoId' not in search_result: continue
                 song_info = SongInfo(source=self.source)
-                for parser in [self._parsvidewithmp3youtube, self._parsewithofficialapi]:
+                for parser in [self._parsvidewithmp3youtube, self._parsewithclipto, self._parsewithofficialapi]:
                     try: song_info = parser(search_result, request_overrides); assert song_info.with_valid_download_url
                     except: continue
                 if not song_info.with_valid_download_url: continue
