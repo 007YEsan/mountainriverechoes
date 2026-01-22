@@ -68,7 +68,7 @@ class YouTubeMusicClient(BaseMusicClient):
             download_result = resp2json(resp=resp)
             download_url: str = download_result.get('url')
             if not download_url or not str(download_url).startswith('http'): continue
-            try: resp = self.get(download_url, stream=True, **request_overrides); resp.raise_for_status()
+            try: resp = self.get(download_url, **request_overrides); resp.raise_for_status()
             except: continue
             song_info = SongInfo(
                 raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(search_result, ['title'], None)),
@@ -76,6 +76,7 @@ class YouTubeMusicClient(BaseMusicClient):
                 album=legalizestring(safeextractfromdict(search_result, ['album'], None)), ext='mp3', file_size_bytes=resp.content.__sizeof__(), file_size=byte2mb(resp.content.__sizeof__()), identifier=song_id,
                 duration_s=safeextractfromdict(search_result, ['duration_seconds'], 0), duration=format_duration_func(safeextractfromdict(search_result, ['duration'], '0:00') or '0:00'), lyric='NULL',
                 cover_url=safeextractfromdict(search_result, ['thumbnail'], "") or safeextractfromdict(search_result, ['thumbnails', -1, 'url'], ""), download_url=download_url, download_url_status={'ok': True}, 
+                downloaded_contents=resp.content, default_download_headers={"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"},
             )
             if song_info.with_valid_download_url: break
         # return
