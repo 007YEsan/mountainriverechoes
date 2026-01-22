@@ -166,29 +166,41 @@ class BaseMusicClient():
     @usedownloadheaderscookies
     def _download(self, song_info: SongInfo, request_overrides: dict = None, downloaded_song_infos: list = [], progress: Progress = None, song_progress_id: int = 0):
         request_overrides = request_overrides or {}
-        try:
-            touchdir(song_info.work_dir)
-            if song_info.default_download_headers: request_overrides['headers'] = song_info.default_download_headers
-            with self.get(song_info.download_url, stream=True, **request_overrides) as resp:
-                resp.raise_for_status()
-                total_size, chunk_size, downloaded_size = int(resp.headers.get('content-length', 0)), song_info.get('chunk_size', 1024), 0
+        if song_info.downloaded_contents:
+            try:
+                touchdir(song_info.work_dir)
+                total_size = song_info.downloaded_contents.__sizeof__()
                 progress.update(song_progress_id, total=total_size)
-                with open(song_info.save_path, "wb") as fp:
-                    for chunk in resp.iter_content(chunk_size=chunk_size):
-                        if not chunk: continue
-                        fp.write(chunk)
-                        downloaded_size = downloaded_size + len(chunk)
-                        if total_size > 0:
-                            downloading_text = "%0.2fMB/%0.2fMB" % (downloaded_size / 1024 / 1024, total_size / 1024 / 1024)
-                        else:
-                            progress.update(song_progress_id, total=downloaded_size)
-                            downloading_text = "%0.2fMB/%0.2fMB" % (downloaded_size / 1024 / 1024, downloaded_size / 1024 / 1024)
-                        progress.advance(song_progress_id, len(chunk))
-                        progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name[:10] + '...' if len(song_info.song_name) > 13 else song_info.song_name[:13]} (Downloading: {downloading_text})")
-                progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name[:10] + '...' if len(song_info.song_name) > 13 else song_info.song_name[:13]} (Success)")
+                with open(song_info.save_path, "wb") as fp: fp.write(song_info.downloaded_contents)
+                progress.advance(song_progress_id, total_size)
+                progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name[:10] + '...' if len(song_info.song_name) > 13 else song_info.song_name[:13]} (Downloading: {downloading_text})")
                 downloaded_song_infos.append(SongInfoUtils.fillsongtechinfo(copy.deepcopy(song_info), logger_handle=self.logger_handle, disable_print=self.disable_print))
-        except Exception as err:
-            progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name[:10] + '...' if len(song_info.song_name) > 13 else song_info.song_name[:13]} (Error: {err})")
+            except Exception as err:
+                progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name[:10] + '...' if len(song_info.song_name) > 13 else song_info.song_name[:13]} (Error: {err})")
+        else:
+            try:
+                touchdir(song_info.work_dir)
+                if song_info.default_download_headers: request_overrides['headers'] = song_info.default_download_headers
+                with self.get(song_info.download_url, stream=True, **request_overrides) as resp:
+                    resp.raise_for_status()
+                    total_size, chunk_size, downloaded_size = int(resp.headers.get('content-length', 0)), song_info.get('chunk_size', 1024), 0
+                    progress.update(song_progress_id, total=total_size)
+                    with open(song_info.save_path, "wb") as fp:
+                        for chunk in resp.iter_content(chunk_size=chunk_size):
+                            if not chunk: continue
+                            fp.write(chunk)
+                            downloaded_size = downloaded_size + len(chunk)
+                            if total_size > 0:
+                                downloading_text = "%0.2fMB/%0.2fMB" % (downloaded_size / 1024 / 1024, total_size / 1024 / 1024)
+                            else:
+                                progress.update(song_progress_id, total=downloaded_size)
+                                downloading_text = "%0.2fMB/%0.2fMB" % (downloaded_size / 1024 / 1024, downloaded_size / 1024 / 1024)
+                            progress.advance(song_progress_id, len(chunk))
+                            progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name[:10] + '...' if len(song_info.song_name) > 13 else song_info.song_name[:13]} (Downloading: {downloading_text})")
+                    progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name[:10] + '...' if len(song_info.song_name) > 13 else song_info.song_name[:13]} (Success)")
+                    downloaded_song_infos.append(SongInfoUtils.fillsongtechinfo(copy.deepcopy(song_info), logger_handle=self.logger_handle, disable_print=self.disable_print))
+            except Exception as err:
+                progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name[:10] + '...' if len(song_info.song_name) > 13 else song_info.song_name[:13]} (Error: {err})")
         return downloaded_song_infos
     '''download'''
     @usedownloadheaderscookies

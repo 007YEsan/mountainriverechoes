@@ -30,43 +30,31 @@ class YouTubeMusicClient(BaseMusicClient):
     def _download(self, song_info: SongInfo, request_overrides: dict = None, downloaded_song_infos: list = [], progress: Progress = None, song_progress_id: int = 0):
         if isinstance(song_info.download_url, str): return super()._download(song_info=song_info, request_overrides=request_overrides, downloaded_song_infos=downloaded_song_infos, progress=progress, song_progress_id=song_progress_id)
         request_overrides = request_overrides or {}
-        if song_info.downloaded_contents:
-            try:
-                touchdir(song_info.work_dir)
-                total_size = song_info.downloaded_contents.__sizeof__()
-                progress.update(song_progress_id, total=total_size)
-                with open(song_info.save_path, "wb") as fp: fp.write(song_info.downloaded_contents)
-                progress.advance(song_progress_id, total_size)
-                progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name} (Success)")
-                downloaded_song_infos.append(SongInfoUtils.fillsongtechinfo(copy.deepcopy(song_info), logger_handle=self.logger_handle, disable_print=self.disable_print))
-            except Exception as err:
-                progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name} (Error: {err})")
-        else:
-            try:
-                touchdir(song_info.work_dir)
-                total_size, chunk_size, downloaded_size = int(song_info.download_url.filesize), song_info.get('chunk_size', 1024 * 1024), 0
-                progress.update(song_progress_id, total=total_size)
-                with open(song_info.save_path, "wb") as fp:
-                    for chunk in song_info.download_url.iterchunks(chunk_size=chunk_size):
-                        if not chunk: continue
-                        fp.write(chunk)
-                        downloaded_size = downloaded_size + len(chunk)
-                        if total_size > 0:
-                            downloading_text = "%0.2fMB/%0.2fMB" % (downloaded_size / 1024 / 1024, total_size / 1024 / 1024)
-                        else:
-                            progress.update(song_progress_id, total=downloaded_size)
-                            downloading_text = "%0.2fMB/%0.2fMB" % (downloaded_size / 1024 / 1024, downloaded_size / 1024 / 1024)
-                        progress.advance(song_progress_id, len(chunk))
-                        progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name[:10] + '...' if len(song_info.song_name) > 13 else song_info.song_name[:13]} (Downloading: {downloading_text})")
-                progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name[:10] + '...' if len(song_info.song_name) > 13 else song_info.song_name[:13]} (Success)")
-                downloaded_song_infos.append(SongInfoUtils.fillsongtechinfo(copy.deepcopy(song_info), logger_handle=self.logger_handle, disable_print=self.disable_print))
-            except Exception as err:
-                progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name[:10] + '...' if len(song_info.song_name) > 13 else song_info.song_name[:13]} (Error: {err})")
+        try:
+            touchdir(song_info.work_dir)
+            total_size, chunk_size, downloaded_size = int(song_info.download_url.filesize), song_info.get('chunk_size', 1024 * 1024), 0
+            progress.update(song_progress_id, total=total_size)
+            with open(song_info.save_path, "wb") as fp:
+                for chunk in song_info.download_url.iterchunks(chunk_size=chunk_size):
+                    if not chunk: continue
+                    fp.write(chunk)
+                    downloaded_size = downloaded_size + len(chunk)
+                    if total_size > 0:
+                        downloading_text = "%0.2fMB/%0.2fMB" % (downloaded_size / 1024 / 1024, total_size / 1024 / 1024)
+                    else:
+                        progress.update(song_progress_id, total=downloaded_size)
+                        downloading_text = "%0.2fMB/%0.2fMB" % (downloaded_size / 1024 / 1024, downloaded_size / 1024 / 1024)
+                    progress.advance(song_progress_id, len(chunk))
+                    progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name[:10] + '...' if len(song_info.song_name) > 13 else song_info.song_name[:13]} (Downloading: {downloading_text})")
+            progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name[:10] + '...' if len(song_info.song_name) > 13 else song_info.song_name[:13]} (Success)")
+            downloaded_song_infos.append(SongInfoUtils.fillsongtechinfo(copy.deepcopy(song_info), logger_handle=self.logger_handle, disable_print=self.disable_print))
+        except Exception as err:
+            progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name[:10] + '...' if len(song_info.song_name) > 13 else song_info.song_name[:13]} (Error: {err})")
         return downloaded_song_infos
     '''_parsewithmp3youtube'''
     def _parsvidewithmp3youtube(self, search_result: dict, request_overrides: dict = None):
         # init
-        MUSIC_QUALITIES = ['320', '256', '128', '96']
+        MUSIC_QUALITIES = ['320', '256', '128', '96'][:2]
         request_overrides, song_id, song_info = request_overrides or {}, search_result['videoId'], SongInfo(source=self.source)
         format_duration_func = lambda d: "{:02}:{:02}:{:02}".format(*([0] * (3 - len(str(d).split(":"))) + list(map(int, str(d).split(":")))))
         resp = self.get('https://api.mp3youtube.cc/v2/sanity/key', headers={"Content-Type": "application/json", "Origin": "https://iframe.y2meta-uk.com", "Accept": "*/*"}, timeout=10, **request_overrides)
@@ -80,7 +68,7 @@ class YouTubeMusicClient(BaseMusicClient):
             download_result = resp2json(resp=resp)
             download_url: str = download_result.get('url')
             if not download_url or not str(download_url).startswith('http'): continue
-            try: resp = self.get(download_url, headers={"Content-Type": "application/json", "Origin": "https://iframe.y2meta-uk.com", "Accept": "*/*", "Referer": "https://iframe.y2meta-uk.com/"}, **request_overrides); resp.raise_for_status()
+            try: resp = self.get(download_url, stream=True, **request_overrides); resp.raise_for_status()
             except: continue
             song_info = SongInfo(
                 raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(search_result, ['title'], None)),
@@ -88,7 +76,6 @@ class YouTubeMusicClient(BaseMusicClient):
                 album=legalizestring(safeextractfromdict(search_result, ['album'], None)), ext='mp3', file_size_bytes=resp.content.__sizeof__(), file_size=byte2mb(resp.content.__sizeof__()), identifier=song_id,
                 duration_s=safeextractfromdict(search_result, ['duration_seconds'], 0), duration=format_duration_func(safeextractfromdict(search_result, ['duration'], '0:00') or '0:00'), lyric='NULL',
                 cover_url=safeextractfromdict(search_result, ['thumbnail'], "") or safeextractfromdict(search_result, ['thumbnails', -1, 'url'], ""), download_url=download_url, download_url_status={'ok': True}, 
-                downloaded_contents=resp.content,
             )
             if song_info.with_valid_download_url: break
         # return
@@ -182,7 +169,7 @@ class YouTubeMusicClient(BaseMusicClient):
                 if not isinstance(search_result, dict) or 'videoId' not in search_result: continue
                 song_info = SongInfo(source=self.source)
                 for parser in [self._parsvidewithmp3youtube, self._parsewithclipto, self._parsewithofficialapi]:
-                    try: song_info = parser(search_result, request_overrides); assert song_info.with_valid_download_url
+                    try: song_info = parser(search_result, request_overrides); assert song_info.with_valid_download_url; break
                     except: continue
                 if not song_info.with_valid_download_url: continue
                 # --append to song_infos
