@@ -173,7 +173,7 @@ class BaseMusicClient():
                 progress.update(song_progress_id, total=total_size)
                 with open(song_info.save_path, "wb") as fp: fp.write(song_info.downloaded_contents)
                 progress.advance(song_progress_id, total_size)
-                progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name[:10] + '...' if len(song_info.song_name) > 13 else song_info.song_name[:13]} (Downloading: {downloading_text})")
+                progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name[:10] + '...' if len(song_info.song_name) > 13 else song_info.song_name[:13]} (Success)")
                 downloaded_song_infos.append(SongInfoUtils.fillsongtechinfo(copy.deepcopy(song_info), logger_handle=self.logger_handle, disable_print=self.disable_print))
             except Exception as err:
                 progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name[:10] + '...' if len(song_info.song_name) > 13 else song_info.song_name[:13]} (Error: {err})")
