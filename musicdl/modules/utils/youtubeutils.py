@@ -34,12 +34,14 @@ from ..js.youtube import JSInterpreter, extractplayerjsglobalvar
 from typing import Callable, List, Optional, Union, Callable, BinaryIO, Dict, Any, Tuple
 
 
-'''API_KEYS'''
-API_KEYS = [
-    'AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8', 'AIzaSyCtkvNIR1HCEwzsqK6JuE6KqpyjusIRI30', 'AIzaSyA8eiZmM1FaDVjRy-df2KTyQ_vz_yYM39w', 'AIzaSyC8UYZpvA2eknNex0Pjid0_eTLJoDu6los',
-    'AIzaSyCjc_pVEDi4qsv5MtC2dMXzpIaDoRFLsxw', 'AIzaSyDHQ9ipnphqTzDqZsbtd8_Ru4_kiKVQe2k'
+'''settings'''
+REPAIDAPI_KEYS = [
+    "MTU1NmY2Y2NiMm1zaDY0YjgwNzQ4NTE1NmIzM3AxMmE2NmRqc243ZTE5N2JjMjNmMTk=", "NWE4MTBhODA2ZG1zaDE2NDJmNjEyZTIxNjViN3AxOTYwODRqc244Y2ViNDIxNjlhNTc=", "YmViZDlkMWE1Zm1zaDdkNTJmZGZhNzFkODVlYnAxYTZiMzVqc25lZWYzYjg4MTJiZmI=",
+    "NmM5ZGQzNjBiY21zaGJkMjk2MGM2NzY5MzM4MHAxYjY3MjBqc25mMmNhNzdkN2UzZTA=", "MDdmZTg1ZWY0MW1zaGE3MDdkMTgxYzZkZmE5ZXAxZTMyYTNqc25lMDIxNmYxNGI2MWU=", "M2Y3OTQ3MzVlYW1zaDg3NzNlOTY5M2RjYTczMHAxNDNmNWZqc242ZGRiYjY3MGZkNzE=",
+    "NWI1YjE2NTBmZG1zaGUxYTlmYjk2NjlkMWQ0MnAxZmZiYmVqc24xN2RiMjgxZGEyMjg=", "NmUzYjhhYjQ5Mm1zaGRmNzJhMzkxMjA4MjczYXAxYzBhODJqc24wNmIxM2EyZWFiMmQ=", "ODMyYzM4ZGRjZm1zaGVlNTNjZTk5ODNiNjJiZnAxODdmZDlqc24xODk3M2ExNDI0NDI=",
+    "YTUyODE1MjZjNG1zaGZjOTlmNzJiMzE4MjJmMXAxNThjMTdqc24zZjM0ODJhNDE4NjI=", "NzMyNGRkMDBjNW1zaDc1MDQ3ZTNjNWRjY2ViN3AxMjEwZTJqc25hYzQzMGQ0ZjIxMzM=", "OWUwOTQxOTExYW1zaDU1MzdiZDhiZmYwYTRmNnAxZmFjYzJqc242MWZiNTRmOGI0NzQ=",
 ]
-'''CLIENT DATA'''
+API_KEYS = ['AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8', 'AIzaSyCtkvNIR1HCEwzsqK6JuE6KqpyjusIRI30', 'AIzaSyA8eiZmM1FaDVjRy-df2KTyQ_vz_yYM39w', 'AIzaSyC8UYZpvA2eknNex0Pjid0_eTLJoDu6los', 'AIzaSyCjc_pVEDi4qsv5MtC2dMXzpIaDoRFLsxw', 'AIzaSyDHQ9ipnphqTzDqZsbtd8_Ru4_kiKVQe2k']
 CLIENT_ID = '861556708454-d6dlm3lh05idd8npek18k6be8ba3oc68.apps.googleusercontent.com'
 CLIENT_SECRET = 'SboVhoG9s0rNafixCSGGKXAT'
 DEFAULT_CLIENTS = {

@@ -58,6 +58,7 @@ class KugouMusicClient(BaseMusicClient):
             song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
             song_info.file_size = song_info.download_url_status['probe_status']['file_size']
             if song_info.with_valid_download_url: break
+        # return
         return song_info
     '''_parsewiththirdpartapis'''
     def _parsewiththirdpartapis(self, hash_list: list, search_result: dict, request_overrides: dict = None):
