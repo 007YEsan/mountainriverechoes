@@ -7,9 +7,13 @@ WeChat Official Account (微信公众号):
     Charles的皮卡丘
 '''
 import os
+import re
 import copy
+import random
 import pickle
 import requests
+import curl_cffi
+from pathlib import Path
 from threading import Lock
 from rich.text import Text
 from itertools import chain
@@ -18,12 +22,8 @@ from rich.progress import Task
 from fake_useragent import UserAgent
 from pathvalidate import sanitize_filepath
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from rich.progress import (
-    Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn, DownloadColumn, TransferSpeedColumn, TimeRemainingColumn, MofNCompleteColumn, ProgressColumn,
-)
-from ..utils import (
-    LoggerHandle, AudioLinkTester, SongInfo, SongInfoUtils, touchdir, usedownloadheaderscookies, usesearchheaderscookies, cookies2dict, cookies2string, shortenpathsinsonginfos
-)
+from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn, DownloadColumn, TransferSpeedColumn, TimeRemainingColumn, MofNCompleteColumn, ProgressColumn
+from ..utils import LoggerHandle, AudioLinkTester, SongInfo, SongInfoUtils, touchdir, usedownloadheaderscookies, usesearchheaderscookies, cookies2dict, cookies2string, shortenpathsinsonginfos
 
 
 '''AudioAwareColumn'''
@@ -45,9 +45,9 @@ class AudioAwareColumn(ProgressColumn):
 '''BaseMusicClient'''
 class BaseMusicClient():
     source = 'BaseMusicClient'
-    def __init__(self, search_size_per_source: int = 5, auto_set_proxies: bool = False, random_update_ua: bool = False, max_retries: int = 3, maintain_session: bool = False, 
-                 logger_handle: LoggerHandle = None, disable_print: bool = False, work_dir: str = 'musicdl_outputs', freeproxy_settings: dict = None, default_search_cookies: dict | str = None,
-                 default_download_cookies: dict | str = None, search_size_per_page: int = 10, strict_limit_search_size_per_page: bool = True, quark_parser_config: dict = None):
+    def __init__(self, search_size_per_source: int = 5, auto_set_proxies: bool = False, random_update_ua: bool = False, enable_search_curl_cffi: bool = False, enable_download_curl_cffi: bool = False, 
+                 max_retries: int = 3, maintain_session: bool = False, logger_handle: LoggerHandle = None, disable_print: bool = False, work_dir: str = 'musicdl_outputs', freeproxy_settings: dict = None, 
+                 default_search_cookies: dict | str = None, default_download_cookies: dict | str = None, search_size_per_page: int = 10, strict_limit_search_size_per_page: bool = True, quark_parser_config: dict = None):
         # set up work dir
         touchdir(work_dir)
         # set attributes
@@ -66,6 +66,10 @@ class BaseMusicClient():
         self.search_size_per_page = min(search_size_per_source, search_size_per_page)
         self.strict_limit_search_size_per_page = strict_limit_search_size_per_page
         self.quark_parser_config = quark_parser_config or {}
+        self.enable_search_curl_cffi = enable_search_curl_cffi
+        self.enable_download_curl_cffi = enable_download_curl_cffi
+        self.enable_curl_cffi = self.enable_search_curl_cffi
+        self.cc_impersonates = self._listccimpersonates() if (enable_search_curl_cffi or enable_download_curl_cffi) else None
         # init requests.Session
         self.default_search_headers = {'User-Agent': UserAgent().random}
         self.default_download_headers = {'User-Agent': UserAgent().random}
@@ -83,9 +87,15 @@ class BaseMusicClient():
             default_freeproxy_settings = dict(disable_print=True, proxy_sources=['ProxiflyProxiedSession'], max_tries=20, init_proxied_session_cfg={})
             default_freeproxy_settings.update(self.freeproxy_settings)
             self.proxied_session_client = freeproxy.ProxiedSessionClient(**default_freeproxy_settings)
+    '''_listccimpersonates'''
+    def _listccimpersonates(self):
+        root = Path(curl_cffi.__file__).resolve().parent
+        exts = {".py", ".so", ".pyd", ".dll", ".dylib"}
+        pat = re.compile(rb"\b(?:chrome|edge|safari|firefox|tor)(?:\d+[a-z_]*|_android|_ios)?\b")
+        return sorted({m.decode("utf-8", "ignore") for p in root.rglob("*") if p.suffix in exts for m in pat.findall(p.read_bytes())})
     '''_initsession'''
     def _initsession(self):
-        self.session = requests.Session()
+        self.session = requests.Session() if not self.enable_curl_cffi else curl_cffi.requests.Session()
         self.session.headers = self.default_headers
         self.audio_link_tester = AudioLinkTester(headers=copy.deepcopy(self.default_download_headers), cookies=copy.deepcopy(self.default_download_cookies))
         self.quark_audio_link_tester = AudioLinkTester(headers=copy.deepcopy(self.quark_default_download_headers), cookies=copy.deepcopy(self.quark_default_download_cookies))
@@ -240,6 +250,7 @@ class BaseMusicClient():
     '''get'''
     def get(self, url, **kwargs):
         if 'cookies' not in kwargs: kwargs['cookies'] = self.default_cookies
+        if 'impersonate' not in kwargs and self.enable_curl_cffi: kwargs['impersonate'] = random.choice(self.cc_impersonates)
         resp = None
         for _ in range(self.max_retries):
             if not self.maintain_session:
@@ -265,6 +276,7 @@ class BaseMusicClient():
     '''post'''
     def post(self, url, **kwargs):
         if 'cookies' not in kwargs: kwargs['cookies'] = self.default_cookies
+        if 'impersonate' not in kwargs and self.enable_curl_cffi: kwargs['impersonate'] = random.choice(self.cc_impersonates)
         resp = None
         for _ in range(self.max_retries):
             if not self.maintain_session:
