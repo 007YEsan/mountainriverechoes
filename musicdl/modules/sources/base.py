@@ -12,7 +12,6 @@ import copy
 import random
 import pickle
 import requests
-import curl_cffi
 from pathlib import Path
 from threading import Lock
 from rich.text import Text
@@ -23,7 +22,7 @@ from fake_useragent import UserAgent
 from pathvalidate import sanitize_filepath
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn, DownloadColumn, TransferSpeedColumn, TimeRemainingColumn, MofNCompleteColumn, ProgressColumn
-from ..utils import LoggerHandle, AudioLinkTester, SongInfo, SongInfoUtils, touchdir, usedownloadheaderscookies, usesearchheaderscookies, cookies2dict, cookies2string, shortenpathsinsonginfos
+from ..utils import LoggerHandle, AudioLinkTester, SongInfo, SongInfoUtils, touchdir, usedownloadheaderscookies, usesearchheaderscookies, cookies2dict, cookies2string, shortenpathsinsonginfos, optionalimport
 
 
 '''AudioAwareColumn'''
@@ -89,12 +88,14 @@ class BaseMusicClient():
             self.proxied_session_client = freeproxy.ProxiedSessionClient(**default_freeproxy_settings)
     '''_listccimpersonates'''
     def _listccimpersonates(self):
+        curl_cffi = optionalimport('curl_cffi')
         root = Path(curl_cffi.__file__).resolve().parent
         exts = {".py", ".so", ".pyd", ".dll", ".dylib"}
         pat = re.compile(rb"\b(?:chrome|edge|safari|firefox|tor)(?:\d+[a-z_]*|_android|_ios)?\b")
         return sorted({m.decode("utf-8", "ignore") for p in root.rglob("*") if p.suffix in exts for m in pat.findall(p.read_bytes())})
     '''_initsession'''
     def _initsession(self):
+        curl_cffi = optionalimport('curl_cffi')
         self.session = requests.Session() if not self.enable_curl_cffi else curl_cffi.requests.Session()
         self.session.headers = self.default_headers
         self.audio_link_tester = AudioLinkTester(headers=copy.deepcopy(self.default_download_headers), cookies=copy.deepcopy(self.default_download_cookies))

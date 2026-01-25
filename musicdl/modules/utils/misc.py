@@ -1,6 +1,6 @@
 '''
 Function:
-    Implementation of common utils
+    Implementation of Common Utils
 Author:
     Zhenchao Jin
 WeChat Official Account (微信公众号):
@@ -17,12 +17,12 @@ import bleach
 import hashlib
 import requests
 import functools
-import curl_cffi
 import json_repair
 import unicodedata
 from io import BytesIO
 from pathlib import Path
 from bs4 import BeautifulSoup
+from .importutils import optionalimport
 from mutagen import File as MutagenFile
 from pathvalidate import sanitize_filepath, sanitize_filename
 
@@ -169,7 +169,9 @@ def byte2mb(size: int):
 
 '''resp2json'''
 def resp2json(resp: requests.Response):
-    if not isinstance(resp, (requests.Response, curl_cffi.requests.Response)): return {}
+    curl_cffi = optionalimport('curl_cffi')
+    valid_resp_object = (requests.Response, curl_cffi.requests.Response) if curl_cffi else requests.Response
+    if not isinstance(resp, valid_resp_object): return {}
     try: result = resp.json()
     except: result = json_repair.loads(resp.text)
     if not result: result = dict()
@@ -178,7 +180,9 @@ def resp2json(resp: requests.Response):
 
 '''isvalidresp'''
 def isvalidresp(resp: requests.Response, valid_status_codes: list | tuple | set = {200, 206}):
-    if not isinstance(resp, (requests.Response, curl_cffi.requests.Response)): return False
+    curl_cffi = optionalimport('curl_cffi')
+    valid_resp_object = (requests.Response, curl_cffi.requests.Response) if curl_cffi else requests.Response
+    if not isinstance(resp, valid_resp_object): return False
     if resp is None or resp.status_code not in valid_status_codes: return False
     return True
 

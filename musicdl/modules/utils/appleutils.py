@@ -1,6 +1,6 @@
 '''
 Function:
-    Implementation of AppleMusicClient utils, refer to 
+    Implementation of AppleMusicClient Utils
 Author:
     Zhenchao Jin
 WeChat Official Account (微信公众号):
