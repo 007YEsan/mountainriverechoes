@@ -80,9 +80,9 @@ def replacefile(src: str, dest: str):
     try:
         os.replace(src, dest)
     except OSError as exc:
-        if exc.errno != errno.EXDEV: raise
+        if exc.errno != errno.EXDEV: raise Exception
         if os.path.exists(dest):
-            if os.path.isdir(dest): raise
+            if os.path.isdir(dest): raise Exception
             os.remove(dest)
         shutil.move(src, dest)
 

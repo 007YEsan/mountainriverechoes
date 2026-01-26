@@ -385,7 +385,7 @@ def parseforobjectfromstartpoint(html, start_point):
         try:
             return ast.literal_eval(full_obj)
         except:
-            raise
+            raise Exception
 
 
 '''parseforobject'''
@@ -509,7 +509,7 @@ def applysignature(stream_manifest: Dict, vid_info: Dict, js: str, url_js: str):
             url: str = stream["url"]
         except KeyError:
             live_stream = (vid_info.get("playabilityStatus", {}, ).get("liveStreamability"))
-            if live_stream: raise
+            if live_stream: raise Exception
         parsed_url = urlparse(url)
         query_params = parse_qs(urlparse(url).query)
         query_params = {k: v[0] for k, v in query_params.items()}
@@ -609,7 +609,7 @@ class RequestWrapper:
                 try:
                     resp = RequestWrapper._executerequest(f"{url}&range={downloaded}-{stop_pos}", method="GET", timeout=timeout)
                 except URLError as e:
-                    if not isinstance(e.reason, (socket.timeout, OSError)): raise
+                    if not isinstance(e.reason, (socket.timeout, OSError)): raise Exception
                 except http.client.IncompleteRead: pass
                 else: break
                 tries += 1
@@ -650,7 +650,7 @@ class RequestWrapper:
         for line in stream_info:
             try: segment_count = int(regexsearch(segment_regex, line, 1))
             except: pass
-        if segment_count == 0: raise
+        if segment_count == 0: raise Exception
         seq_num = 1
         while seq_num <= segment_count:
             querys['sq'] = seq_num
@@ -998,7 +998,7 @@ class Stream:
             try:
                 self._filesize = RequestWrapper.filesize(self.url)
             except HTTPError as e:
-                if e.code != 404: raise
+                if e.code != 404: raise Exception
                 self._filesize = RequestWrapper.seqfilesize(self.url)
         return self._filesize
     '''filesizekb'''
@@ -1008,7 +1008,7 @@ class Stream:
             try:
                 self._filesize_kb = float(math.ceil(RequestWrapper.filesize(self.url) / 1024 * 1000) / 1000)
             except HTTPError as e:
-                if e.code != 404: raise
+                if e.code != 404: raise Exception
                 self._filesize_kb = float(math.ceil(RequestWrapper.seqfilesize(self.url) / 1024 * 1000) / 1000)
         return self._filesize_kb
     '''filesizemb'''
@@ -1018,7 +1018,7 @@ class Stream:
             try:
                 self._filesize_mb = float(math.ceil(RequestWrapper.filesize(self.url) / 1024 / 1024 * 1000) / 1000)
             except HTTPError as e:
-                if e.code != 404: raise
+                if e.code != 404: raise Exception
                 self._filesize_mb = float(math.ceil(RequestWrapper.seqfilesize(self.url) / 1024 / 1024 * 1000) / 1000)
         return self._filesize_mb
     '''filesizegb'''
@@ -1028,7 +1028,7 @@ class Stream:
             try:
                 self._filesize_gb = float(math.ceil(RequestWrapper.filesize(self.url) / 1024 / 1024 / 1024 * 1000) / 1000)
             except HTTPError as e:
-                if e.code != 404: raise
+                if e.code != 404: raise Exception
                 self._filesize_gb = float(math.ceil(RequestWrapper.seqfilesize(self.url) / 1024 / 1024 / 1024 * 1000) / 1000)
         return self._filesize_gb
     '''title'''
@@ -1078,7 +1078,7 @@ class Stream:
                 else:
                     ServerAbrStream(stream=self, write_chunk=_writechunk, monostate=self._monostate).start()
             except HTTPError as e:
-                if e.code != 404: raise
+                if e.code != 404: raise Exception
             except StopIteration:
                 if not self.issabr:
                     for chunk in RequestWrapper.seqstream(self.url, timeout=timeout, max_retries=max_retries):
@@ -1128,7 +1128,7 @@ class Stream:
         try:
             stream = RequestWrapper.stream(self.url)
         except HTTPError as e:
-            if e.code != 404: raise
+            if e.code != 404: raise Exception
             stream = RequestWrapper.seqstream(self.url)
         for chunk in stream:
             bytes_remaining -= len(chunk)
@@ -2764,7 +2764,7 @@ class ServerAbrStream:
             self.emit(data)
             if data.get("sabr_context_update"):
                 if self.maximum_reload_attempt > 0: continue
-                else: raise 
+                else: raise Exception 
             if client_abr_state["enabledTrackTypesBitfield"] == 0:
                 main_format = next((fmt for fmt in data.get("initialized_formats", []) if "video" in (fmt.get("mimeType") or "")), None)
             else:
@@ -2779,7 +2779,7 @@ class ServerAbrStream:
                     self.RELOAD = False
                     continue
                 else:
-                    raise 
+                    raise Exception 
             if (not main_format or main_format["sequenceCount"] == main_format["sequenceList"][-1].get("sequenceNumber")): break
             total_sequence_duration = sum(seq.get("durationMs", 0) for seq in main_format["sequenceList"])
             client_abr_state["playerTimeMs"] += total_sequence_duration
@@ -2895,7 +2895,7 @@ class ServerAbrStream:
     '''processsnackbarmessage'''
     def processsnackbarmessage(self):
         skip = self.sabr_context_updates[self.sabr_contexts_to_send[-1]].get("skip", 1000) / 1000
-        if skip >= 60: raise
+        if skip >= 60: raise Exception
         time.sleep(skip)
         self.maximum_reload_attempt -= 1
     '''processstreamprotectionstatus'''
@@ -3267,7 +3267,7 @@ class Cipher:
                 nsig = self.runner_nsig.call([n])
         except Exception as err:
             raise err
-        if 'error' in nsig or '_w8_' in nsig or not isinstance(nsig, str): raise 
+        if 'error' in nsig or '_w8_' in nsig or not isinstance(nsig, str): raise Exception 
         return nsig
     '''getsig'''
     def getsig(self, ciphered_signature: str):
@@ -3276,7 +3276,7 @@ class Cipher:
             else: sig = self.runner_sig.call([ciphered_signature])
         except Exception as err:
             raise err
-        if 'error' in sig or not isinstance(sig, str): raise 
+        if 'error' in sig or not isinstance(sig, str): raise Exception 
         return sig
     '''getsigfunctionname'''
     def getsigfunctionname(self, js: str, js_url: str):
@@ -3302,7 +3302,7 @@ class Cipher:
                     param = function_match.group('param')
                     if param: self._sig_param_val = int(param)
                 return sig
-        raise
+        raise Exception
     '''getnsigfunctionname'''
     def getnsigfunctionname(self, js: str, js_url: str):
         try:
@@ -3330,7 +3330,7 @@ class Cipher:
                                 n_func = func_name.group("funcname")
                                 self._nsig_param_val = self._extractnsigparamval(js, n_func)
                                 return n_func
-                            raise
+                            raise Exception
         except Exception as err:
             raise err
     '''_extractnsigparamval'''
