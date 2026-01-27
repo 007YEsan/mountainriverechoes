@@ -21,7 +21,7 @@ else:
     from .modules import BuildMusicClient, LoggerHandle, MusicClientBuilder, smarttrunctable, colorize, printfullline, cursorpickintable
 
 
-'''BASIC_INFO'''
+'''settings'''
 BASIC_INFO = '''Function: Music Downloader v%s
 Author: Zhenchao Jin
 WeChat Official Account (微信公众号): Charles_pikachu (Charles的皮卡丘)
@@ -36,8 +36,7 @@ Instructions:
         Press Esc or q to cancel selection
 Music Files Save Path:
     %s (root dir is the current directory if using relative path).'''
-'''DEFAULT_MUSIC_SOURCES'''
-DEFAULT_MUSIC_SOURCES = ['MiguMusicClient', 'NeteaseMusicClient', 'QQMusicClient', 'KuwoMusicClient', 'QianqianMusicClient', 'KugouMusicClient']
+DEFAULT_MUSIC_SOURCES = ['MiguMusicClient', 'NeteaseMusicClient', 'QQMusicClient', 'KuwoMusicClient', 'QianqianMusicClient']
 
 
 '''MusicClient'''
