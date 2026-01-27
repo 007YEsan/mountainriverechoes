@@ -9,12 +9,13 @@ WeChat Official Account (微信公众号):
 import re
 import json
 import copy
+import base64
 import random
 import warnings
 from .base import BaseMusicClient
 from rich.progress import Progress
 from ..utils.neteaseutils import EapiCryptoUtils, MUSIC_QUALITIES, DEFAULT_COOKIES
-from ..utils import resp2json, seconds2hms, legalizestring, safeextractfromdict, usesearchheaderscookies, cleanlrc, SongInfo
+from ..utils import resp2json, seconds2hms, legalizestring, safeextractfromdict, usesearchheaderscookies, extractdurationsecondsfromlrc, cleanlrc, SongInfo
 warnings.filterwarnings('ignore')
 
 
@@ -122,11 +123,33 @@ class NeteaseMusicClient(BaseMusicClient):
             if song_info.with_valid_download_url: break
         # return
         return song_info
+    '''_parsewithxianyuwapi'''
+    def _parsewithxianyuwapi(self, search_result: dict, request_overrides: dict = None):
+        # init
+        decrypt_func = lambda t: base64.b64decode(str(t).encode('utf-8')).decode('utf-8')
+        request_overrides, song_id, song_info = request_overrides or {}, search_result['id'], SongInfo(source=self.source)
+        REQUEST_KEYS = ['c2stOTUwZTc4MTNjMzhjMmUzMWQzOWQ4NzlkMzIwNDg4OTU=', 'c2stNjJjZGIwM2UyMjcwZWIzOTY4Y2NhNzg4MTM5OWY0MTI=']
+        # parse
+        resp = self.get(f'https://apii.xianyuw.cn/api/v1/163-music-search?id={song_id}&key={decrypt_func(random.choice(REQUEST_KEYS))}&no_url=0&br=hires', **request_overrides)
+        resp.raise_for_status()
+        download_result = resp2json(resp=resp)
+        download_url: str = download_result['data']['url']
+        if not download_url or not download_url.startswith('http'): return song_info
+        song_info = SongInfo(
+            raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'quality': 'hires'}, source=self.source, song_name=legalizestring(safeextractfromdict(download_result, ['data', 'title'], None)),
+            singers=legalizestring(str(safeextractfromdict(download_result, ['data', 'author'], "")).replace('/', ', ')), album=legalizestring(safeextractfromdict(download_result, ['data', 'album'], None)), 
+            ext=download_url.split('?')[0].split('.')[-1], file_size='NULL', identifier=search_result['id'], duration='-:-:-', lyric='NULL', cover_url=safeextractfromdict(download_result, ['data', 'cover'], ""), 
+            download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+        )
+        song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
+        song_info.file_size = song_info.download_url_status['probe_status']['file_size']
+        # return
+        return song_info
     '''_parsewiththirdpartapis'''
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         cookies = self.default_cookies or request_overrides.get('cookies')
         if cookies and (cookies != DEFAULT_COOKIES): return SongInfo(source=self.source, raw_data={'quality': MUSIC_QUALITIES[-1]})
-        for imp_func in [self._parsewithcggapi, self._parsewithbugpkapi, self._parsewithxiaoqinapi]:
+        for imp_func in [self._parsewithcggapi, self._parsewithbugpkapi, self._parsewithxianyuwapi, self._parsewithxiaoqinapi]:
             try:
                 song_info_flac = imp_func(search_result, request_overrides)
                 if song_info_flac.with_valid_download_url: break
@@ -211,6 +234,7 @@ class NeteaseMusicClient(BaseMusicClient):
                     lyric_result, lyric = dict(), 'NULL'
                 song_info.raw_data['lyric'] = lyric_result
                 song_info.lyric = lyric
+                if not song_info.duration or song_info.duration == '-:-:-': song_info.duration = seconds2hms(extractdurationsecondsfromlrc(song_info.lyric))
                 # --append to song_infos
                 song_infos.append(song_info)
                 # --judgement for search_size
