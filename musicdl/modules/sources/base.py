@@ -104,9 +104,9 @@ class BaseMusicClient():
     def _constructsearchurls(self, keyword: str, rule: dict = None, request_overrides: dict = None):
         raise NotImplementedError('not to be implemented')
     '''_constructuniqueworkdir'''
-    def _constructuniqueworkdir(self, keyword: str):
+    def _constructuniqueworkdir(self, keyword: str, with_time_stamp: bool = False):
         time_stamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-        work_dir = sanitize_filepath(os.path.join(self.work_dir, self.source, f'{time_stamp} {keyword.replace(" ", "")}'))
+        work_dir = sanitize_filepath(os.path.join(self.work_dir, self.source, f'{time_stamp} {keyword.replace(" ", "")}' if with_time_stamp else keyword))
         touchdir(work_dir)
         return work_dir
     '''_removeduplicates'''
