@@ -8,6 +8,7 @@ WeChat Official Account (微信公众号):
 '''
 import copy
 import random
+import base64
 from .base import BaseMusicClient
 from rich.progress import Progress
 from urllib.parse import urlencode, urlparse, parse_qs
@@ -32,13 +33,14 @@ class KuwoMusicClient(BaseMusicClient):
     def _parsewithyaohudapi(self, keyword: str, search_result: dict, request_overrides: dict = None, page_no: int = 1, num: int = 1):
         # init
         if page_no > 1: return SongInfo(source=self.source)
+        decrypt_func = lambda t: base64.b64decode(str(t).encode('utf-8')).decode('utf-8')
         request_overrides, song_id = request_overrides or {}, str(search_result['MUSICRID']).removeprefix('MUSIC_')
-        REQUEST_KEYS = ['zn54xgS3NU0cOKEO0yQ', 'xwT5YzREvIwK8LVZ72n']
+        REQUEST_KEYS = ['em41NHhnUzNOVTBjT0tFTzB5UQ==', 'eHdUNVl6UkV2SXdLOExWWjcybg==']
         MUSIC_QUALITIES = ["hires", "lossless", "SQ", "exhigh", "standard"]
         # parse
         for quality in MUSIC_QUALITIES:
             try:
-                resp = self.get(f"https://api.yaohud.cn/api/music/kuwo?key={random.choice(REQUEST_KEYS)}&msg={keyword}&n={num}&size={quality}", timeout=10, **request_overrides)
+                resp = self.get(f"https://api.yaohud.cn/api/music/kuwo?key={decrypt_func(random.choice(REQUEST_KEYS))}&msg={keyword}&n={num}&size={quality}", timeout=10, **request_overrides)
                 resp.raise_for_status()
                 download_result = resp2json(resp=resp)
                 if 'data' not in download_result: continue
@@ -133,7 +135,7 @@ class KuwoMusicClient(BaseMusicClient):
                 # --download results
                 if not isinstance(search_result, dict) or ('MUSICRID' not in search_result): continue
                 song_info = SongInfo(source=self.source)
-                song_info_flac = self._parsewiththirdpartapis(keyword=keyword, search_result=search_result, request_overrides=request_overrides, page_no=page_no, num=search_result_idx)
+                song_info_flac = self._parsewiththirdpartapis(keyword=keyword, search_result=search_result, request_overrides=request_overrides, page_no=page_no, num=search_result_idx+1)
                 for quality in KuwoMusicClient.MUSIC_QUALITIES:
                     if song_info_flac.with_valid_download_url and song_info_flac.ext in ('flac',): song_info = song_info_flac; break
                     try:

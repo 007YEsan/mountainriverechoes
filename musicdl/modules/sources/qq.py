@@ -13,8 +13,8 @@ import random
 import base64
 from .base import BaseMusicClient
 from rich.progress import Progress
-from ..utils import resp2json, seconds2hms, legalizestring, safeextractfromdict, usesearchheaderscookies, cleanlrc, SongInfo
 from ..utils.qqutils import QQMusicClientUtils, SearchType, Credential, ThirdPartVKeysAPISongFileType, SongFileType, EncryptedSongFileType
+from ..utils import resp2json, seconds2hms, legalizestring, safeextractfromdict, usesearchheaderscookies, extractdurationsecondsfromlrc, cleanlrc, SongInfo
 
 
 '''QQMusicClient'''
@@ -67,10 +67,11 @@ class QQMusicClient(BaseMusicClient):
     '''_parsewithnkiapi'''
     def _parsewithnkiapi(self, search_result: dict, request_overrides: dict = None):
         # init
+        decrypt_func = lambda t: base64.b64decode(str(t).encode('utf-8')).decode('utf-8')
         request_overrides, song_id, song_info = request_overrides or {}, search_result['mid'], SongInfo(source=self.source)
-        REQUEST_KEYS = ['28fece925439b052792a97989c870ced3803a71c6b534f71e5a53338b2d31ef8']
+        REQUEST_KEYS = ['MjhmZWNlOTI1NDM5YjA1Mjc5MmE5Nzk4OWM4NzBjZWQzODAzYTcxYzZiNTM0ZjcxZTVhNTMzMzhiMmQzMWVmOA==', 'YzRjNGY1ZmMzNmJhZDRjYWNiOTg4MzllMTRmZWE0MDI3N2IzNWVhMmViMWJhYmRhZDdiYmRlMTI4NDAwZjNiMQ==']
         # parse
-        resp = self.get(f'https://api.nki.pw/API/music_open_api.php?mid={song_id}&apikey={random.choice(REQUEST_KEYS)}', **request_overrides)
+        resp = self.get(f'https://api.nki.pw/API/music_open_api.php?mid={song_id}&apikey={decrypt_func(random.choice(REQUEST_KEYS))}', **request_overrides)
         resp.raise_for_status()
         download_result = resp2json(resp=resp)
         download_url: str = download_result['song_play_url_sq'] or download_result['song_play_url']
@@ -87,10 +88,34 @@ class QQMusicClient(BaseMusicClient):
         song_info.file_size = song_info.download_url_status['probe_status']['file_size']
         # return
         return song_info
+    '''_parsewithxianyuwapi'''
+    def _parsewithxianyuwapi(self, search_result: dict, request_overrides: dict = None):
+        # init
+        decrypt_func = lambda t: base64.b64decode(str(t).encode('utf-8')).decode('utf-8')
+        request_overrides, song_id, song_info = request_overrides or {}, search_result['mid'], SongInfo(source=self.source)
+        REQUEST_KEYS = ['c2stOTUwZTc4MTNjMzhjMmUzMWQzOWQ4NzlkMzIwNDg4OTU=', 'c2stNjJjZGIwM2UyMjcwZWIzOTY4Y2NhNzg4MTM5OWY0MTI=']
+        # parse
+        resp = self.get(f'https://apii.xianyuw.cn/api/v1/qq-music-search?id={song_id}&key={decrypt_func(random.choice(REQUEST_KEYS))}&no_url=0&br=hires', **request_overrides)
+        resp.raise_for_status()
+        download_result = resp2json(resp=resp)
+        download_url: str = download_result['data']['url']
+        if not download_url or not download_url.startswith('http'): return song_info
+        song_info = SongInfo(
+            raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(download_result, ['data', 'title'], None)),
+            singers=legalizestring(safeextractfromdict(download_result, ['data', 'author'], None)), album=legalizestring(safeextractfromdict(download_result, ['data', 'album'], None)), 
+            ext=download_url.split('?')[0].split('.')[-1], file_size='NULL', identifier=search_result['mid'], duration='-:-:-', lyric=cleanlrc(safeextractfromdict(download_result, ['data', 'lrc'], "")),
+            cover_url=safeextractfromdict(download_result, ['data', 'cover'], ""), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+        )
+        song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
+        song_info.file_size = song_info.download_url_status['probe_status']['file_size']
+        song_info.duration_s = extractdurationsecondsfromlrc(song_info.lyric)
+        song_info.duration = seconds2hms(song_info.duration_s)
+        # return
+        return song_info
     '''_parsewiththirdpartapis'''
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         if self.default_cookies or request_overrides.get('cookies'): return SongInfo(source=self.source)
-        for imp_func in [self._parsewithvkeysapi, self._parsewithnkiapi]:
+        for imp_func in [self._parsewithvkeysapi, self._parsewithnkiapi, self._parsewithxianyuwapi]:
             try:
                 song_info_flac = imp_func(search_result, request_overrides)
                 if song_info_flac.with_valid_download_url: break
