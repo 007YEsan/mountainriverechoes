@@ -62,8 +62,10 @@ class SongInfoUtils:
         easy = File(audio_path, easy=True)
         if easy is None: raise ValueError(f"Unsupported/unreadable audio file: {audio_path}")
         tags, changed = {"artist": song_info.singers, "album": song_info.album, "title": song_info.song_name}, False
-        for k, v in (tags or {}).items(): (v is None or v == 'NULL' or not v) or ((overwrite or not easy.get(k)) and (easy.__setitem__(k, v if isinstance(v, (list, tuple)) else str(v)) or (changed := True)))
-        if changed: easy.save()
+        for k, v in (tags or {}).items(): (not v or v == 'NULL') or ((overwrite or not easy.get(k)) and (easy.__setitem__(k, v if isinstance(v, (list, tuple)) else str(v)) or (changed := True)))
+        if changed: 
+            try: easy.save(v2_version=3)
+            except: easy.save()
         if song_info.cover_url and song_info.cover_url != 'NULL' and (str(song_info.cover_url).startswith('http') or os.path.exists(str(song_info.cover_url))):
             try: changed = SongInfoUtils.writecovertoaudio(audio_path, song_info.cover_url, overwrite=overwrite) or changed
             except: pass
@@ -106,11 +108,10 @@ class SongInfoUtils:
         if ext == ".mp3":
             try: id3 = ID3(audio_path)
             except Exception: id3 = ID3()
-            has_cover = any(k.startswith("APIC") for k in id3.keys())
-            if has_cover and not overwrite: return False
-            if overwrite: id3 = {k: v for k, v in id3.items() if not k.startswith("APIC")}
+            if not overwrite and any(k.startswith("APIC") for k in id3.keys()): return False
+            if overwrite: id3.delall("APIC")
             id3.add(APIC(encoding=3, mime=mime, type=3, desc="Cover", data=cover_bytes))
-            id3.save(audio_path)
+            id3.save(audio_path, v2_version=3)
             return True
         # mp4
         if cls == "MP4":
