@@ -25,10 +25,10 @@ class KuwoMusicClient(BaseMusicClient):
     def __init__(self, **kwargs):
         super(KuwoMusicClient, self).__init__(**kwargs)
         self.default_search_headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36',
+            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36',
         }
         self.default_download_headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36',
+            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36',
         }
         self.default_headers = self.default_search_headers
         self._initsession()
@@ -142,7 +142,7 @@ class KuwoMusicClient(BaseMusicClient):
                 for quality in KuwoMusicClient.MUSIC_QUALITIES:
                     if song_info_flac.with_valid_download_url and song_info_flac.ext in ('flac',): song_info = song_info_flac; break
                     query = f"user=0&corp=kuwo&source=kwplayer_ar_5.1.0.0_B_jiakong_vh.apk&p2p=1&type=convert_url2&sig=0&format={quality[1]}&rid={search_result['MUSICRID'].removeprefix('MUSIC_')}"
-                    try: (resp := self.get(f"http://mobi.kuwo.cn/mobi.s?f=kuwo&q={KuwoMusicClientUtils.encryptquery(query)}", **request_overrides)).raise_for_status(); download_result = resp.text
+                    try: (resp := self.get(f"http://mobi.kuwo.cn/mobi.s?f=kuwo&q={KuwoMusicClientUtils.encryptquery(query)}", headers={"user-agent": "okhttp/3.10.0"}, **request_overrides)).raise_for_status(); download_result = resp.text
                     except Exception: continue
                     download_url = re.search(r'http[^\s$\"]+', download_result)
                     if not download_url: continue

@@ -86,7 +86,8 @@ class KuwoMusicClientUtils:
     def subkeys(l, longs, mode):
         l2 = KuwoMusicClientUtils.bittransform(ARRAYPC1, 56, l)
         for i in HelperFunctions.rangen(16):
-            r, mask = ARRAYLS[i], ARRAYLSMASK[r]
+            r = ARRAYLS[i]
+            mask = ARRAYLSMASK[r]
             not_mask = HelperFunctions.u64(~mask)
             part1, part2 = HelperFunctions.u64((l2 & mask) << (28 - r)), (l2 & not_mask) >> r
             l2 = HelperFunctions.u64(part1 | part2)
