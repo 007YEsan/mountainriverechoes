@@ -38,7 +38,7 @@ class SongInfo:
     lyric: Optional[str] = None
     # cover
     cover_url: Optional[str] = None
-    # episodes, each item in episodes is SongInfo object, used by FM site like MissEvanMusicClient
+    # episodes, each item in episodes is SongInfo object, used by FM site like XimalayaMusicClient
     episodes: Optional[list[SongInfo]] = None
     # download url related variables
     download_url: Optional[Any] = None
