@@ -17,6 +17,8 @@ from ..utils import legalizestring, resp2json, usesearchheaderscookies, seconds2
 class TuneHubMusicClient(BaseMusicClient):
     source = 'TuneHubMusicClient'
     ALLOWED_SITES = ['netease', 'qq', 'kuwo', 'kugou', 'migu'] # it seems kuwo, kugou and migu are useless, recorded in 2026-01-28
+    MUSIC_QUALITIES = ['flac24bit', 'flac', '320k', '128k']
+    BAKA_MUSIC_QUALITIES = ['400', '380', '320', '128']
     def __init__(self, **kwargs):
         self.allowed_music_sources = list(set(kwargs.pop('allowed_music_sources', TuneHubMusicClient.ALLOWED_SITES[:-3])))
         super(TuneHubMusicClient, self).__init__(**kwargs)
@@ -74,21 +76,12 @@ class TuneHubMusicClient(BaseMusicClient):
                 if 'id' not in search_result: search_result['id'] = parse_qs(urlparse(str(search_result['url'])).query, keep_blank_values=True).get('id')[0]
                 song_info = SongInfo(source=self.source, root_source=search_result.get('platform') or search_result.get('source'))
                 if search_result.get('source') in {'netease', 'qq', 'tencent'}:
-                    MUSiC_QUALITIES = ['400', '380', '320', '128'] if search_result['source'] in {'netease'} else ['400']
-                    for br in MUSiC_QUALITIES:
+                    for br in (TuneHubMusicClient.BAKA_MUSIC_QUALITIES if search_result['source'] in {'netease'} else TuneHubMusicClient.BAKA_MUSIC_QUALITIES[:1]):
                         params = {'br': br, 'id': search_result['id'], 'server': search_result['source'], 'type': 'url'}
-                        try:
-                            resp = self.session.head('https://api.baka.plus/meting?', timeout=10, params=params, allow_redirects=True, **request_overrides)
-                            resp.raise_for_status()
-                            download_url = resp.url
-                        except:
-                            continue
-                        try:
-                            resp = self.session.head(safeextractfromdict(search_result, ['pic'], None), timeout=10, allow_redirects=True, **request_overrides)
-                            resp.raise_for_status()
-                            cover_url = resp.url
-                        except:
-                            cover_url = safeextractfromdict(search_result, ['pic'], None) or ""
+                        try: (resp := self.session.head('https://api.baka.plus/meting?', timeout=10, params=params, allow_redirects=True, **request_overrides)).raise_for_status(); download_url = resp.url
+                        except Exception: continue
+                        try: (resp := self.session.head(safeextractfromdict(search_result, ['pic'], None), timeout=10, allow_redirects=True, **request_overrides)).raise_for_status(); cover_url = resp.url
+                        except Exception: cover_url = safeextractfromdict(search_result, ['pic'], None) or ""
                         song_info = SongInfo(
                             raw_data={'search': search_result, 'download': {}, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(search_result, ['name'], None)),
                             singers=legalizestring(safeextractfromdict(search_result, ['artist'], None)), album=legalizestring(safeextractfromdict(search_result, ['album'], None)),
@@ -101,20 +94,12 @@ class TuneHubMusicClient(BaseMusicClient):
                         song_info.ext = song_info.download_url_status['probe_status']['ext'] if (song_info.download_url_status['probe_status']['ext'] and song_info.download_url_status['probe_status']['ext'] not in ('NULL', )) else song_info.ext
                         if song_info.with_valid_download_url: break
                 else:
-                    for br in ['flac24bit', 'flac', '320k', '128k']:
+                    for br in TuneHubMusicClient.MUSIC_QUALITIES:
                         params = {'br': br, 'id': search_result['id'], 'source': search_result['platform'], 'type': 'url'}
-                        try:
-                            resp = self.session.head('https://music-dl.sayqz.com/api?', timeout=10, params=params, allow_redirects=True, **request_overrides)
-                            resp.raise_for_status()
-                            download_url = resp.url
-                        except:
-                            continue
-                        try:
-                            resp = self.session.head(safeextractfromdict(search_result, ['pic'], None), timeout=10, allow_redirects=True, **request_overrides)
-                            resp.raise_for_status()
-                            cover_url = resp.url
-                        except:
-                            cover_url = safeextractfromdict(search_result, ['pic'], None) or ""
+                        try: (resp := self.session.head('https://music-dl.sayqz.com/api?', timeout=10, params=params, allow_redirects=True, **request_overrides)).raise_for_status(); download_url = resp.url
+                        except Exception: continue
+                        try: (resp := self.session.head(safeextractfromdict(search_result, ['pic'], None), timeout=10, allow_redirects=True, **request_overrides)).raise_for_status(); cover_url = resp.url
+                        except Exception: cover_url = safeextractfromdict(search_result, ['pic'], None) or ""
                         song_info = SongInfo(
                             raw_data={'search': search_result, 'download': {}, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(search_result, ['name'], None)),
                             singers=legalizestring(safeextractfromdict(search_result, ['artist'], None)), album=legalizestring(safeextractfromdict(search_result, ['album'], None)),
