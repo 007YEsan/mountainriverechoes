@@ -125,6 +125,7 @@ class XimalayaMusicClient(BaseMusicClient):
         request_overrides = request_overrides or {}
         for search_result in search_results['response']['docs']:
             if (not isinstance(search_result, dict)) or ('id' not in search_result): continue
+            song_info = SongInfo(source=self.source)
             for parser in [self._parsewithcggapi, self._parsewithofficialapiv1]:
                 try: song_info = parser(search_result=search_result, request_overrides=request_overrides)
                 except: continue
@@ -135,7 +136,7 @@ class XimalayaMusicClient(BaseMusicClient):
         return song_infos
     '''_parsebyalbum'''
     def _parsebyalbum(self, search_results, song_infos: list = [], request_overrides: dict = None, progress: Progress = None):
-        request_overrides, song_info = request_overrides or {}, SongInfo(source=self.source)
+        request_overrides = request_overrides or {}
         for search_result in search_results['response']['docs']:
             if (not isinstance(search_result, dict)) or ('id' not in search_result): continue
             download_results, page_size, tracks, unique_track_ids = [], 200, [], set()
@@ -159,6 +160,7 @@ class XimalayaMusicClient(BaseMusicClient):
                 if track_idx > 0:
                     progress.advance(download_album_pid, 1)
                     progress.update(download_album_pid, description=f"{self.source}._parsebyalbum >>> ({track_idx}/{len(tracks)}) episodes completed in album {search_result['id']}")
+                eps_info = SongInfo(source=self.source)
                 for parser in [self._parsewithcggapi, self._parsewithofficialapiv1]:
                     try: eps_info = parser(search_result=track, request_overrides=request_overrides)
                     except: continue
