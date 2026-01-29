@@ -11,7 +11,6 @@ from .jcpoo import JCPOOMusicClient
 from .flmp3 import FLMP3MusicClient
 from .htqyy import HTQYYMusicClient
 from .tidal import TIDALMusicClient
-from .lizhi import LizhiMusicClient
 from .apple import AppleMusicClient
 from .kugou import KugouMusicClient
 from .twot58 import TwoT58MusicClient
@@ -31,7 +30,7 @@ from .qianqian import QianqianMusicClient
 from .bilibili import BilibiliMusicClient
 from .missevan import MissEvanMusicClient
 from .yinyuedao import YinyuedaoMusicClient
-from ..audiobooks import XimalayaMusicClient
+from ..audiobooks import XimalayaMusicClient, LizhiMusicClient
 from ..common import GDStudioMusicClient, TuneHubMusicClient, MP3JuiceMusicClient, MyFreeMP3MusicClient, JBSouMusicClient
 
 
