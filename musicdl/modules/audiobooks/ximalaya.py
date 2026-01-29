@@ -69,6 +69,29 @@ class XimalayaMusicClient(BaseMusicClient):
         plaintext = cipher.decrypt(ciphertext)
         plaintext = re.sub(r"[^\x20-\x7E]", "", plaintext.decode("utf-8"))
         return plaintext
+    '''_parsewithcggapi'''
+    def _parsewithcggapi(self, search_result: dict, request_overrides: dict = None):
+        # init
+        request_overrides, song_id, song_info = request_overrides or {}, search_result.get('id') or search_result.get('trackId'), SongInfo(source=self.source)
+        # parse
+        resp = self.get(f"https://api-v2.cenguigui.cn/api/music/ximalaya.php?trackId={song_id}", **request_overrides)
+        resp.raise_for_status()
+        download_result = resp2json(resp=resp)
+        if ('0 MB' in download_result['size']) or (not download_result.get('url')): return song_info
+        download_url = download_result['url']
+        file_size = re.sub(r"^\s*([0-9]*\.?[0-9]+)\s*([A-Za-z]+)\s*$", lambda m: f"{float(m.group(1)):.2f} {m.group(2)}", download_result['size'])
+        m = re.match(r'^\s*([0-9]*\.?[0-9]+)\s*([KMGT]?B)\s*$', download_result['size'])
+        file_size_bytes = int(float(m.group(1)) * {'B': 1, 'KB': 1024, 'MB': 1024**2, 'GB': 1024**3, 'TB': 1024**4}[m.group(2).upper()])
+        song_info = SongInfo(
+            raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('title')), singers=legalizestring(search_result.get('nickname')),
+            album=legalizestring(search_result.get('album_title') or search_result.get('albumTitle')), ext=download_url.split('?')[0].split('.')[-1], file_size_bytes=file_size_bytes, file_size=file_size, identifier=song_id,
+            duration_s=int(float(search_result.get('duration', 0) or 0)), duration=seconds2hms(search_result.get('duration', 0) or 0), lyric=None, cover_url=safeextractfromdict(search_result, ['cover_path'], None),
+            download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+        )
+        song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
+        song_info.file_size = song_info.download_url_status['probe_status']['file_size']
+        song_info.ext = song_info.download_url_status['probe_status']['ext'] if (song_info.download_url_status['probe_status']['ext'] and song_info.download_url_status['probe_status']['ext'] not in ('NULL',)) else song_info.ext
+        return song_info
     '''_parsewithofficialapiv1'''
     def _parsewithofficialapiv1(self, search_result: dict, request_overrides: dict = None):
         # init
@@ -98,11 +121,11 @@ class XimalayaMusicClient(BaseMusicClient):
         # return
         return song_info
     '''_parsebytrack'''
-    def _parsebytrack(self, search_results, song_infos: list = [], request_overrides: dict = None):
+    def _parsebytrack(self, search_results, song_infos: list = [], request_overrides: dict = None, progress: Progress = None):
         request_overrides = request_overrides or {}
         for search_result in search_results['response']['docs']:
             if (not isinstance(search_result, dict)) or ('id' not in search_result): continue
-            for parser in [self._parsewithofficialapiv1]:
+            for parser in [self._parsewithcggapi, self._parsewithofficialapiv1]:
                 try: song_info = parser(search_result=search_result, request_overrides=request_overrides)
                 except: continue
                 if song_info.with_valid_download_url: break
@@ -111,14 +134,14 @@ class XimalayaMusicClient(BaseMusicClient):
             if self.strict_limit_search_size_per_page and len(song_infos) >= self.search_size_per_page: break
         return song_infos
     '''_parsebyalbum'''
-    def _parsebyalbum(self, search_results, song_infos: list = [], request_overrides: dict = None):
+    def _parsebyalbum(self, search_results, song_infos: list = [], request_overrides: dict = None, progress: Progress = None):
         request_overrides, song_info = request_overrides or {}, SongInfo(source=self.source)
         for search_result in search_results['response']['docs']:
             if (not isinstance(search_result, dict)) or ('id' not in search_result): continue
             download_results, page_size, tracks, unique_track_ids = [], 200, [], set()
             song_info = SongInfo(
                 raw_data={'search': search_result, 'download': download_results, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('title')), singers=legalizestring(search_result.get('nickname')),
-                album=f"{search_result.get('tracks', 0) or 0} Episodes", ext=None, file_size=None, identifier=search_result['id'], duration=None, lyric=None, cover_url=safeextractfromdict(search_result, ['cover_path'], None),
+                album=f"{search_result.get('tracks', 0) or 0} Episodes", ext=None, file_size=None, identifier=search_result['id'], duration='-:-:-', lyric=None, cover_url=safeextractfromdict(search_result, ['cover_path'], None),
                 download_url=None, download_url_status={}, episodes=[],
             )
             for page_num in range(1, math.ceil(int(search_result.get('tracks', 0) or 0) / 200) + 1):
@@ -131,18 +154,24 @@ class XimalayaMusicClient(BaseMusicClient):
                     if track.get('trackId') in unique_track_ids: continue
                     unique_track_ids.add(track.get('trackId'))
                     tracks.append(track)
-            for track in tracks:
-                for parser in [self._parsewithofficialapiv1]:
+            download_album_pid = progress.add_task(f"{self.source}._parsebyalbum >>> (0/{len(tracks)}) episodes completed in album {search_result['id']}", total=len(tracks))
+            for track_idx, track in enumerate(tracks):
+                if track_idx > 0:
+                    progress.advance(download_album_pid, 1)
+                    progress.update(download_album_pid, description=f"{self.source}._parsebyalbum >>> ({track_idx}/{len(tracks)}) episodes completed in album {search_result['id']}")
+                for parser in [self._parsewithcggapi, self._parsewithofficialapiv1]:
                     try: eps_info = parser(search_result=track, request_overrides=request_overrides)
                     except: continue
                     if eps_info.with_valid_download_url: break
                 if not eps_info.with_valid_download_url: continue
                 song_info.episodes.append(eps_info)
+            progress.advance(download_album_pid, 1)
+            progress.update(download_album_pid, description=f"{self.source}._parsebyalbum >>> ({track_idx+1}/{len(tracks)}) episodes completed in album {search_result['id']}")
             if not song_info.with_valid_download_url: continue
-            song_info.duration_s = sum([eps.duration_s for eps in song_info.episodes])
-            song_info.duration = seconds2hms(song_info.duration_s)
-            song_info.file_size_bytes = sum([eps.file_size_bytes for eps in song_info.episodes])
-            song_info.file_size = byte2mb(song_info.file_size_bytes)
+            try: song_info.duration_s = sum([eps.duration_s for eps in song_info.episodes]); song_info.duration = seconds2hms(song_info.duration_s)
+            except Exception: pass
+            try: song_info.file_size_bytes = sum([eps.file_size_bytes for eps in song_info.episodes]); song_info.file_size = byte2mb(song_info.file_size_bytes)
+            except Exception: pass
             song_infos.append(song_info)
             if self.strict_limit_search_size_per_page and len(song_infos) >= self.search_size_per_page: break
         return song_infos
@@ -160,7 +189,7 @@ class XimalayaMusicClient(BaseMusicClient):
             # --parse based on search type
             search_type = parse_qs(urlparse(search_url).query, keep_blank_values=True).get('core')[0]
             parsers = {'album': self._parsebyalbum, 'track': self._parsebytrack}
-            parsers[search_type](search_results, song_infos=song_infos, request_overrides=request_overrides)
+            parsers[search_type](search_results, song_infos=song_infos, request_overrides=request_overrides, progress=progress)
             # --update progress
             progress.update(progress_id, description=f"{self.source}.search >>> {search_url} (Success)")
         # failure

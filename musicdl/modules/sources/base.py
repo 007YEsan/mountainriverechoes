@@ -18,6 +18,7 @@ from rich.text import Text
 from itertools import chain
 from datetime import datetime
 from rich.progress import Task
+from collections import defaultdict
 from fake_useragent import UserAgent
 from pathvalidate import sanitize_filepath
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -161,12 +162,14 @@ class BaseMusicClient():
         song_infos = list(chain.from_iterable(song_infos.values()))
         song_infos = self._removeduplicates(song_infos=song_infos)
         work_dir = self._constructuniqueworkdir(keyword=keyword)
-        for song_info in song_infos: song_info.work_dir = work_dir
+        for song_info in song_infos:
+            song_info.work_dir = work_dir; episodes = song_info.episodes if isinstance(song_info.episodes, list) else []
+            for eps_info in episodes: eps_info.work_dir = sanitize_filepath(os.path.join(work_dir, song_info.song_name)); touchdir(work_dir)
         # logging
         if len(song_infos) > 0:
-            work_dir = song_infos[0].work_dir
-            touchdir(work_dir)
-            self._savetopkl([s.todict() for s in song_infos], os.path.join(work_dir, 'search_results.pkl'))
+            work_dir_to_song_info, work_dir = defaultdict(list), ', '.join(list(set([str(s.work_dir) for s in song_infos])))
+            for s in song_infos: s.work_dir = str(s.work_dir); work_dir_to_song_info[s.work_dir].append(s.todict())
+            for w, items in work_dir_to_song_info.items(): touchdir(w); self._savetopkl(items, os.path.join(w, "search_results.pkl"))
         else:
             work_dir = self.work_dir
         self.logger_handle.info(f'Finished searching music files using {self.source}. Search results have been saved to {work_dir}, valid items: {len(song_infos)}.', disable_print=self.disable_print)
@@ -175,7 +178,7 @@ class BaseMusicClient():
         return song_infos
     '''_download'''
     @usedownloadheaderscookies
-    def _download(self, song_info: SongInfo, request_overrides: dict = None, downloaded_song_infos: list = [], progress: Progress = None, song_progress_id: int = 0):
+    def _download(self, song_info: SongInfo, request_overrides: dict = None, downloaded_song_infos: list[SongInfo] = [], progress: Progress = None, song_progress_id: int = 0):
         request_overrides = request_overrides or {}
         if song_info.downloaded_contents:
             try:
@@ -215,7 +218,7 @@ class BaseMusicClient():
         return downloaded_song_infos
     '''download'''
     @usedownloadheaderscookies
-    def download(self, song_infos: list[SongInfo], num_threadings=5, request_overrides: dict = None):
+    def download(self, song_infos: list[SongInfo], num_threadings: int = 5, request_overrides: dict = None):
         # init
         request_overrides = request_overrides or {}
         shortenpathsinsonginfos(song_infos=song_infos)
@@ -240,9 +243,9 @@ class BaseMusicClient():
                     progress.update(songs_progress_id, description=f"{self.source}.download >>> completed ({num_downloaded_songs}/{len(song_infos)})")
         # logging
         if len(downloaded_song_infos) > 0:
-            work_dir = downloaded_song_infos[0]['work_dir']
-            touchdir(work_dir)
-            self._savetopkl([s.todict() for s in downloaded_song_infos], os.path.join(work_dir, 'download_results.pkl'))
+            work_dir_to_song_info, work_dir = defaultdict(list), ', '.join(list(set([str(s.work_dir) for s in downloaded_song_infos])))
+            for s in downloaded_song_infos: s.work_dir = str(s.work_dir); work_dir_to_song_info[s.work_dir].append(s.todict())
+            for w, items in work_dir_to_song_info.items(): touchdir(w); self._savetopkl(items, os.path.join(w, "download_results.pkl"))
         else:
             work_dir = self.work_dir
         self.logger_handle.info(f'Finished downloading music files using {self.source}. Download results have been saved to {work_dir}, valid downloads: {len(downloaded_song_infos)}.', disable_print=self.disable_print)

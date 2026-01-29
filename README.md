@@ -241,10 +241,10 @@ The demonstration is as follows,
 
 <div align="center">
   <div>
-    <img src="https://github.com/CharlesPikachu/musicdl/raw/master/docs/screenshot.png" width="600"/>
+    <img src="https://github.com/CharlesPikachu/musicdl/raw/master/docs/screenshot/screenshot.png" width="600"/>
   </div>
   <div>
-    <img src="https://github.com/CharlesPikachu/musicdl/raw/master/docs/screenshot.gif" width="600"/>
+    <img src="https://github.com/CharlesPikachu/musicdl/raw/master/docs/screenshot/screenshot.gif" width="600"/>
   </div>
 </div>
 <br />
@@ -464,6 +464,48 @@ If the cookies you supply belong to a non-VIP Quark account, the download speed 
 Also note that Quark Drive will first save the music file to your own Quark account (usually in the "From: Shares (来自: 分享)" folder) and then start the download.
 Therefore, if your Quark storage is insufficient, the download may fail.
 
+#### Ximalaya Audio/Radio Download
+
+Musicdl currently also supports searching for and downloading individual audio tracks, as well as entire albums, from long-form audio platforms (*e.g.*, Ximalaya and Lizhi FM) that host podcasts and audiobooks. 
+By default, both modes start simultaneously, and the top few search results for each mode are shown based on the input keyword.
+
+A simple usage example is shown below,
+
+```python
+from musicdl import musicdl
+
+init_music_clients_cfg = {'XimalayaMusicClient': {'search_size_per_source': 2}}
+music_client = musicdl.MusicClient(music_sources=['XimalayaMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
+music_client.startcmdui()
+```
+
+The result of running the code above looks like this,
+
+<div align="center">
+  <div>
+    <img src="https://github.com/CharlesPikachu/musicdl/raw/master/docs/screenshot/ximalayascreenshot.png" width="600"/>
+  </div>
+</div>
+<br />
+
+You can also choose the search type yourself by setting `allowed_search_types`, for example:
+
+```python
+from musicdl import musicdl
+
+# only search by track
+init_music_clients_cfg = {'XimalayaMusicClient': {'search_size_per_source': 2, 'allowed_search_types': ['track']}}
+# only search by album
+init_music_clients_cfg = {'XimalayaMusicClient': {'search_size_per_source': 2, 'allowed_search_types': ['album']}}
+# instance music_client
+music_client = musicdl.MusicClient(music_sources=['XimalayaMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
+# start
+music_client.startcmdui()
+```
+
+Please note that the code above only supports downloading free albums and audio. 
+If you need to download paid audio, please configure cookies in `init_music_clients_cfg`, just as you would with other music clients.
+
 #### TIDAL High-Quality Music Download
 
 If you want to download lossless-quality music from [TIDAL](https://tidal.com/), you need to make sure that [PyAV](https://github.com/PyAV-Org/PyAV) is available or that [FFmpeg](https://www.ffmpeg.org/) is in your environment variables, 
@@ -610,7 +652,7 @@ The screenshot of the running result is as follows:
 
 <div align="center">
   <div>
-    <img src="https://github.com/CharlesPikachu/musicdl/raw/master/docs/gdstudioscreenshot.png" width="600"/>
+    <img src="https://github.com/CharlesPikachu/musicdl/raw/master/docs/screenshot/gdstudioscreenshot.png" width="600"/>
   </div>
 </div>
 <br />
@@ -680,7 +722,7 @@ The screenshot of the running result is as follows:
 
 <div align="center">
   <div>
-    <img src="https://github.com/CharlesPikachu/musicdl/raw/master/docs/tunehubscreenshot.png" width="600"/>
+    <img src="https://github.com/CharlesPikachu/musicdl/raw/master/docs/screenshot/tunehubscreenshot.png" width="600"/>
   </div>
 </div>
 <br />
