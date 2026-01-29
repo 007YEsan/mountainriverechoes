@@ -483,7 +483,7 @@ The result of running the code above looks like this,
 
 <div align="center">
   <div>
-    <img src="https://github.com/CharlesPikachu/musicdl/raw/master/docs/screenshot/ximalayascreenshot.png" width="600"/>
+    <img src="https://github.com/CharlesPikachu/musicdl/raw/master/docs/screenshot/ximalayascreenshot.gif" width="600"/>
   </div>
 </div>
 <br />
