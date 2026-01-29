@@ -6,12 +6,12 @@ Author:
 WeChat Official Account (微信公众号):
     Charles的皮卡丘
 '''
+import re
 import copy
 from contextlib import suppress
 from urllib.parse import urlencode
 from rich.progress import Progress
 from ..sources import BaseMusicClient
-from datetime import datetime, timezone, timedelta
 from ..utils import legalizestring, resp2json, seconds2hms, usesearchheaderscookies, safeextractfromdict, SongInfo
 
 
@@ -57,6 +57,34 @@ class LizhiMusicClient(BaseMusicClient):
                 pass
         # return
         return search_urls
+    '''_parsewithofficialapiv1'''
+    def _parsewithofficialapiv1(self, search_result: dict, request_overrides: dict = None):
+        # init
+        request_overrides, song_id, song_info = request_overrides or {}, safeextractfromdict(search_result, ['voiceInfo', 'voiceId'], ''), SongInfo(source=self.source)
+        # parse
+        resp = self.get(f'https://m.lizhi.fm/vodapi/voice/info/{song_id}', **request_overrides)
+        resp.raise_for_status()
+        download_result = resp2json(resp=resp)
+        download_url = safeextractfromdict(download_result, ['data', 'userVoice', 'voicePlayProperty', 'trackUrl'], '')
+        if not download_url or not str(download_url).startswith('http'):
+            image_url = safeextractfromdict(download_result, ['data', 'userVoice', 'voiceInfo', 'imageUrl'], "") or ""
+            m = re.search(r'/(\d{4}/\d{2}/\d{2})(?:/|$)', str(image_url))
+            if not m: return song_info
+            download_url = f'https://cdn101.lizhi.fm/audio/{m.group(1)}/{song_id}_sd.m4a' # cdn101 is better than cdn5
+        for quality in LizhiMusicClient.MUSIC_QUALITIES:
+            download_url: str = (download_url[:-7] + quality).replace('//cdn5.lizhi.fm/audio/', '//cdn101.lizhi.fm/audio/')
+            song_info = SongInfo(
+                raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(download_result, ['data', 'userVoice', 'voiceInfo', 'name'], '')),
+                singers=legalizestring(safeextractfromdict(download_result, ['data', 'userVoice', 'userInfo', 'name'], '')), album='NULL', ext=download_url.split('?')[0].split('.')[-1], file_size='NULL', identifier=song_id, 
+                duration_s=safeextractfromdict(download_result, ['data', 'userVoice', 'voiceInfo', 'duration'], ''), duration=seconds2hms(safeextractfromdict(download_result, ['data', 'userVoice', 'voiceInfo', 'duration'], '')), 
+                lyric=None, cover_url=safeextractfromdict(download_result, ['data', 'userVoice', 'voiceInfo', 'imageUrl'], None), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+            )
+            if song_info.with_valid_download_url: break
+        if not song_info.with_valid_download_url: return song_info
+        song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
+        song_info.file_size = song_info.download_url_status['probe_status']['file_size']
+        # return
+        return song_info
     '''_parsebytrack'''
     def _parsebytrack(self, search_results, song_infos: list = [], request_overrides: dict = None, progress: Progress = None):
         request_overrides = request_overrides or {}
@@ -65,11 +93,12 @@ class LizhiMusicClient(BaseMusicClient):
             song_info, song_id = SongInfo(source=self.source), safeextractfromdict(search_result, ['voiceInfo', 'voiceId'], '')
             download_url = safeextractfromdict(search_result, ['voicePlayProperty', 'trackUrl'], '')
             if not download_url or not str(download_url).startswith('http'):
-                create_time = safeextractfromdict(search_result, ['voiceInfo', 'createTime'], 0)
-                if not create_time: continue
-                download_url = f'http://cdn5.lizhi.fm/audio/{datetime.fromtimestamp(int(float(create_time)), tz=timezone(timedelta(hours=8))).strftime("%Y/%m/%d")}/{song_id}_sd.m4a'
+                image_url = safeextractfromdict(search_result, ['voiceInfo', 'imageUrl'], "") or ""
+                m = re.search(r'/(\d{4}/\d{2}/\d{2})(?:/|$)', str(image_url))
+                if not m: continue
+                download_url = f'https://cdn101.lizhi.fm/audio/{m.group(1)}/{song_id}_sd.m4a' # cdn101 is better than cdn5
             for quality in LizhiMusicClient.MUSIC_QUALITIES:
-                download_url: str = download_url[:-7] + quality
+                download_url: str = (download_url[:-7] + quality).replace('//cdn5.lizhi.fm/audio/', '//cdn101.lizhi.fm/audio/')
                 song_info = SongInfo(
                     raw_data={'search': search_result, 'download': {}, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(search_result, ['voiceInfo', 'name'], '')),
                     singers=legalizestring(safeextractfromdict(search_result, ['userInfo', 'name'], '')), album='NULL', ext=download_url.split('?')[0].split('.')[-1], file_size='NULL', identifier=song_id, 
