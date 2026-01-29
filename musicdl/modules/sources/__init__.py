@@ -32,7 +32,7 @@ from .bilibili import BilibiliMusicClient
 from .missevan import MissEvanMusicClient
 from .yinyuedao import YinyuedaoMusicClient
 from ..audiobooks import XimalayaMusicClient
-from ..common import GDStudioMusicClient, TuneHubMusicClient, MP3JuiceMusicClient, MyFreeMP3MusicClient
+from ..common import GDStudioMusicClient, TuneHubMusicClient, MP3JuiceMusicClient, MyFreeMP3MusicClient, JBSouMusicClient
 
 
 '''MusicClientBuilder'''
@@ -46,7 +46,7 @@ class MusicClientBuilder(BaseModuleBuilder):
         # Audio / Radio
         'XimalayaMusicClient': XimalayaMusicClient, 'LizhiMusicClient': LizhiMusicClient, 'MissEvanMusicClient': MissEvanMusicClient,
         # Aggregators / Multi-Source Gateways
-        'MP3JuiceMusicClient': MP3JuiceMusicClient, 'TuneHubMusicClient': TuneHubMusicClient, 'GDStudioMusicClient': GDStudioMusicClient, 'MyFreeMP3MusicClient': MyFreeMP3MusicClient,
+        'MP3JuiceMusicClient': MP3JuiceMusicClient, 'TuneHubMusicClient': TuneHubMusicClient, 'GDStudioMusicClient': GDStudioMusicClient, 'MyFreeMP3MusicClient': MyFreeMP3MusicClient, 'JBSouMusicClient': JBSouMusicClient,
         # Unofficial Download Sites / Scrapers
         'MituMusicClient': MituMusicClient, 'BuguyyMusicClient': BuguyyMusicClient, 'GequbaoMusicClient': GequbaoMusicClient, 'YinyuedaoMusicClient': YinyuedaoMusicClient, 'FLMP3MusicClient': FLMP3MusicClient,
         'FangpiMusicClient': FangpiMusicClient, 'FiveSongMusicClient': FiveSongMusicClient, 'KKWSMusicClient': KKWSMusicClient, 'GequhaiMusicClient': GequhaiMusicClient, 'LivePOOMusicClient': LivePOOMusicClient,
