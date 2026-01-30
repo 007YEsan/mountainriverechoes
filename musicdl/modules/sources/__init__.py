@@ -28,9 +28,8 @@ from .fivesong import FiveSongMusicClient
 from .fivesing import FiveSingMusicClient
 from .qianqian import QianqianMusicClient
 from .bilibili import BilibiliMusicClient
-from .missevan import MissEvanMusicClient
 from .yinyuedao import YinyuedaoMusicClient
-from ..audiobooks import XimalayaMusicClient, LizhiMusicClient
+from ..audiobooks import XimalayaMusicClient, LizhiMusicClient, QingtingMusicClient
 from ..common import GDStudioMusicClient, TuneHubMusicClient, MP3JuiceMusicClient, MyFreeMP3MusicClient, JBSouMusicClient
 
 
@@ -43,7 +42,7 @@ class MusicClientBuilder(BaseModuleBuilder):
         # Global Streaming / Indie
         'YouTubeMusicClient': YouTubeMusicClient, 'JooxMusicClient': JooxMusicClient, 'AppleMusicClient': AppleMusicClient, 'JamendoMusicClient': JamendoMusicClient, 'TIDALMusicClient': TIDALMusicClient,
         # Audio / Radio
-        'XimalayaMusicClient': XimalayaMusicClient, 'LizhiMusicClient': LizhiMusicClient, 'MissEvanMusicClient': MissEvanMusicClient,
+        'XimalayaMusicClient': XimalayaMusicClient, 'LizhiMusicClient': LizhiMusicClient, 'QingtingMusicClient': QingtingMusicClient,
         # Aggregators / Multi-Source Gateways
         'MP3JuiceMusicClient': MP3JuiceMusicClient, 'TuneHubMusicClient': TuneHubMusicClient, 'GDStudioMusicClient': GDStudioMusicClient, 'MyFreeMP3MusicClient': MyFreeMP3MusicClient, 'JBSouMusicClient': JBSouMusicClient,
         # Unofficial Download Sites / Scrapers
