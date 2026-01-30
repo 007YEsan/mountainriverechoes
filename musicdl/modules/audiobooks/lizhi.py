@@ -90,6 +90,9 @@ class LizhiMusicClient(BaseMusicClient):
                 duration=seconds2hms(safeextractfromdict(download_result, ['data', 'userVoice', 'voiceInfo', 'duration'], '')), lyric=None, cover_url=safeextractfromdict(download_result, ['data', 'userVoice', 'voiceInfo', 'imageUrl'], None), 
                 download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
             )
+            if not song_info.with_valid_download_url: song_info.update(dict(
+                download_url=download_url.replace('//cdn101.lizhi.fm/audio/', '//cdn5.lizhi.fm/audio/'), download_url_status=self.audio_link_tester.test(download_url.replace('//cdn101.lizhi.fm/audio/', '//cdn5.lizhi.fm/audio/'), request_overrides)
+            ))
             if song_info.with_valid_download_url: break
         if not song_info.with_valid_download_url: return song_info
         song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
@@ -117,6 +120,9 @@ class LizhiMusicClient(BaseMusicClient):
                     duration=seconds2hms(safeextractfromdict(search_result, ['voiceInfo', 'duration'], '')), lyric=None, cover_url=safeextractfromdict(search_result, ['voiceInfo', 'imageUrl'], None), 
                     download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
                 )
+                if not song_info.with_valid_download_url: song_info.update(dict(
+                    download_url=download_url.replace('//cdn101.lizhi.fm/audio/', '//cdn5.lizhi.fm/audio/'), download_url_status=self.audio_link_tester.test(download_url.replace('//cdn101.lizhi.fm/audio/', '//cdn5.lizhi.fm/audio/'), request_overrides)
+                ))
                 if song_info.with_valid_download_url: break
             if not song_info.with_valid_download_url: continue
             song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
@@ -174,6 +180,9 @@ class LizhiMusicClient(BaseMusicClient):
                             duration=seconds2hms(safeextractfromdict(track, ['voiceInfo', 'duration'], '')), lyric=None, cover_url=safeextractfromdict(track, ['voiceInfo', 'imageUrl'], None), 
                             download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
                         )
+                        if not eps_info.with_valid_download_url: eps_info.update(dict(
+                            download_url=download_url.replace('//cdn101.lizhi.fm/audio/', '//cdn5.lizhi.fm/audio/'), download_url_status=self.audio_link_tester.test(download_url.replace('//cdn101.lizhi.fm/audio/', '//cdn5.lizhi.fm/audio/'), request_overrides)
+                        ))
                         if eps_info.with_valid_download_url: break
                     if not eps_info.with_valid_download_url: continue
                     eps_info.download_url_status['probe_status'] = self.audio_link_tester.probe(eps_info.download_url, request_overrides)
@@ -182,7 +191,7 @@ class LizhiMusicClient(BaseMusicClient):
             if not song_info.with_valid_download_url: continue
             try: song_info.duration_s = sum([eps.duration_s for eps in song_info.episodes]); song_info.duration = seconds2hms(song_info.duration_s)
             except Exception: pass
-            try: song_info.file_size = str(sum([float(eps.file_size.removesuffix('MB').strip()) for eps in song_info.episodes])) + ' MB'
+            try: song_info.file_size = str(round(sum([float(eps.file_size.removesuffix('MB').strip()) for eps in song_info.episodes]), 2)) + ' MB'
             except Exception: pass
             song_infos.append(song_info)
             if self.strict_limit_search_size_per_page and len(song_infos) >= self.search_size_per_page: break
