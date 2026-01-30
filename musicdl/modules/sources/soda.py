@@ -7,6 +7,7 @@ WeChat Official Account (微信公众号):
     Charles的皮卡丘
 '''
 import re
+import os
 import copy
 import json_repair
 from pathlib import Path
@@ -38,6 +39,7 @@ class SodaMusicClient(BaseMusicClient):
         output_filepath = Path(song_info.save_path)
         output_filepath = output_filepath.parent / f'{output_filepath.stem}.m4a'
         AudioDecryptor.decrypt(file_data=file_data, play_auth=song_info.raw_data['play_auth'], output_filepath=str(output_filepath))
+        if not os.path.samefile(song_info.save_path, str(output_filepath)): os.remove(song_info.save_path)
         return downloaded_song_infos
     '''_constructsearchurls'''
     def _constructsearchurls(self, keyword: str, rule: dict = None, request_overrides: dict = None):

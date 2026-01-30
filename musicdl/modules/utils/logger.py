@@ -20,6 +20,7 @@ from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.layout.containers import HSplit, Window
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.formatted_text import ANSI, to_formatted_text
+from prompt_toolkit.formatted_text.utils import split_lines, fragment_list_width
 
 
 '''settings'''
@@ -221,37 +222,46 @@ def cursorpickintable(headers, rows, row_ids, no_trunc_cols=None, terminal_right
         return smarttrunctable(headers=view_headers, rows=view_rows, no_trunc_cols=no_trunc_cols, terminal_right_space_len=terminal_right_space_len)
     def render():
         table = buildtablestr()
-        lines = table.splitlines(True)
+        table_frags = to_formatted_text(ANSI(table))
         cols = shutil.get_terminal_size().columns
-        highlight_line, out = 3 + (cur[0] - view_start[0]) * 2, []
-        for li, line in enumerate(lines):
-            line = line.rstrip("\n").ljust(cols + 2) + "\n"
-            frags = to_formatted_text(ANSI(line))
-            if li == highlight_line: frags = [((s + " reverse") if s else "reverse", t) for (s, t) in frags]
-            out.extend(frags)
-        out.extend(to_formatted_text(ANSI("\nUse ↑/↓ to move, <space> to toggle, a: select all, i: invert, <enter> to confirm, q/Esc to cancel.\n")))
+        highlight_line, out, line_count = 3 + (cur[0] - view_start[0]) * 2, [], 0
+        for li, line_frags in enumerate(split_lines(table_frags)):
+            if li == highlight_line: line_frags = [(((style + " reverse").strip() if style else "reverse"), text, *rest) for style, text, *rest in line_frags]
+            pad = cols - fragment_list_width(line_frags)
+            if pad > 0: line_frags = list(line_frags) + [("", " " * pad)]
+            out.extend(line_frags); out.append(("", "\n")); line_count += 1
+        help_frags = to_formatted_text(ANSI("\nUse ↑/↓ to move, <space> to toggle, a: select all, i: invert, <enter> to confirm, q/Esc to cancel.\n"))
+        for line_frags in split_lines(help_frags):
+            pad = cols - fragment_list_width(line_frags)
+            if pad > 0: line_frags = list(line_frags) + [("", " " * pad)]
+            out.extend(line_frags); out.append(("", "\n")); line_count += 1
+        term_lines = shutil.get_terminal_size().lines
+        for _ in range(max(0, term_lines - line_count - 1)): out.append(("", " " * cols + "\n"))
         return out
     @kb.add("up")
     def _(_event):
         if cur[0] > 0: cur[0] -= 1
+        _event.app.invalidate()
     @kb.add("down")
     def _(_event):
         if cur[0] < len(rows) - 1: cur[0] += 1
+        _event.app.invalidate()
     @kb.add(" ")
     def _(_event):
         rid = row_ids[cur[0]]
         if rid in picked: picked.remove(rid)
         else: picked.add(rid)
+        _event.app.invalidate()
     @kb.add("a")
     @kb.add("A")
-    def _(_event): picked.clear(); picked.update(row_ids)
+    def _(_event): picked.clear(); picked.update(row_ids); _event.app.invalidate()
     @kb.add("i")
     @kb.add("I")
-    def _(_event): picked_sym = set(row_ids); picked_sym.difference_update(picked); picked.clear(); picked.update(picked_sym)
+    def _(_event): picked_sym = set(row_ids); picked_sym.difference_update(picked); picked.clear(); picked.update(picked_sym); _event.app.invalidate()
     @kb.add("enter")
-    def _(_event): ordered = [rid for rid in row_ids if rid in picked]; _event.app.exit(result=ordered)
+    def _(_event): ordered = [rid for rid in row_ids if rid in picked]; _event.app.exit(result=ordered); _event.app.invalidate()
     @kb.add("escape")
     @kb.add("q")
-    def _(_event): _event.app.exit(result=[])
+    def _(_event): _event.app.exit(result=[]); _event.app.invalidate()
     app = Application(layout=Layout(HSplit([Window(FormattedTextControl(render), wrap_lines=False)])), key_bindings=kb, full_screen=True)
     return app.run()
