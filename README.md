@@ -97,6 +97,7 @@ If you are a copyright or rights holder and believe that this repository infring
 |                                          | [TIDALMusicClient](https://tidal.com/)                             | [TIDAL (提供HiFi音质的流媒体平台)](https://tidal.com/)                       | ✅        | ✅         | [tidal.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/tidal.py)          |
 |                                          | [YouTubeMusicClient](https://music.youtube.com/)                   | [油管音乐](https://music.youtube.com/)                                       | ✅        | ✅         | [youtube.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/youtube.py)      |
 | **Audio / Radio**                        | [LizhiMusicClient](https://www.lizhi.fm/)                          | [荔枝FM](https://www.lizhi.fm/)                                              | ✅        | ✅         | [lizhi.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/lizhi.py)          |
+|                                          | [QingtingMusicClient](https://www.qtfm.cn/)                        | [蜻蜓FM](https://www.qtfm.cn/)                                               | ✅        | ✅         | [qingting.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/qingting.py)    |
 |                                          | [XimalayaMusicClient](https://www.ximalaya.com/)                   | [喜马拉雅](https://www.ximalaya.com/)                                        | ✅        | ✅         | [ximalaya.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/ximalaya.py)    |
 | **Aggregators / Multi-Source Gateways**  | [GDStudioMusicClient](https://music.gdstudio.xyz/)                 | [GD音乐台 (Spotify, Qobuz等10个音乐源)](https://music.gdstudio.xyz/)         | ✅        | ✅         | [gdstudio.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/common/gdstudio.py)     |
 |                                          | [JBSouMusicClient](https://www.jbsou.cn/)                          | [煎饼搜 (QQ网易云酷我酷狗音乐源)](https://www.jbsou.cn/)                     | ✅        | ✅         | [jbsou.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/common/jbsou.py)           |
@@ -466,7 +467,7 @@ If the cookies you supply belong to a non-VIP Quark account, the download speed 
 Also note that Quark Drive will first save the music file to your own Quark account (usually in the "From: Shares (来自: 分享)" folder) and then start the download.
 Therefore, if your Quark storage is insufficient, the download may fail.
 
-#### Ximalaya Audio/Radio Download
+#### XimalayaFM and LizhiFM Audio/Radio Download
 
 Musicdl currently also supports searching for and downloading individual audio tracks, as well as entire albums, from long-form audio platforms (*e.g.*, Ximalaya and Lizhi FM) that host podcasts and audiobooks. 
 By default, both modes start simultaneously, and the top few search results for each mode are shown based on the input keyword.
@@ -507,6 +508,10 @@ music_client.startcmdui()
 
 Please note that the code above only supports downloading free albums and audio. 
 If you need to download paid audio, please configure cookies in `init_music_clients_cfg`, just as you would with other music clients.
+
+#### QingtingFM Audio/Radio Download
+
+
 
 #### TIDAL High-Quality Music Download
 
