@@ -59,9 +59,9 @@
 
 # 🎉 What's New
 
+- 2026-01-30: Released musicdl v2.8.11 — added or enhanced search and download support for Ximalaya, Lizhi FM, and Qingting FM; fixed several known bugs.
 - 2026-01-29: Released musicdl v2.8.10 — Support batch downloading audiobooks from the same album on the Ximalaya platform; update the API interfaces for Ximalaya, Kuwo, and TuneHub; and fix some minor bugs.
 - 2026-01-28: Released musicdl v2.8.9 — add an automatic song tag autofill feature, introduce shared membership APIs for additional platforms, and deploy a TuneHub hotfix.
-- 2026-01-26: Released musicdl v2.8.8 — added a new lossless music search and download site, implemented a Lanzou Cloud direct-download link parser, and performed partial code optimizations.
 
 
 # 🎵 Introduction
