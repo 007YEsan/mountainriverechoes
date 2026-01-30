@@ -193,6 +193,7 @@ class LizhiMusicClient(BaseMusicClient):
             except Exception: pass
             try: song_info.file_size = str(round(sum([float(eps.file_size.removesuffix('MB').strip()) for eps in song_info.episodes]), 2)) + ' MB'
             except Exception: pass
+            song_info.album = f"{len(song_info.episodes)} Episodes"
             song_infos.append(song_info)
             if self.strict_limit_search_size_per_page and len(song_infos) >= self.search_size_per_page: break
         return song_infos            

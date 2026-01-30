@@ -222,8 +222,10 @@ def cursorpickintable(headers, rows, row_ids, no_trunc_cols=None, terminal_right
     def render():
         table = buildtablestr()
         lines = table.splitlines(True)
+        cols = shutil.get_terminal_size().columns
         highlight_line, out = 3 + (cur[0] - view_start[0]) * 2, []
         for li, line in enumerate(lines):
+            line = line.rstrip("\n").ljust(cols + 2) + "\n"
             frags = to_formatted_text(ANSI(line))
             if li == highlight_line: frags = [((s + " reverse") if s else "reverse", t) for (s, t) in frags]
             out.extend(frags)
@@ -251,5 +253,5 @@ def cursorpickintable(headers, rows, row_ids, no_trunc_cols=None, terminal_right
     @kb.add("escape")
     @kb.add("q")
     def _(_event): _event.app.exit(result=[])
-    app = Application(layout=Layout(HSplit([Window(FormattedTextControl(render))])), key_bindings=kb, full_screen=True)
+    app = Application(layout=Layout(HSplit([Window(FormattedTextControl(render), wrap_lines=False)])), key_bindings=kb, full_screen=True)
     return app.run()
