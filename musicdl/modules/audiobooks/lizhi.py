@@ -144,7 +144,7 @@ class LizhiMusicClient(BaseMusicClient):
                 album=f"{safeextractfromdict(search_result, ['userInfo', 'audioNum'], '') or 0} Episodes", ext=None, file_size_bytes=None, file_size=None, identifier=album_id, duration_s=None, duration='-:-:-', lyric=None, 
                 cover_url=safeextractfromdict(search_result, ['userInfo', 'photo'], None), download_url=None, download_url_status={}, episodes=[],
             )
-            download_album_pid = progress.add_task(f"{self.source}._parsebyalbum >>> (0/0) pages completed in album {album_id}", total=0)
+            download_album_pid = progress.add_task(f"{self.source}._parsebyalbum >>> (0/0) pages downloaded in album {album_id}", total=0)
             while True:
                 try: resp = self.get(f'https://m.lizhi.fm/vodapi/user/{album_id}?pageNo={page_no}&pageSize={page_size}', **request_overrides); resp.raise_for_status()
                 except Exception: break
@@ -153,7 +153,7 @@ class LizhiMusicClient(BaseMusicClient):
                 download_results.append(download_result)
                 page_no += 1
                 progress.update(download_album_pid, total=page_no, completed=page_no)
-                progress.update(download_album_pid, description=f"{self.source}._parsebyalbum >>> ({page_no}/{page_no}) pages completed in album {album_id}")
+                progress.update(download_album_pid, description=f"{self.source}._parsebyalbum >>> ({page_no}/{page_no}) pages downloaded in album {album_id}")
             total_episodes = sum([len(safeextractfromdict(download_result, ['data'], []) or []) for download_result in download_results])
             download_album_pid = progress.add_task(f"{self.source}._parsebyalbum >>> (0/{total_episodes}) episodes completed in album {album_id}", total=total_episodes)
             for download_result in download_results:

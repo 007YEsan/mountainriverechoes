@@ -145,10 +145,17 @@ class XimalayaMusicClient(BaseMusicClient):
                 album=f"{search_result.get('tracks', 0) or 0} Episodes", ext=None, file_size=None, identifier=search_result['id'], duration='-:-:-', lyric=None, cover_url=safeextractfromdict(search_result, ['cover_path'], None),
                 download_url=None, download_url_status={}, episodes=[],
             )
-            for page_num in range(1, math.ceil(int(search_result.get('tracks', 0) or 0) / 200) + 1):
+            num_pages = math.ceil(int(search_result.get('tracks', 0) or 0) / page_size)
+            download_album_pid = progress.add_task(f"{self.source}._parsebyalbum >>> (0/{num_pages}) pages downloaded in album {search_result['id']}", total=num_pages)
+            for page_num_idx, page_num in enumerate(range(1, num_pages + 1)):
+                if page_num_idx > 0:
+                    progress.advance(download_album_pid, 1)
+                    progress.update(download_album_pid, description=f"{self.source}._parsebyalbum >>> ({page_num_idx}/{num_pages}) pages downloaded in album {search_result['id']}")
                 try: resp = self.get(f'http://mobile.ximalaya.com/mobile/v1/album/track?albumId={search_result["id"]}&pageId={page_num}&pageSize={page_size}&isAsc=true', **request_overrides)
                 except: continue
                 download_results.append(resp2json(resp=resp))
+            progress.advance(download_album_pid, 1)
+            progress.update(download_album_pid, description=f"{self.source}._parsebyalbum >>> ({page_num_idx+1}/{num_pages}) pages downloaded in album {search_result['id']}")
             for download_result in download_results:
                 for track in (safeextractfromdict(download_result, ['data', 'list'], []) or []):
                     if not isinstance(track, dict) or not track.get('trackId'): continue
