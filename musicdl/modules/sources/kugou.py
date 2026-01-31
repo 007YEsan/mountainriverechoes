@@ -118,16 +118,17 @@ class KugouMusicClient(BaseMusicClient):
                 song_info_flac = self._parsewiththirdpartapis(hash_list=hash_list, search_result=search_result, request_overrides=request_overrides)
                 for file_hash in hash_list:
                     if song_info_flac.with_valid_download_url and song_info_flac.ext in ('flac',): song_info = song_info_flac; break
-                    md5_hex = hashlib.md5((f'{file_hash}kgcloud').encode("utf-8")).hexdigest()
+                    md5_hex = hashlib.md5((file_hash + 'kgcloudv2').encode("utf-8")).hexdigest()
                     try:
-                        resp = self.get(f'http://trackercdn.kugou.com/i/?cmd=4&hash={file_hash}&key={md5_hex}&pid=1&forceDown=0&vip=1', **request_overrides)
+                        resp = self.get(f'http://trackercdn.kugou.com/i/v2/?appid=1005&pid=2&cmd=25&behavior=play&hash={file_hash}&key={md5_hex}', **request_overrides) # web: http://trackercdnbj.kugou.com/i/v2/?cmd=23&pid=1&behavior=play, app: http://trackercdn.kugou.com/i/v2/?appid=1005&pid=2&cmd=25&behavior=play
                         if resp2json(resp).get('error', ''): resp = self.get(f"http://m.kugou.com/app/i/getSongInfo.php?cmd=playInfo&hash={file_hash}", **request_overrides)
                         resp.raise_for_status()
                         download_result: dict = resp2json(resp)
                         download_url = safeextractfromdict(download_result, ['url'], '') or safeextractfromdict(download_result, ['backup_url'], '')
                     except:
                         continue
-                    if not download_url: continue
+                    if download_url and isinstance(download_url, (list, tuple)): download_url = list(download_url)[0]
+                    if not download_url or not download_url.startswith('http'): continue
                     song_info = SongInfo(
                         raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(search_result, ['songname'], None) or safeextractfromdict(search_result, ['songname_original'], None) or safeextractfromdict(search_result, ['filename'], None)),
                         singers=legalizestring(safeextractfromdict(search_result, ['singername'], None)), album=legalizestring(safeextractfromdict(search_result, ['album_name'], None)), ext=download_url.split('?')[0].split('.')[-1] or download_result.get('extName') or 'mp3', 
