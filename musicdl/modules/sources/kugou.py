@@ -120,7 +120,11 @@ class KugouMusicClient(BaseMusicClient):
                     if song_info_flac.with_valid_download_url and song_info_flac.ext in ('flac',): song_info = song_info_flac; break
                     md5_hex = hashlib.md5((file_hash + 'kgcloudv2').encode("utf-8")).hexdigest()
                     try:
-                        resp = self.get(f'http://trackercdn.kugou.com/i/v2/?appid=1005&pid=2&cmd=25&behavior=play&hash={file_hash}&key={md5_hex}', **request_overrides) # web: http://trackercdnbj.kugou.com/i/v2/?cmd=23&pid=1&behavior=play, app: http://trackercdn.kugou.com/i/v2/?appid=1005&pid=2&cmd=25&behavior=play
+                        # >>> old api: http://trackercdn.kugou.com/i/?cmd=4&pid=1&forceDown=0&vip=1&hash=md5(file_hash+kgcloud)
+                        # >>> webv2: http://trackercdnbj.kugou.com/i/v2/?cmd=23&pid=1&behavior=play
+                        # >>> appv2: http://trackercdn.kugou.com/i/v2/?appid=1005&pid=2&cmd=25&behavior=play
+                        # >>> TODO: upgrade to appv3
+                        resp = self.get(f'http://trackercdn.kugou.com/i/v2/?appid=1005&pid=2&cmd=25&behavior=play&hash={file_hash}&key={md5_hex}', **request_overrides)
                         if resp2json(resp).get('error', ''): resp = self.get(f"http://m.kugou.com/app/i/getSongInfo.php?cmd=playInfo&hash={file_hash}", **request_overrides)
                         resp.raise_for_status()
                         download_result: dict = resp2json(resp)
