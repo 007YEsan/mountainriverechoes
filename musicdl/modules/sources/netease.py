@@ -40,7 +40,7 @@ class NeteaseMusicClient(BaseMusicClient):
         # parse
         for quality in MUSIC_QUALITIES:
             try:
-                resp = self.post('https://wyapi-1.toubiec.cn/api/music/url', json={'id': song_id, 'level': quality}, timeout=10, verify=False, **request_overrides)
+                resp = self.post('https://wyapi-eo.toubiec.cn/api/getSongUrl', json={'id': song_id, 'level': quality}, timeout=10, verify=False, **request_overrides)
                 resp.raise_for_status()
                 download_result = resp2json(resp=resp)
                 if ('data' not in download_result) or (not download_result['data']): continue
