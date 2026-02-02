@@ -38,6 +38,10 @@ class AudioAwareColumn(ProgressColumn):
             completed = int(task.completed)
             total = int(task.total) if task.total is not None else 0
             return Text(f"{completed}/{total} audios")
+        elif kind == "hls":
+            completed = int(task.completed)
+            total = int(task.total) if task.total is not None else 0
+            return Text(f"{completed}/{total} segments")
         else:
             return self._download_col.render(task)
 

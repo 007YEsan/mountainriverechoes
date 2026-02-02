@@ -1,5 +1,6 @@
 '''initialize'''
 from .data import SongInfo
+from .hls import HLSDownloader
 from .ip import RandomIPGenerator
 from .quarkparser import QuarkParser
 from .lanzouyparser import LanZouYParser
