@@ -8,20 +8,22 @@ WeChat Official Account (微信公众号):
 '''
 import os
 import re
+import copy
 import time
 import math
 import m3u8
 import base64
 import shutil
+import hashlib
 import requests
 import threading
 import concurrent.futures as cf
 from pathlib import Path
 from .misc import touchdir
 from .logger import LoggerHandle
+from urllib.parse import urljoin
 from dataclasses import dataclass
 from rich.progress import Progress
-from urllib.parse import urljoin, urlparse
 from typing import Optional, Dict, Any, Tuple, List, Union, Callable
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
@@ -44,7 +46,7 @@ class SegmentJob:
 '''HLSDownloader'''
 class HLSDownloader:
     def __init__(self, output_dir: str = "downloads", proxies: Optional[Dict[str, str]] = None, headers: Optional[Dict[str, str]] = None, cookies: Optional[Dict[str, str]] = None, timeout: Tuple[float, float] = (10.0, 30.0), logger_handle: LoggerHandle = None,
-                 verify_tls: bool = True, concurrency: int = 16, max_retries: int = 8, backoff_base: float = 0.6, backoff_cap: float = 10.0, chunk_size: int = 1024 * 256, strict_key_length: bool = False, disable_print: bool = False):
+                 verify_tls: bool = True, concurrency: int = 16, max_retries: int = 8, backoff_base: float = 0.6, backoff_cap: float = 10.0, chunk_size: int = 1024 * 256, strict_key_length: bool = False, disable_print: bool = False, request_overrides: dict = None):
         # work dir
         self.output_dir = output_dir
         touchdir(self.output_dir)
@@ -52,9 +54,9 @@ class HLSDownloader:
         self.logger_handle = logger_handle
         self.disable_print = disable_print
         # http requests
-        self.proxies = proxies
+        self.proxies = proxies or {}
         self.headers = headers or {}
-        self.cookies = cookies
+        self.cookies = cookies or {}
         self.timeout = timeout
         self.verify_tls = verify_tls
         self.chunk_size = int(chunk_size)
@@ -63,12 +65,13 @@ class HLSDownloader:
         self.concurrency = max(1, int(concurrency))
         self.max_retries = max(1, int(max_retries))
         self.strict_key_length = bool(strict_key_length)
+        self.request_overrides = request_overrides or {}
         # threading
         self._tls = threading.local()
         self._key_cache: Dict[str, bytes] = {}
         self._key_cache_lock = threading.Lock()
     '''download'''
-    def download(self, m3u8_url: str, output_path: str, quality: Union[str, int, Callable[[List[Dict[str, Any]]], int]] = "best", keep_segments: bool = False, temp_subdir: Optional[str] = None) -> str:
+    def download(self, m3u8_url: str, output_path: str, quality: Union[str, int, Callable[[List[Dict[str, Any]]], int]] = "best", keep_segments: bool = False, temp_subdir: Optional[str] = None, progress: Progress = None, progress_id: int = 0) -> str:
         master_or_media = self._loadm3u8(m3u8_url)
         if master_or_media.is_variant:
             variant_url = self._selectvariant(master_or_media, quality)
@@ -82,7 +85,7 @@ class HLSDownloader:
         if global_init_map:
             global_init_path = os.path.join(temp_folder, "_global_init.bin")
             if not self._fileok(global_init_path): self._atomicwrite(global_init_path, self._fetchbytes(global_init_map["uri"], global_init_map.get("byterange")))
-        seg_paths = self._downloadallsegments(jobs, temp_folder)
+        seg_paths = self._downloadallsegments(jobs, temp_folder, progress=progress, progress_id=progress_id)
         touchdir(os.path.dirname(os.path.abspath(output_path)) or ".")
         self._mergefiles(global_init_path, seg_paths, output_path)
         if not keep_segments: shutil.rmtree(temp_folder, ignore_errors=True)
@@ -98,6 +101,7 @@ class HLSDownloader:
         return sess
     '''_request'''
     def _request(self, url: str, method: str = "GET", headers: Optional[Dict[str, str]] = None, stream: bool = False, **kwargs) -> requests.Response:
+        kwargs.update(copy.deepcopy(self.request_overrides))
         sess, last_exc = self._getsession(), None
         hdrs = dict(self.headers)
         if headers: hdrs.update(headers)
@@ -182,8 +186,8 @@ class HLSDownloader:
             jobs.append(SegmentJob(index=i, uri=seg_uri, byterange=getattr(seg, "byterange", None), key_method=key_method, key_uri=key_uri_abs, key_iv=key_iv, keyformat=keyformat, media_sequence=media_seq, map_uri=map_uri, map_byterange=map_byterange))
         return jobs, global_init
     '''_downloadallsegments'''
-    def _downloadallsegments(self, jobs: List[SegmentJob], temp_folder: str, progress: Progress) -> List[str]:
-        download_segs_progress_id = progress.add_task(f"HLSDownloader._downloadallsegments >>> completed (0/{len(jobs)})", total=len(jobs), kind='hls')
+    def _downloadallsegments(self, jobs: List[SegmentJob], temp_folder: str, progress: Progress, progress_id: int) -> List[str]:
+        progress.update(progress_id, description=f"HLSDownloader._downloadallsegments >>> completed (0/{len(jobs)})", total=len(jobs), kind='hls')
         byterange_cursor: Dict[str, int] = {}; seg_paths: List[Optional[str]] = [None] * len(jobs)
         init_cache: Dict[str, str] = {}; init_inflight: Dict[str, threading.Event] = {}; init_cache_lock = threading.Lock()
         def _ensureinitsection(map_uri: str, map_byterange: Optional[str]) -> bytes:
@@ -222,9 +226,9 @@ class HLSDownloader:
                 except Exception as e:
                     exceptions.append(e)
                 finally:
-                    progress.advance(download_segs_progress_id, 1)
-                    num_downloaded_segs = int(progress.tasks[download_segs_progress_id].completed)
-                    progress.update(download_segs_progress_id, description=f"HLSDownloader._downloadallsegments >>> completed ({num_downloaded_segs}/{len(jobs)})")
+                    progress.advance(progress_id, 1)
+                    num_downloaded_segs = int(progress.tasks[progress_id].completed)
+                    progress.update(progress_id, description=f"HLSDownloader._downloadallsegments >>> completed ({num_downloaded_segs}/{len(jobs)})")
         if exceptions: raise exceptions[0]
         return [p for p in seg_paths if p is not None]
     '''_fetchandmaybedecrypt'''
@@ -354,11 +358,8 @@ class HLSDownloader:
                 with open(p, "rb") as fp: shutil.copyfileobj(fp, out, length=1024 * 1024)
         os.replace(tmp_out, output_path)
     '''_safenamefromurl'''
-    def _safenamefromurl(self, url: str) -> str:
-        u = urlparse(url)
-        s = (u.netloc + u.path).strip("/")
-        s = re.sub(r"[^a-zA-Z0-9._-]+", "_", s)
-        return s[:20] if len(s) > 20 else s
+    def _safenamefromurl(self, url: str, max_len: int = 20) -> str:
+        return hashlib.sha256(url.encode("utf-8")).hexdigest()[:max_len]
     '''_fileok'''
     def _fileok(self, path: str) -> bool:
         return os.path.exists(path) and os.path.getsize(path) > 0
