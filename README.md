@@ -667,12 +667,12 @@ music_client.startcmdui()
 ```
 
 The only thing to note is that `SoundCloudMusicClient` handles login cookies for downloading subscriber-only tracks slightly differently from the other music clients. 
-You’ll need to follow [SoundCloud’s official instructions](https://developers.soundcloud.com/docs#authentication) to obtain an Authorization Code, then fill it in as follows:
+You need to capture packets (*i.e.*, sniff the network requests) from [SoundCloud’s official website](https://soundcloud.com/) yourself to obtain the *Authorization* field in the request headers, then fill it in as follows:
 
 ```python
 from musicdl import musicdl
 
-cookies = {'oauth_token': 'Your Authorization Code'}
+cookies = {'oauth_token': 'OAuth x-xxxxxx-xxxxxxxxx-xxxxxxx'}
 init_music_clients_cfg = {'SoundCloudMusicClient': {'default_search_cookies': cookies, 'default_download_cookies': cookies, 'search_size_per_source': 5}}
 music_client = musicdl.MusicClient(music_sources=['SoundCloudMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
 music_client.startcmdui()

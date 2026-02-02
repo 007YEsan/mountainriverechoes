@@ -265,6 +265,9 @@ class BaseMusicClient():
         self.logger_handle.info(f'Finished downloading music files using {self.source}. Download results have been saved to {work_dir}, valid downloads: {len(downloaded_song_infos)}.', disable_print=self.disable_print)
         # return
         return downloaded_song_infos
+    '''parseplaylist'''
+    def parseplaylist(self, playlist_url: str):
+        raise NotImplementedError(f'Not supported now to parse playlist from {self.source}')
     '''_autosetproxies'''
     def _autosetproxies(self):
         if self.auto_set_proxies:
