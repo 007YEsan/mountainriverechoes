@@ -649,6 +649,35 @@ music_client = musicdl.MusicClient(music_sources=['YouTubeMusicClient'])
 music_client.startcmdui()
 ```
 
+#### SoundCloud Music Download
+
+musicdl lets you search for and download your favorite songs from SoundCloud. Specifically, you only need to run the following command:
+
+```
+musicdl -m SoundCloudMusicClient
+```
+
+Or you can invoke it with the following code:
+
+```python
+from musicdl import musicdl
+
+music_client = musicdl.MusicClient(music_sources=['SoundCloudMusicClient'])
+music_client.startcmdui()
+```
+
+The only thing to note is that `SoundCloudMusicClient` handles login cookies for downloading subscriber-only tracks slightly differently from the other music clients. 
+You’ll need to follow [SoundCloud’s official instructions](https://developers.soundcloud.com/docs#authentication) to obtain an Authorization Code, then fill it in as follows:
+
+```python
+from musicdl import musicdl
+
+cookies = {'oauth_token': 'Your Authorization Code'}
+init_music_clients_cfg = {'SoundCloudMusicClient': {'default_search_cookies': cookies, 'default_download_cookies': cookies, 'search_size_per_source': 5}}
+music_client = musicdl.MusicClient(music_sources=['SoundCloudMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
+music_client.startcmdui()
+```
+
 #### Apple Music Download
 
 `AppleMusicClient` works similarly to `TIDALMusicClient`: 
