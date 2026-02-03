@@ -266,12 +266,12 @@ class NeteaseMusicClient(BaseMusicClient):
         with Progress(TextColumn("{task.description}"), BarColumn(bar_width=None), MofNCompleteColumn(), TimeRemainingColumn(), refresh_per_second=10) as main_process_context:
             main_progress_id = main_process_context.add_task(f"{len(track_ids)} songs found in playlist {playlist_id} >>> completed (0/{len(track_ids)})", total=len(track_ids))
             for idx, track_id in enumerate(track_ids):
-                if idx > 0: main_process_context.advance(main_process_context, 1)
+                if idx > 0: main_process_context.advance(main_progress_id, 1)
                 main_process_context.update(main_progress_id, description=f"{len(track_ids)} songs found in the playlist >>> completed ({idx}/{len(track_ids)})")
                 try: song_info = self._parsewithcggapi({'id': track_id}, request_overrides=request_overrides)
                 except: continue
                 song_infos.append(song_info)
-            main_process_context.advance(main_process_context, 1)
+            main_process_context.advance(main_progress_id, 1)
             main_process_context.update(main_progress_id, description=f"{len(track_ids)} songs found in the playlist >>> completed ({idx+1}/{len(track_ids)})")
         song_infos = self._removeduplicates(song_infos=song_infos)
         work_dir = self._constructuniqueworkdir(keyword=playlist_id)
