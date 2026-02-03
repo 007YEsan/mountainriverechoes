@@ -257,8 +257,7 @@ class NeteaseMusicClient(BaseMusicClient):
         request_overrides = request_overrides or {}
         hostname = obtainhostname(url=playlist_url)
         if not hostname or not hostmatchessuffix(hostname, NETEASE_MUSIC_HOSTS): return []
-        playlist_id = parse_qs(urlparse(urlparse(playlist_url).fragment).query, keep_blank_values=True).get('id')
-        if not playlist_id or not playlist_id[0]: return []
+        playlist_id = parse_qs(urlparse(urlparse(playlist_url).fragment).query, keep_blank_values=True).get('id')[0]
         resp = self.post('https://music.163.com/api/v6/playlist/detail', data={'id': playlist_id}, **request_overrides)
         resp.raise_for_status()
         playlist_results = resp2json(resp=resp)
