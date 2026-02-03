@@ -406,6 +406,28 @@ from musicdl.modules import MusicClientBuilder
 print(MusicClientBuilder.REGISTERED_MODULES)
 ```
 
+#### Download Playlist Items
+
+From musicdl v2.9.0 onward, support for downloading user playlists from each platform will be added gradually. The platforms currently supported are as follows:
+
+- [NeteaseMusicClient | 网易云音乐](https://music.163.com/)
+
+Specifically, you only need to run the following command in the terminal, musicdl will automatically detect the playlist in the link and download it in batch:
+
+```sh
+musicdl -p "https://music.163.com/#/playlist?id=7583298906" -m NeteaseMusicClient
+```
+
+Alternatively, use the following code to invoke it,
+
+```python
+from musicdl import musicdl
+
+music_client = musicdl.MusicClient(music_sources=['NeteaseMusicClient'])
+song_infos = music_client.parseplaylist("https://music.163.com/#/playlist?id=7583298906")
+music_client.download(song_infos=song_infos)
+```
+
 #### WhisperLRC
 
 On some music platforms, it’s not possible to obtain the lyric files corresponding to the audio, *e.g*, `XimalayaMusicClient` and `MituMusicClient`. 
