@@ -42,7 +42,7 @@ class AppleMusicClient(BaseMusicClient):
         request_overrides = request_overrides or {}
         try:
             touchdir(song_info.work_dir)
-            tmp_dir = os.path.join(song_info.work_dir, str(song_info.identifier))
+            tmp_dir = f'apple_id_{str(song_info.identifier)}'
             touchdir(tmp_dir)
             download_item: DownloadItem = song_info.download_url
             progress.update(song_progress_id, total=1, kind='overall')
@@ -129,7 +129,7 @@ class AppleMusicClient(BaseMusicClient):
         resp.raise_for_status()
         download_result = resp2json(resp=resp)
         download_item: DownloadItem = AppleMusicClientDownloadSongUtils.getdownloaditem(
-            song_metadata=download_result['data'][0], playlist_metadata=None, codec=codec, apple_music_api=self.apple_music_api, itunes_api=self.itunes_api, request_overrides=request_overrides
+            song_metadata=download_result['data'][0], playlist_metadata=None, codec=codec, apple_music_api=self.apple_music_api, itunes_api=self.itunes_api, request_overrides=request_overrides, use_wrapper=self.use_wrapper
         )
         try: resp = self.get(download_item.stream_info.audio_track.stream_url, **request_overrides); resp.raise_for_status()
         except Exception: return song_info

@@ -745,9 +745,7 @@ Finally, configure your musicdl as follows:
 from musicdl import musicdl
 from musicdl.modules.source.apple import SongCodec
 
-cookies = {'media-user-token': xxx}
 init_music_clients_cfg = {'AppleMusicClient': {
-    'default_search_cookies': cookies, 
     'search_size_per_source': 10, 
     'language': 'en-US', 
     'codec': SongCodec.ALAC, 
