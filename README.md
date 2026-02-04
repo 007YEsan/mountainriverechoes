@@ -707,23 +707,59 @@ music_client.startcmdui()
 
 #### Apple Music Download
 
-`AppleMusicClient` works similarly to `TIDALMusicClient`: 
-if you are not an Apple Music subscriber or you have not manually set in musicdl the cookies (*i.e.*, the `media-user-token`) from your logged-in Apple Music session in the browser, 
-you will only be able to download a partial segment of each track (usually 30–90 seconds). 
+Apple Music is like TIDAL, only users with a paid Apple Music subscription can download Apple Music tracks, otherwise, you can only download an approximately 30-90 second preview clip.
 
-If you need to download the full audio and lyrics for each song, you can configure musicdl as follows:
+Specifically, for paid Apple Music users, musicdl supports downloading music files in the following formats,
+
+- `aac-legacy`
+- `aac-he-legacy`
+- `aac`
+- `aac-he`
+- `aac-binaural`
+- `aac-downmix`
+- `aac-he-binaural`
+- `aac-he-downmix`
+- `atmos`
+- `ac3`
+- `alac`
+
+Specifically, if you only need to download tracks in the `aac-legacy` and `aac-he-legacy` quality tiers, you just need to make sure that [FFmpeg](https://www.ffmpeg.org/) and [N_m3u8DL-RE](https://github.com/nilaoda/N_m3u8DL-RE) are already installed and available in your environment variables.
+Then, set the `media-user-token` argument you obtained by capturing network traffic from the Apple Music website as follows:
 
 ```python
 from musicdl import musicdl
+from musicdl.modules.source.apple import SongCodec
 
 cookies = {'media-user-token': xxx}
-init_music_clients_cfg = {'AppleMusicClient': {'default_search_cookies': cookies, 'default_download_cookies': cookies, 'search_size_per_source': 10}}
+init_music_clients_cfg = {'AppleMusicClient': {'default_search_cookies': cookies, 'search_size_per_source': 10, 'language': 'en-US', 'codec': SongCodec.AAC_LEGACY}}
 music_client = musicdl.MusicClient(music_sources=['AppleMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
 music_client.startcmdui()
 ```
 
-It is important to note that to download Apple Music audio files (including decryption) using musicdl, you must properly install [GPAC](https://gpac.io/downloads/gpac-nightly-builds/),
-[Bento4](https://www.bento4.com/downloads/) and [N_m3u8DL-RE](https://github.com/nilaoda/N_m3u8DL-RE).
+However, if you need to download higher-quality audio (e.g., `alac`), the setup is relatively more complex. 
+First, follow the [wrapper](https://github.com/WorldObservationLog/wrapper) guide and start the wrapper server.
+Then, in addition to [FFmpeg](https://www.ffmpeg.org/) and [N_m3u8DL-RE](https://github.com/nilaoda/N_m3u8DL-RE), you also need to install [Bento4](https://www.bento4.com/downloads/) and [amdecrypt](https://github.com/CharlesPikachu/musicdl/releases/tag/clitools).
+Finally, configure your musicdl as follows:
+
+```python
+from musicdl import musicdl
+from musicdl.modules.source.apple import SongCodec
+
+cookies = {'media-user-token': xxx}
+init_music_clients_cfg = {'AppleMusicClient': {
+    'default_search_cookies': cookies, 
+    'search_size_per_source': 10, 
+    'language': 'en-US', 
+    'codec': SongCodec.ALAC, 
+    'use_wrapper': True, 
+    'wrapper_account_url': 'http://127.0.0.1:30020/',
+	'wrapper_decrypt_ip': '127.0.0.1:10020',
+}}
+music_client = musicdl.MusicClient(music_sources=['AppleMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
+music_client.startcmdui()
+```
+
+Note that the `wrapper_account_url` and `wrapper_decrypt_ip` settings must match the corresponding arguments configured in your [wrapper server](https://github.com/WorldObservationLog/wrapper).
 
 #### GD Studio Music Download
 
