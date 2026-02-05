@@ -751,7 +751,7 @@ init_music_clients_cfg = {'AppleMusicClient': {
     'codec': SongCodec.ALAC, 
     'use_wrapper': True, 
     'wrapper_account_url': 'http://127.0.0.1:30020/',
-	'wrapper_decrypt_ip': '127.0.0.1:10020',
+    'wrapper_decrypt_ip': '127.0.0.1:10020',
 }}
 music_client = musicdl.MusicClient(music_sources=['AppleMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
 music_client.startcmdui()
