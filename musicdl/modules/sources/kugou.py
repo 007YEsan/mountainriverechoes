@@ -122,10 +122,10 @@ class KugouMusicClient(BaseMusicClient):
                     if song_info_flac.with_valid_download_url and song_info_flac.ext in ('flac',): song_info = song_info_flac; break
                     md5_hex = hashlib.md5((file_hash + 'kgcloudv2').encode("utf-8")).hexdigest()
                     try:
-                        # >>> old api: https://trackercdn.kugou.com/i/?cmd=4&pid=1&forceDown=0&vip=1&hash=md5(file_hash+kgcloud)
-                        # >>> webv2 play: https://trackercdnbj.kugou.com/i/v2/?cmd=23&pid=1&behavior=play
-                        # >>> appv2 play: https://trackercdn.kugou.com/i/v2/?appid=1005&pid=2&cmd=25&behavior=play
-                        # >>> appv2 download: https://trackercdn.kugou.com/i/v2/?cdnBackup=1&behavior=download&pid=1&cmd=21&appid=1001
+                        # >>> old api: https://trackercdn.kugou.com/i/?cmd=4&pid=1&forceDown=0&vip=1&hash={file_hash}&key={MD5(file_hash+kgcloud)}
+                        # >>> webv2 play: https://trackercdnbj.kugou.com/i/v2/?cmd=23&pid=1&behavior=play&hash={file_hash}&key={MD5(file_hash+kgcloudv2)}
+                        # >>> appv2 play: https://trackercdn.kugou.com/i/v2/?appid=1005&pid=2&cmd=25&behavior=play&hash={file_hash}&key={MD5(file_hash+kgcloudv2)}
+                        # >>> appv2 download: https://trackercdn.kugou.com/i/v2/?cdnBackup=1&behavior=download&pid=1&cmd=21&appid=1001&hash={file_hash}&key={MD5(file_hash+kgcloudv2)}
                         # >>> TODO: upgrade to appv3
                         resp = self.get(f'https://trackercdn.kugou.com/i/v2/?cdnBackup=1&behavior=download&pid=1&cmd=21&appid=1001&hash={file_hash}&key={md5_hex}', **request_overrides)
                         if 'extName' not in resp2json(resp=resp) : resp = self.get(f"https://m.kugou.com/app/i/getSongInfo.php?cmd=playInfo&hash={file_hash}", **request_overrides)
