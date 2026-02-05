@@ -728,7 +728,7 @@ Then, set the `media-user-token` argument you obtained by capturing network traf
 
 ```python
 from musicdl import musicdl
-from musicdl.modules.source.apple import SongCodec
+from musicdl.modules.sources.apple import SongCodec
 
 cookies = {'media-user-token': xxx}
 init_music_clients_cfg = {'AppleMusicClient': {'default_search_cookies': cookies, 'search_size_per_source': 10, 'language': 'en-US', 'codec': SongCodec.AAC_LEGACY}}
@@ -743,7 +743,7 @@ Finally, configure your musicdl as follows:
 
 ```python
 from musicdl import musicdl
-from musicdl.modules.source.apple import SongCodec
+from musicdl.modules.sources.apple import SongCodec
 
 init_music_clients_cfg = {'AppleMusicClient': {
     'search_size_per_source': 10, 
