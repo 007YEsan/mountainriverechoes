@@ -737,7 +737,7 @@ music_client.startcmdui()
 ```
 
 However, if you need to download higher-quality audio (*e.g.*, `alac`), the setup is relatively more complex. 
-First, follow the [wrapper](https://github.com/WorldObservationLog/wrapper) guide and start the wrapper server (note that windows users need to download and install WSL first, followed by installing Ubuntu on WSL, and finally start the wrapper server within Ubuntu, otherwise, decryption will most likely fail).
+First, follow the [wrapper](https://github.com/WorldObservationLog/wrapper) guide and start the wrapper server (❗ **note that Windows users need to download and install WSL first, followed by installing Ubuntu on WSL, and finally start the wrapper server within Ubuntu, otherwise, decryption will most likely fail** ❗).
 Then, in addition to [FFmpeg](https://www.ffmpeg.org/) and [N_m3u8DL-RE](https://github.com/nilaoda/N_m3u8DL-RE), you also need to install [Bento4](https://www.bento4.com/downloads/) and [amdecrypt](https://github.com/CharlesPikachu/musicdl/releases/tag/clitools).
 Finally, configure your musicdl as follows:
 
