@@ -85,7 +85,7 @@ class StreetVoiceMusicClient(BaseMusicClient):
                 except Exception: continue
                 song_info = SongInfo(
                     raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(download_result, ['name'], None)),
-                    singers=legalizestring(safeextractfromdict(download_result, ['user', 'profile', 'nickname'], None)), album=legalizestring(safeextractfromdict(download_result, ['album'], None)),
+                    singers=legalizestring(safeextractfromdict(download_result, ['user', 'profile', 'nickname'], None)), album=legalizestring(safeextractfromdict(download_result, ['album', 'name'], None)),
                     ext=download_url.removesuffix('.m3u8').split('?')[0].split('.')[-1], file_size='HLS', identifier=search_result['song_id'], duration_s=safeextractfromdict(download_result, ['length'], 0),
                     duration=seconds2hms(safeextractfromdict(download_result, ['length'], 0)), lyric=cleanlrc(safeextractfromdict(download_result, ['lyrics'], 'NULL')), cover_url=download_result.get('image'), 
                     download_url=download_url, download_url_status=download_url_status, protocol='HLS'
