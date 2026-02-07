@@ -324,7 +324,7 @@ class NeteaseMusicClient(BaseMusicClient):
             for idx, track_id in enumerate(track_ids):
                 if idx > 0: main_process_context.advance(main_progress_id, 1)
                 main_process_context.update(main_progress_id, description=f"{len(track_ids)} songs found in playlist {playlist_id} >>> completed ({idx}/{len(track_ids)})")
-                for third_part_api in [self._parsewithcggapi, self._parsewithtmetuapi, self._parsewithcyruiapi]:
+                for third_part_api in [self._parsewithtmetuapi, self._parsewithcyruiapi, self._parsewithcggapi]:
                     try:
                         song_info = third_part_api({'id': track_id}, request_overrides=request_overrides)
                         if song_info.with_valid_download_url: song_infos.append(song_info); break
