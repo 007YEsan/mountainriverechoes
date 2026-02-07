@@ -417,11 +417,13 @@ print(MusicClientBuilder.REGISTERED_MODULES)
 From musicdl v2.9.0 onward, support for downloading user playlists from each platform will be added gradually. The platforms currently supported are as follows:
 
 - [NeteaseMusicClient | 网易云音乐](https://music.163.com/)
+- [QQMusicClient | QQ音乐](https://y.qq.com/)
 
 Specifically, you only need to run the following command in the terminal, musicdl will automatically detect the playlist in the link and download it in batch:
 
 ```sh
 musicdl -p "https://music.163.com/#/playlist?id=7583298906" -m NeteaseMusicClient
+musicdl -p "https://y.qq.com/n/ryqq_v2/playlist/8740590963" -m QQMusicClient
 ```
 
 Alternatively, use the following code to invoke it,

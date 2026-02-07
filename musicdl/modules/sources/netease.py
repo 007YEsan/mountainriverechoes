@@ -311,6 +311,7 @@ class NeteaseMusicClient(BaseMusicClient):
     @useparseheaderscookies
     def parseplaylist(self, playlist_url: str, request_overrides: dict = None):
         request_overrides = request_overrides or {}
+        playlist_url = self.session.head(playlist_url, allow_redirects=True, **request_overrides).url
         hostname = obtainhostname(url=playlist_url)
         if not hostname or not hostmatchessuffix(hostname, NETEASE_MUSIC_HOSTS): return []
         playlist_id = parse_qs(urlparse(urlparse(playlist_url).fragment).query, keep_blank_values=True).get('id')[0]
