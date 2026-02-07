@@ -496,6 +496,38 @@ If the cookies you supply belong to a non-VIP Quark account, the download speed 
 Also note that Quark Drive will first save the music file to your own Quark account (usually in the "From: Shares (来自: 分享)" folder) and then start the download.
 Therefore, if your Quark storage is insufficient, the download may fail.
 
+#### Kugou Music Download
+
+Musicdl currently supports searching and downloading from KuGou Music, and it is used in the same way as other music clients. 
+The only thing to note is that if you need to configure member cookies to download purchased albums/singles or member-exclusive audio quality, the cookies must be in the following format:
+
+```python
+{
+  'KUGOU_API_GUID': 'xxxx', 
+  'KUGOU_API_MID': 'xxxx', 
+  'KUGOU_API_MAC': 'xxxx', 
+  'KUGOU_API_DEV': 'xxxx', 
+  'token': 'xxxx', 
+  'userid': 'xxxx', 
+  'dfid': 'xxxx'
+}
+```
+
+You can either use the [build_cookies_for_kugou.py](https://github.com/CharlesPikachu/musicdl/blob/master/scripts/build_cookies_for_kugou.py) script provided in the repo to obtain them directly, 
+or capture the above arguments yourself via network packet capture on the KuGou app or the web client, and then configure musicdl as follows:
+
+```python
+from musicdl import musicdl
+
+cookies = {'KUGOU_API_GUID': 'xxxx', 'KUGOU_API_MID': 'xxxx', 'KUGOU_API_MAC': 'xxxx', 'KUGOU_API_DEV': 'xxxx', 'token': 'xxxx', 'userid': 'xxxx', 'dfid': 'xxxx'}
+init_music_clients_cfg = {'KugouMusicClient': {'default_search_cookies': cookies, 'search_size_per_source': 5}}
+music_client = musicdl.MusicClient(music_sources=['KugouMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
+music_client.startcmdui()
+```
+
+Keep in mind that the parameter names obtained from packet capture may not match musicdl’s required names. 
+You must map them correctly to generate valid cookies, otherwise, downloading member-only music resources will not work.
+
 #### XimalayaFM and LizhiFM Audio/Radio Download
 
 Musicdl currently also supports searching for and downloading individual audio tracks, as well as entire albums, from long-form audio platforms (*e.g.*, Ximalaya and Lizhi FM) that host podcasts and audiobooks. 
@@ -679,7 +711,7 @@ music_client.startcmdui()
 
 #### SoundCloud Music Download
 
-musicdl lets you search for and download your favorite songs from SoundCloud. Specifically, you only need to run the following command:
+Musicdl lets you search for and download your favorite songs from SoundCloud. Specifically, you only need to run the following command:
 
 ```
 musicdl -m SoundCloudMusicClient
