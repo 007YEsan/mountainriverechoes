@@ -429,7 +429,8 @@ Alternatively, use the following code to invoke it,
 ```python
 from musicdl import musicdl
 
-music_client = musicdl.MusicClient(music_sources=['NeteaseMusicClient'])
+init_music_clients_cfg = {'NeteaseMusicClient': {'default_parse_cookies': YOUR_VIP_COOKIES}}
+music_client = musicdl.MusicClient(music_sources=['NeteaseMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
 song_infos = music_client.parseplaylist("https://music.163.com/#/playlist?id=7583298906")
 music_client.download(song_infos=song_infos)
 ```

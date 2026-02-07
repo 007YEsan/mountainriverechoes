@@ -19,7 +19,7 @@ from urllib.parse import urlparse, parse_qs
 from ..utils.hosts import NETEASE_MUSIC_HOSTS, hostmatchessuffix, obtainhostname
 from ..utils.neteaseutils import EapiCryptoUtils, MUSIC_QUALITIES, DEFAULT_COOKIES
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
-from ..utils import resp2json, seconds2hms, legalizestring, safeextractfromdict, usesearchheaderscookies, extractdurationsecondsfromlrc, touchdir, byte2mb, cleanlrc, SongInfo
+from ..utils import resp2json, seconds2hms, legalizestring, safeextractfromdict, usesearchheaderscookies, extractdurationsecondsfromlrc, touchdir, byte2mb, useparseheaderscookies, cleanlrc, SongInfo
 warnings.filterwarnings('ignore')
 
 
@@ -28,13 +28,12 @@ class NeteaseMusicClient(BaseMusicClient):
     source = 'NeteaseMusicClient'
     def __init__(self, **kwargs):
         super(NeteaseMusicClient, self).__init__(**kwargs)
-        self.default_search_headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36',
-            'Referer': 'https://music.163.com/',
-        }
+        self.default_search_headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', 'Referer': 'https://music.163.com/'}
+        self.default_parse_headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', 'Referer': 'https://music.163.com/'}
         self.default_download_headers = {}
         self.default_headers = self.default_search_headers
         self.default_search_cookies = self.default_search_cookies or DEFAULT_COOKIES
+        self.default_parse_cookies = self.default_parse_cookies or DEFAULT_COOKIES
         self.default_download_cookies = self.default_download_cookies or DEFAULT_COOKIES
         self._initsession()
     '''_parsewithxiaoqinapi'''
@@ -309,7 +308,7 @@ class NeteaseMusicClient(BaseMusicClient):
         # return
         return song_infos
     '''parseplaylist'''
-    @usesearchheaderscookies
+    @useparseheaderscookies
     def parseplaylist(self, playlist_url: str, request_overrides: dict = None):
         request_overrides = request_overrides or {}
         hostname = obtainhostname(url=playlist_url)
