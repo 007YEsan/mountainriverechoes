@@ -1,6 +1,10 @@
 '''
 Function:
     Implementation of KugouMusicClient Utils
+    >>> old api: https://trackercdn.kugou.com/i/?cmd=4&pid=1&forceDown=0&vip=1&hash={file_hash}&key={MD5(file_hash+kgcloud)}
+    >>> webv2 play: https://trackercdnbj.kugou.com/i/v2/?cmd=23&pid=1&behavior=play&hash={file_hash}&key={MD5(file_hash+kgcloudv2)}
+    >>> appv2 play: https://trackercdn.kugou.com/i/v2/?appid=1005&pid=2&cmd=25&behavior=play&hash={file_hash}&key={MD5(file_hash+kgcloudv2)}
+    >>> appv2 download: https://trackercdn.kugou.com/i/v2/?cdnBackup=1&behavior=download&pid=1&cmd=21&appid=1001&hash={file_hash}&key={MD5(file_hash+kgcloudv2)}
 Author:
     Zhenchao Jin
 WeChat Official Account (微信公众号):
@@ -112,12 +116,9 @@ class KugouMusicClientUtils:
         clienttime = int(time.time())
         params, headers, used_cookies, request_overrides = params or {}, headers or {}, dict(cookies), request_overrides or {}
         if cookies_override: used_cookies.update(cookies_override)
-        token = used_cookies.get("token") or used_cookies.get("t") or ""
-        dfid = used_cookies.get("dfid") or used_cookies.get("kg_dfid") or ""
-        userid = used_cookies.get("userid") or used_cookies.get("KugooID") or used_cookies.get("UserName") or ""
-        mid = used_cookies.get("KUGOU_API_MID") or used_cookies.get("mid") or used_cookies.get("kg_mid") or used_cookies.get("kg_mid_temp") or ""
+        token, dfid, userid, mid = used_cookies.get("token", ""), used_cookies.get("dfid", "-"), used_cookies.get("userid", 0), used_cookies.get("KUGOU_API_MID", "-")
         # construct params
-        default_params = {"dfid": dfid, "mid": mid, "uuid": "", "appid": APPID, "clientver": CLIENTVER, "clienttime": clienttime}
+        default_params = {"dfid": dfid, "mid": mid, "uuid": "-", "appid": APPID, "clientver": CLIENTVER, "clienttime": clienttime}
         if token: default_params["token"] = token
         if userid: default_params["userid"] = userid
         params = {**default_params, **params}
@@ -156,7 +157,7 @@ class KugouMusicClientUtils:
         raw = json.dumps(data_map, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
         enc = cipher.encrypt(KugouMusicClientUtils.pad(raw))
         aes_body = base64.b64encode(enc).decode("utf-8")
-        p = KugouMusicClientUtils.rsaencryptpkcs1({"aes": aes_key, "uid": cookies.get("userid") or cookies.get("KugooID") or cookies.get("UserName") or "", "token": cookies.get("token") or cookies.get("t") or ""})
+        p = KugouMusicClientUtils.rsaencryptpkcs1({"aes": aes_key, "uid": cookies.get("userid", 0), "token": cookies.get("token", "")})
         # send request and return result
         resp_raw: bytes = KugouMusicClientUtils.sendrequest(session, "POST", "/risk/v2/r_register_dev", params={"part": 1, "platid": 1, "p": p}, data=aes_body, base_url="https://userservice.kugou.com", encrypt_type="android", response_type="arraybuffer", cookies=cookies, request_overrides=request_overrides)
         try:
