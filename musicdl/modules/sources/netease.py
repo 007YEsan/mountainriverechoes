@@ -210,7 +210,7 @@ class NeteaseMusicClient(BaseMusicClient):
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         cookies = self.default_cookies or request_overrides.get('cookies')
         if cookies and (cookies != DEFAULT_COOKIES): return SongInfo(source=self.source, raw_data={'quality': MUSIC_QUALITIES[-1]})
-        for imp_func in [self._parsewithcggapi, self._parsewithtmetuapi, self._parsewithcyruiapi, self._parsewithxiaoqinapi, self._parsewithxianyuwapi, self._parsewithbugpkapi]:
+        for imp_func in [self._parsewithtmetuapi, self._parsewithcyruiapi, self._parsewithxiaoqinapi, self._parsewithcggapi, self._parsewithxianyuwapi, self._parsewithbugpkapi]:
             try:
                 song_info_flac = imp_func(search_result, request_overrides)
                 if song_info_flac.with_valid_download_url: break
