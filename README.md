@@ -529,7 +529,7 @@ music_client.startcmdui()
 ```
 
 Keep in mind that cookie names captured from network traffic may not match the cookie names required by musicdl.
-You must map them correctly to generate valid cookies, otherwise, downloading member-only music resources will not work.
+You need to map them correctly to construct valid cookies, otherwise, member-only music downloads won’t work.
 
 #### XimalayaFM and LizhiFM Audio/Radio Download
 
