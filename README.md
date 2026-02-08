@@ -391,7 +391,7 @@ music_client.download(song_infos=song_infos)
 ```
 
 You can also choose not to use the unified `MusicClient` interface and instead directly import the definition class for a specific music platform for secondary development. 
-For example, to import the definition class for `NeteaseMusicClient`:
+Take `NeteaseMusicClient` as an example:
 
 ```python
 from musicdl.modules.sources import NeteaseMusicClient
@@ -528,7 +528,7 @@ music_client = musicdl.MusicClient(music_sources=['KugouMusicClient'], init_musi
 music_client.startcmdui()
 ```
 
-Keep in mind that the parameter names obtained from packet capture may not match musicdl’s required names. 
+Keep in mind that cookie names captured from network traffic may not match the cookie names required by musicdl.
 You must map them correctly to generate valid cookies, otherwise, downloading member-only music resources will not work.
 
 #### XimalayaFM and LizhiFM Audio/Radio Download
