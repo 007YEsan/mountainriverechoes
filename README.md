@@ -59,9 +59,9 @@
 
 # 🎉 What's New
 
+- 2026-02-11: Released musicdl v2.9.4 — supported batch downloading for Kuwo Music playlists; optimized playlist downloading for NetEase Cloud Music and QQ Music; added support for QQ Music’s "Premium Master 4.0" (臻品母带 4.0) to provide high-fidelity audio files.
 - 2026-02-10: Released musicdl v2.9.3 — refactored the TIDAL client to utilize N_m3u8DL-RE for HI_RES_LOSSLESS support, and optimized the lossless interface for shared membership accounts.
 - 2026-02-07: Released musicdl v2.9.2 — support parsing and downloading QQ Music playlists; update arguments for some API endpoints; update the KuGou Music track link parsing API to enable downloading music files with Viper audio effects/quality using a KuGou VIP account; and fix several bugs.
-- 2026-02-05: Released musicdl v2.9.1 — support ALAC-quality downloads for Apple Music; add song search and download for the StreetVoice platform; add two new shared VIP-account API endpoints for NetEase Cloud Music.
 
 
 # 🎵 Introduction

@@ -66,6 +66,29 @@ class QQMusicClient(BaseMusicClient):
             if song_info.with_valid_download_url: break
         # return
         return song_info
+    '''_parsewithlittleyouziapi'''
+    def _parsewithlittleyouziapi(self, search_result: dict, request_overrides: dict = None):
+        # init
+        request_overrides, song_id = request_overrides or {}, search_result.get('mid') or search_result.get('songmid')
+        # parse
+        for quality in range(0, 11):
+            try: resp = self.get(f"https://www.littleyouzi.com/api/v2/qqmusic?mid={song_id}&quality={quality}", timeout=10, **request_overrides); resp.raise_for_status()
+            except Exception: break
+            download_result = resp2json(resp=resp)
+            download_url: str = safeextractfromdict(download_result, ['data', 'audio'], '')
+            if not download_url: continue
+            song_info = SongInfo(
+                raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('title') or search_result.get('songname')),
+                singers=legalizestring(', '.join([singer.get('name') for singer in (safeextractfromdict(search_result, ['singer'], []) or []) if isinstance(singer, dict) and singer.get('name')])),
+                album=legalizestring(safeextractfromdict(search_result, ['album', 'title'], None) or search_result.get('albumname')), ext=download_url.split('?')[0].split('.')[-1], file_size='NULL', 
+                identifier=song_id, duration_s=search_result.get('interval', 0), duration=seconds2hms(search_result.get('interval', 0)), lyric=None, cover_url=None, download_url=download_url, 
+                download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+            )
+            song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
+            song_info.file_size = song_info.download_url_status['probe_status']['file_size']
+            if song_info.with_valid_download_url: break
+        # return
+        return song_info
     '''_parsewithnkiapi'''
     def _parsewithnkiapi(self, search_result: dict, request_overrides: dict = None):
         # init
@@ -117,7 +140,7 @@ class QQMusicClient(BaseMusicClient):
     '''_parsewiththirdpartapis'''
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         if self.default_cookies or request_overrides.get('cookies'): return SongInfo(source=self.source)
-        for imp_func in [self._parsewithvkeysapi, self._parsewithnkiapi, self._parsewithxianyuwapi]:
+        for imp_func in [self._parsewithlittleyouziapi, self._parsewithvkeysapi, self._parsewithnkiapi, self._parsewithxianyuwapi]:
             try:
                 song_info_flac = imp_func(search_result, request_overrides)
                 if song_info_flac.with_valid_download_url: break
@@ -181,8 +204,9 @@ class QQMusicClient(BaseMusicClient):
                         song_info = SongInfo(
                             raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'ekey': ekey}, source=self.source, song_name=legalizestring(search_result.get('title')),
                             singers=legalizestring(', '.join([singer.get('name') for singer in (search_result.get('singer', []) or []) if isinstance(singer, dict) and singer.get('name')])),
-                            album=legalizestring(safeextractfromdict(search_result, ['album', 'title'], None)), ext=quality[1][1:], file_size='NULL', identifier=search_result['mid'], duration_s=search_result.get('interval', 0),
-                            duration=seconds2hms(search_result.get('interval', 0)), lyric=None, cover_url=None, download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+                            album=legalizestring(safeextractfromdict(search_result, ['album', 'title'], None)), ext=quality[1][1:], file_size='NULL', identifier=search_result['mid'], 
+                            duration_s=search_result.get('interval', 0), duration=seconds2hms(search_result.get('interval', 0)), lyric=None, cover_url=None, download_url=download_url, 
+                            download_url_status=self.audio_link_tester.test(download_url, request_overrides),
                         )
                         song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
                         song_info.file_size = song_info.download_url_status['probe_status']['file_size']
@@ -207,8 +231,9 @@ class QQMusicClient(BaseMusicClient):
                         song_info = SongInfo(
                             raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('title')),
                             singers=legalizestring(', '.join([singer.get('name') for singer in (search_result.get('singer', []) or []) if isinstance(singer, dict) and singer.get('name')])),
-                            album=legalizestring(safeextractfromdict(search_result, ['album', 'title'], None)), ext=quality[1][1:], file_size='NULL', identifier=search_result['mid'], duration_s=search_result.get('interval', 0),
-                            duration=seconds2hms(search_result.get('interval', 0)), lyric=None, cover_url=None, download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+                            album=legalizestring(safeextractfromdict(search_result, ['album', 'title'], None)), ext=quality[1][1:], file_size='NULL', identifier=search_result['mid'], 
+                            duration_s=search_result.get('interval', 0), duration=seconds2hms(search_result.get('interval', 0)), lyric=None, cover_url=None, download_url=download_url, 
+                            download_url_status=self.audio_link_tester.test(download_url, request_overrides),
                         )
                         song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
                         song_info.file_size = song_info.download_url_status['probe_status']['file_size']
@@ -259,7 +284,7 @@ class QQMusicClient(BaseMusicClient):
             for idx, track_info in enumerate(tracks):
                 if idx > 0: main_process_context.advance(main_progress_id, 1)
                 main_process_context.update(main_progress_id, description=f"{len(tracks)} songs found in playlist {playlist_id} >>> completed ({idx}/{len(tracks)})")
-                for third_part_api in [self._parsewithvkeysapi, self._parsewithnkiapi, self._parsewithxianyuwapi]:
+                for third_part_api in [self._parsewithlittleyouziapi, self._parsewithvkeysapi, self._parsewithnkiapi, self._parsewithxianyuwapi]:
                     try:
                         song_info = third_part_api(track_info, request_overrides=request_overrides)
                         if song_info.with_valid_download_url: song_infos.append(song_info); break
