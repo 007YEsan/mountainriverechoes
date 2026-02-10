@@ -40,7 +40,7 @@ class TIDALMusicClient(BaseMusicClient):
         try:
             touchdir(song_info.work_dir)
             stream_url: StreamUrl = song_info.download_url
-            download_ext, final_ext = TIDALMusicClientUtils.guessstreamextension(stream_url=stream_url), f'.{song_info.ext}'
+            download_ext, final_ext = TIDALMusicClientUtils.guessstreamextension(stream=stream_url), f'.{song_info.ext}'
             remux_required = TIDALMusicClientUtils.shouldremuxflac(download_ext, final_ext, stream_url)
             assert TIDALMusicClientUtils.flacremuxavailable(), f'FLAC stream for {stream_url.url} requires remuxing but no backend is available.'
             progress.update(song_progress_id, total=1, kind='overall')
@@ -106,9 +106,9 @@ class TIDALMusicClient(BaseMusicClient):
                     try: download_url: StreamUrl = TIDALMusicClientUtils.getstreamurl(search_result.id, quality=quality[1], request_overrides=request_overrides)
                     except Exception: continue
                     song_info = SongInfo(
-                        raw_data={'search': search_result, 'download': {}, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.title), singers=legalizestring(', '.join([str(singer.name) for singer in (search_result.artists or []) if isinstance(singer, Artist)])),
-                        album=legalizestring(search_result.album.title), ext=TIDALMusicClientUtils.getexpectedextension(download_url).removeprefix('.'), file_size='HLS', identifier=search_result.id, duration_s=search_result.duration, duration=seconds2hms(search_result.duration), 
-                        lyric=None, cover_url=TIDALMusicClientUtils.getcoverurl(search_result.album.cover), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url.urls[0], request_overrides),
+                        raw_data={'search': search_result, 'download': {}, 'lyric': {}, 'quality': quality}, source=self.source, song_name=legalizestring(search_result.title), singers=legalizestring(', '.join([str(singer.name) for singer in (search_result.artists or []) if isinstance(singer, Artist)])),
+                        album=legalizestring(search_result.album.title), ext=TIDALMusicClientUtils.getexpectedextension(download_url).removeprefix('.'), file_size='HLS', identifier=search_result.id, duration_s=search_result.duration or 0, duration=seconds2hms(search_result.duration or 0), lyric=None, 
+                        cover_url=TIDALMusicClientUtils.getcoverurl(search_result.album.cover), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url.urls[0], request_overrides),
                     )
                     if song_info.with_valid_download_url: break
                 if not song_info.with_valid_download_url: continue
