@@ -987,7 +987,7 @@ class TIDALMusicClientUtils:
     '''getstreamurlofficialapi'''
     @staticmethod
     def getstreamurlofficialapi(song_id, quality: str, request_overrides: dict = None):
-        params = {"audioquality": quality, "playbackmode": "STREAM", "assetpresentation": "FULL"}
+        params, request_overrides = {"audioquality": quality, "playbackmode": "STREAM", "assetpresentation": "FULL"}, request_overrides or {}
         data = TIDALMusicClientUtils.tidalhifiapiget(f'tracks/{str(song_id)}/playbackinfopostpaywall', params, request_overrides=request_overrides)
         resp = aigpy.model.dictToModel(data, StreamRespond())
         if "vnd.tidal.bt" in resp.manifestMimeType:
@@ -1011,12 +1011,8 @@ class TIDALMusicClientUtils:
     '''getstreamurlsquidapi'''
     @staticmethod
     def getstreamurlsquidapi(song_id, quality: str, request_overrides: dict = None):
-        headers = {
-            "accept": "*/*", "accept-encoding": "gzip, deflate, br, zstd", "accept-language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7", "origin": "https://tidal.squid.wtf",
-            "priority": "u=1, i", "referer": "https://tidal.squid.wtf/", "sec-ch-ua": '"Not(A:Brand";v="8", "Chromium";v="144", "Google Chrome";v="144"', "sec-ch-ua-mobile": "?0",
-            "sec-ch-ua-platform": '"Windows"', "sec-fetch-dest": "empty", "sec-fetch-mode": "cors", "sec-fetch-site": "same-site", "x-client": "BiniLossless/v3.4",
-            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36",
-        }
+        request_overrides = request_overrides or {}
+        headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"}
         data = requests.get(f'https://triton.squid.wtf/track/?id={song_id}&quality={quality}', headers=headers, **request_overrides).json()['data']
         resp = aigpy.model.dictToModel(data, StreamRespond())
         if "vnd.tidal.bt" in resp.manifestMimeType:
