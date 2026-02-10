@@ -48,13 +48,10 @@ class QQMusicClient(BaseMusicClient):
         to_seconds_func = lambda x: (lambda s: 0 if not s else (lambda p: p[-3]*3600+p[-2]*60+p[-1] if len(p)>=3 else p[0]*60+p[1] if len(p)==2 else p[0] if len(p)==1 else 0)([int(v) for v in re.findall(r'\d+', s.replace('：', ':'))]) if (':' in s or '：' in s) else (lambda h,m,sec,num: (lambda tot: tot if tot>0 else num)(h*3600+m*60+sec))(int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:小时|时|h|hr)', s)) else 0, int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:分钟|分|m|min)', s)) else 0, (int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:秒|s|sec)', s)) else (int(mo.group(1)) if (mo:=re.search(r'(?:分钟|分|m|min)\s*(\d+)\b', s)) else 0)), int(mo.group(0)) if (mo:=re.search(r'\d+', s)) else 0))(str(x).strip().lower())
         # parse
         for quality in list(ThirdPartVKeysAPISongFileType.ID_TO_NAME.value.keys())[::-1]:
-            try:
-                resp = self.get(f"https://api.vkeys.cn/v2/music/tencent/geturl?mid={song_id}&quality={quality}", timeout=10, **request_overrides)
-                resp.raise_for_status()
-                download_result = resp2json(resp=resp)
-                if ('data' not in download_result) or ('url' not in download_result['data']) or (safe_fetch_filesize_func(download_result['data']) < 1): continue
-            except:
-                continue
+            try: resp = self.get(f"https://api.vkeys.cn/v2/music/tencent/geturl?mid={song_id}&quality={quality}", timeout=10, **request_overrides); resp.raise_for_status()
+            except Exception: break
+            download_result = resp2json(resp=resp)
+            if ('data' not in download_result) or ('url' not in download_result['data']) or (safe_fetch_filesize_func(download_result['data']) < 1): continue
             download_url: str = download_result['data']['url']
             if not download_url: continue
             song_info = SongInfo(

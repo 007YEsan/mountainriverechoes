@@ -10,11 +10,13 @@ import re
 import copy
 import random
 import base64
+import warnings
 from .base import BaseMusicClient
 from rich.progress import Progress
 from ..utils.kuwoutils import KuwoMusicClientUtils
 from urllib.parse import urlencode, urlparse, parse_qs
 from ..utils import legalizestring, resp2json, seconds2hms, usesearchheaderscookies, safeextractfromdict, kuwolyricslisttolrc, cleanlrc, SongInfo
+warnings.filterwarnings('ignore')
 
 
 '''KuwoMusicClient'''
@@ -42,13 +44,9 @@ class KuwoMusicClient(BaseMusicClient):
         MUSIC_QUALITIES = ["hires", "lossless", "SQ", "exhigh", "standard"]
         # parse
         for quality in MUSIC_QUALITIES:
-            try:
-                resp = self.get(f"https://api.yaohud.cn/api/music/kuwo?key={decrypt_func(random.choice(REQUEST_KEYS))}&msg={keyword}&n={num}&size={quality}", timeout=10, **request_overrides)
-                resp.raise_for_status()
-                download_result = resp2json(resp=resp)
-                if 'data' not in download_result: continue
-            except:
-                continue
+            try: resp = self.get(f"https://api.yaohud.cn/api/music/kuwo?key={decrypt_func(random.choice(REQUEST_KEYS))}&msg={keyword}&n={num}&size={quality}", timeout=10, **request_overrides); resp.raise_for_status()
+            except Exception: break
+            download_result = resp2json(resp=resp)
             download_url = safeextractfromdict(download_result, ['data', 'vipmusic', 'url'], '')
             if not download_url: continue
             song_info = SongInfo(
@@ -70,13 +68,10 @@ class KuwoMusicClient(BaseMusicClient):
         safe_fetch_filesize_func = lambda meta: (lambda s: (lambda: float(s))() if s.replace('.', '', 1).isdigit() else 0)(str(meta.get('size', '0.00MB')).removesuffix('MB').strip()) if isinstance(meta, dict) else 0
         # parse
         for quality in MUSIC_QUALITIES[::-1][3:]:
-            try:
-                resp = self.get(f"https://kw-api.cenguigui.cn/?id={song_id}&type=song&level={quality}&format=json", timeout=10, **request_overrides)
-                resp.raise_for_status()
-                download_result = resp2json(resp=resp)
-                if 'data' not in download_result or (safe_fetch_filesize_func(download_result['data']) < 1): continue
-            except:
-                continue
+            try: resp = self.get(f"https://kw-api.cenguigui.cn/?id={song_id}&type=song&level={quality}&format=json", verify=False, timeout=10, **request_overrides); resp.raise_for_status()
+            except Exception: break
+            download_result = resp2json(resp=resp)
+            if 'data' not in download_result or (safe_fetch_filesize_func(download_result['data']) < 1): continue
             download_url = safeextractfromdict(download_result, ['data', 'url'], '')
             if not download_url: continue
             song_info = SongInfo(
