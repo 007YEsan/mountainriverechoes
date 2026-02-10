@@ -418,12 +418,14 @@ From musicdl v2.9.0 onward, support for downloading user playlists from each pla
 
 - [NeteaseMusicClient | 网易云音乐](https://music.163.com/)
 - [QQMusicClient | QQ音乐](https://y.qq.com/)
+- [KuwoMusicClient | 酷我音乐](http://www.kuwo.cn/)
 
 Specifically, you only need to run the following command in the terminal, musicdl will automatically detect the playlist in the link and download it in batch:
 
 ```sh
 musicdl -p "https://music.163.com/#/playlist?id=7583298906" -m NeteaseMusicClient
 musicdl -p "https://y.qq.com/n/ryqq_v2/playlist/8740590963" -m QQMusicClient
+musicdl -p "https://www.kuwo.cn/playlist_detail/3387576633" -m KuwoMusicClient
 ```
 
 Alternatively, use the following code to invoke it,
