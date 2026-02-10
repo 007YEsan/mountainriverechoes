@@ -72,15 +72,13 @@ class NeteaseMusicClient(BaseMusicClient):
         to_seconds_func = lambda x: (lambda s: 0 if not s else (lambda p: p[-3]*3600+p[-2]*60+p[-1] if len(p)>=3 else p[0]*60+p[1] if len(p)==2 else p[0] if len(p)==1 else 0)([int(v) for v in re.findall(r'\d+', s.replace('：', ':'))]) if (':' in s or '：' in s) else (lambda h,m,sec,num: (lambda tot: tot if tot>0 else num)(h*3600+m*60+sec))(int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:小时|时|h|hr)', s)) else 0, int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:分钟|分|m|min)', s)) else 0, (int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:秒|s|sec)', s)) else (int(mo.group(1)) if (mo:=re.search(r'(?:分钟|分|m|min)\s*(\d+)\b', s)) else 0)), int(mo.group(0)) if (mo:=re.search(r'\d+', s)) else 0))(str(x).strip().lower())
         # parse
         for quality in MUSIC_QUALITIES:
-            for prefix in ['api-v2', 'api-v1', 'api', 'player']:
-                try:
-                    resp = self.get(url=f'https://{prefix}.cenguigui.cn/api/netease/music_v1.php?id={song_id}&type=json&level={quality}', timeout=10, **request_overrides)
-                    resp.raise_for_status()
-                    download_result = resp2json(resp=resp)
-                    if 'data' not in download_result or (safe_fetch_filesize_func(download_result['data']) < 1): continue
-                    break
-                except:
-                    continue
+            try:
+                resp = self.get(url=f'https://api-v2.cenguigui.cn/api/netease/music_v1.php?id={song_id}&type=json&level={quality}', timeout=10, **request_overrides)
+                resp.raise_for_status()
+                download_result = resp2json(resp=resp)
+                if 'data' not in download_result or (safe_fetch_filesize_func(download_result['data']) < 1): continue
+            except:
+                continue
             download_url: str = safeextractfromdict(download_result, ['data', 'url'], '')
             if not download_url or not download_url.startswith('http'): continue
             song_info = SongInfo(
@@ -236,7 +234,7 @@ class NeteaseMusicClient(BaseMusicClient):
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         cookies = self.default_cookies or request_overrides.get('cookies')
         if cookies and (cookies != DEFAULT_COOKIES): return SongInfo(source=self.source, raw_data={'quality': MUSIC_QUALITIES[-1]})
-        for imp_func in [self._parsewithcggapi, self._parsewithcyruiapi, self._parsewithxiaoqinapi, self._parsewithcunyuapi, self._parsewithxianyuwapi, self._parsewithtmetuapi, self._parsewithbugpkapi]:
+        for imp_func in [self._parsewithcyruiapi, self._parsewithxiaoqinapi, self._parsewithcggapi, self._parsewithcunyuapi, self._parsewithxianyuwapi, self._parsewithtmetuapi, self._parsewithbugpkapi]:
             try:
                 song_info_flac = imp_func(search_result, request_overrides)
                 if song_info_flac.with_valid_download_url: break
@@ -350,7 +348,7 @@ class NeteaseMusicClient(BaseMusicClient):
             for idx, track_id in enumerate(track_ids):
                 if idx > 0: main_process_context.advance(main_progress_id, 1)
                 main_process_context.update(main_progress_id, description=f"{len(track_ids)} songs found in playlist {playlist_id} >>> completed ({idx}/{len(track_ids)})")
-                for third_part_api in [self._parsewithcggapi, self._parsewithcyruiapi, self._parsewithcunyuapi, self._parsewithtmetuapi]:
+                for third_part_api in [self._parsewithcyruiapi, self._parsewithcunyuapi, self._parsewithcggapi, self._parsewithtmetuapi]:
                     try:
                         song_info = third_part_api({'id': track_id}, request_overrides=request_overrides)
                         if song_info.with_valid_download_url: song_infos.append(song_info); break
