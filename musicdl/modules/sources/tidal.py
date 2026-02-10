@@ -9,8 +9,9 @@ WeChat Official Account (微信公众号):
 import os
 import copy
 import aigpy
-import shutil
+import base64
 import tempfile
+from pathlib import Path
 from .base import BaseMusicClient
 from rich.progress import Progress
 from urllib.parse import urlencode
@@ -39,7 +40,7 @@ class TIDALMusicClient(BaseMusicClient):
         request_overrides = request_overrides or {}
         try:
             touchdir(song_info.work_dir)
-            stream_url: StreamUrl = song_info.download_url
+            stream_url: StreamUrl = song_info.download_url; stream_resp: dict = song_info.raw_data['download']
             download_ext, final_ext = TIDALMusicClientUtils.guessstreamextension(stream=stream_url), f'.{song_info.ext}'
             remux_required = TIDALMusicClientUtils.shouldremuxflac(download_ext, final_ext, stream_url)
             assert TIDALMusicClientUtils.flacremuxavailable(), f'FLAC stream for {stream_url.url} requires remuxing but no backend is available.'
@@ -47,9 +48,16 @@ class TIDALMusicClient(BaseMusicClient):
             progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name[:10] + '...' if len(song_info.song_name) > 13 else song_info.song_name[:13]} (Downloading)")
             with tempfile.TemporaryDirectory(prefix="musicdl-TIDALMusicClient-track-") as tmpdir:
                 download_part = os.path.join(tmpdir, f"download{download_ext}.part" if download_ext else "download.part")
-                tool = aigpy.download.DownloadTool(download_part, stream_url.urls); tool.setUserProgress(None); tool.setPartSize(song_info.chunk_size)
-                check, err = tool.start(showProgress=False)
-                if not check: raise RuntimeError(err)
+                if "vnd.tidal.bt" in stream_resp['manifestMimeType']:
+                    tool = aigpy.download.DownloadTool(download_part, stream_url.urls); tool.setUserProgress(None); tool.setPartSize(song_info.chunk_size)
+                    check, err = tool.start(showProgress=False)
+                    if not check: raise RuntimeError(err)
+                elif "dash+xml" in stream_resp['manifestMimeType']:
+                    local_file_path, manifest_content = os.path.join(tmpdir, str(song_info.identifier) + '.mpd'), base64.b64decode(stream_resp['manifest'])
+                    with open(local_file_path, "wb") as fp: fp.write(manifest_content)
+                    check = TIDALMusicClientUtils.downloadstreamwithnm3u8dlre(local_file_path, download_part, silent=self.disable_print, random_uuid=str(song_info.identifier))
+                    if not check: raise RuntimeError(f"N_m3u8DL-RE error while dealing with {manifest_content.decode('utf-8')}")
+                    download_part = max(Path(download_part).parent.glob(f"{Path(download_part).name}*"), key=lambda p: p.stat().st_mtime, default=None)
                 decrypted_target, remux_target = os.path.join(tmpdir, f"decrypted{download_ext}" if download_ext else "decrypted"), os.path.join(tmpdir, "remux.flac")
                 decrypted_path = TIDALMusicClientUtils.decryptdownloadedaudio(stream_url, download_part, decrypted_target); processed_path = decrypted_path
                 if remux_required:
@@ -61,7 +69,6 @@ class TIDALMusicClient(BaseMusicClient):
             progress.advance(song_progress_id, os.path.getsize(song_info.save_path))
             progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name[:10] + '...' if len(song_info.song_name) > 13 else song_info.song_name[:13]} (Success)")
             downloaded_song_infos.append(SongInfoUtils.fillsongtechinfo(copy.deepcopy(song_info), logger_handle=self.logger_handle, disable_print=self.disable_print))
-            shutil.rmtree(tmpdir, ignore_errors=True)
         except Exception as err:
             progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name[:10] + '...' if len(song_info.song_name) > 13 else song_info.song_name[:13]} (Error: {err})")
         return downloaded_song_infos
@@ -103,11 +110,11 @@ class TIDALMusicClient(BaseMusicClient):
                 song_info = SongInfo(source=self.source)
                 # --download results
                 for quality in TIDALMusicClientUtils.MUSIC_QUALITIES:
-                    try: download_url: StreamUrl = TIDALMusicClientUtils.getstreamurl(search_result.id, quality=quality[1], request_overrides=request_overrides)
+                    try: download_url, stream_resp = TIDALMusicClientUtils.getstreamurl(search_result.id, quality=quality[1], request_overrides=request_overrides)
                     except Exception: continue
                     song_info = SongInfo(
-                        raw_data={'search': search_result, 'download': {}, 'lyric': {}, 'quality': quality}, source=self.source, song_name=legalizestring(search_result.title), singers=legalizestring(', '.join([str(singer.name) for singer in (search_result.artists or []) if isinstance(singer, Artist)])),
-                        album=legalizestring(search_result.album.title), ext=TIDALMusicClientUtils.getexpectedextension(download_url).removeprefix('.'), file_size='HLS', identifier=search_result.id, duration_s=search_result.duration or 0, duration=seconds2hms(search_result.duration or 0), lyric=None, 
+                        raw_data={'search': search_result, 'download': stream_resp, 'lyric': {}, 'quality': quality}, source=self.source, song_name=legalizestring(search_result.title), singers=legalizestring(', '.join([str(singer.name) for singer in (search_result.artists or []) if isinstance(singer, Artist)])),
+                        album=legalizestring(search_result.album.title), ext=TIDALMusicClientUtils.getexpectedextension(download_url).removeprefix('.'), file_size_bytes='HLS', file_size='HLS', identifier=search_result.id, duration_s=search_result.duration, duration=seconds2hms(search_result.duration), lyric=None, 
                         cover_url=TIDALMusicClientUtils.getcoverurl(search_result.album.cover), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url.urls[0], request_overrides),
                     )
                     if song_info.with_valid_download_url: break

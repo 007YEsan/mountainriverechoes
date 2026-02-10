@@ -30,6 +30,7 @@ from Crypto.Util import Counter
 from xml.etree import ElementTree
 from abc import ABC, abstractmethod
 from collections import defaultdict
+from platformdirs import user_log_dir
 from cryptography.fernet import Fernet
 from datetime import datetime, timedelta
 from dataclasses import dataclass, field, asdict
@@ -993,7 +994,7 @@ class TIDALMusicClientUtils:
             manifest = json.loads(base64.b64decode(resp.manifest).decode('utf-8'))
             ret = StreamUrl()
             ret.trackid, ret.soundQuality, ret.codec, ret.encryptionKey, ret.url, ret.urls = resp.trackid, resp.audioQuality, manifest['codecs'], manifest['keyId'] if 'keyId' in manifest else "", manifest['urls'][0], [manifest['urls'][0]]
-            return ret
+            return ret, data
         elif "dash+xml" in resp.manifestMimeType:
             manifest = TIDALMusicClientUtils.parsempd(base64.b64decode(resp.manifest))
             ret = StreamUrl()
@@ -1005,7 +1006,7 @@ class TIDALMusicClientUtils:
             if codec.startswith('MP4A'): codec = 'AAC'
             ret.codec, ret.encryptionKey, ret.urls = codec, "", representation.segments
             if len(ret.urls) > 0: ret.url = ret.urls[0]
-            return ret
+            return ret, data
         raise Exception("Can't get the streamUrl, type is " + resp.manifestMimeType)
     '''getstreamurlsquidapi'''
     @staticmethod
@@ -1022,7 +1023,7 @@ class TIDALMusicClientUtils:
             manifest = json.loads(base64.b64decode(resp.manifest).decode('utf-8'))
             ret = StreamUrl()
             ret.trackid, ret.soundQuality, ret.codec, ret.encryptionKey, ret.url, ret.urls = resp.trackid, resp.audioQuality, manifest['codecs'], manifest['keyId'] if 'keyId' in manifest else "", manifest['urls'][0], [manifest['urls'][0]]
-            return ret
+            return ret, data
         elif "dash+xml" in resp.manifestMimeType:
             manifest = TIDALMusicClientUtils.parsempd(base64.b64decode(resp.manifest))
             ret = StreamUrl()
@@ -1034,12 +1035,25 @@ class TIDALMusicClientUtils:
             if codec.startswith('MP4A'): codec = 'AAC'
             ret.codec, ret.encryptionKey, ret.urls = codec, "", representation.segments
             if len(ret.urls) > 0: ret.url = ret.urls[0]
-            return ret
+            return ret, data
         raise Exception("Can't get the streamUrl, type is " + resp.manifestMimeType)
     '''getstreamurl'''
     @staticmethod
     def getstreamurl(song_id, quality: str, request_overrides: dict = None):
         for parser in [TIDALMusicClientUtils.getstreamurlsquidapi, TIDALMusicClientUtils.getstreamurlofficialapi]:
-            try: stream_url = parser(song_id=song_id, quality=quality, request_overrides=request_overrides); assert stream_url.urls; break
+            try: stream_url, stream_resp = parser(song_id=song_id, quality=quality, request_overrides=request_overrides); assert stream_url.urls; break
             except Exception: continue
-        return stream_url
+        return stream_url, stream_resp
+    '''downloadstreamwithnm3u8dlre'''
+    @staticmethod
+    def downloadstreamwithnm3u8dlre(stream_url: str, download_path: str, silent: bool = False, random_uuid: str = ''):
+        download_path_obj = Path(download_path)
+        download_path_obj.parent.mkdir(parents=True, exist_ok=True)
+        log_file_path = os.path.join(user_log_dir(appname='musicdl', appauthor='zcjin'), f"musicdl_{random_uuid}.log")
+        cmd = [
+            "N_m3u8DL-RE", stream_url, "--binary-merge", "--ffmpeg-binary-path", shutil.which('ffmpeg'), "--save-name", download_path_obj.stem, "--save-dir", download_path_obj.parent, 
+            "--tmp-dir", download_path_obj.parent, "--log-file-path", log_file_path, "--auto-select", "--save-pattern", download_path_obj.name
+        ]
+        capture_output = True if silent else False
+        ret = subprocess.run(cmd, check=True, capture_output=capture_output, text=True, encoding='utf-8', errors='ignore')
+        return (ret.returncode == 0)
