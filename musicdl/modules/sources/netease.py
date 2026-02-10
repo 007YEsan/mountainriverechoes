@@ -75,12 +75,10 @@ class NeteaseMusicClient(BaseMusicClient):
             download_url: str = safeextractfromdict(download_result, ['data', 'url'], '')
             if not download_url or not download_url.startswith('http'): continue
             song_info = SongInfo(
-                raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'quality': quality}, source=self.source, song_name=legalizestring(safeextractfromdict(download_result, ['data', 'name'], None)),
-                singers=legalizestring(safeextractfromdict(download_result, ['data', 'artist'], None)), album=legalizestring(safeextractfromdict(download_result, ['data', 'album'], None)), 
-                ext=download_url.split('?')[0].split('.')[-1], file_size=str(safeextractfromdict(download_result, ['data', 'size'], "")).removesuffix('MB').strip() + ' MB', identifier=search_result['id'],
-                duration_s=to_seconds_func(safeextractfromdict(download_result, ['data', 'duration'], "")), duration=seconds2hms(to_seconds_func(safeextractfromdict(download_result, ['data', 'duration'], ""))),
-                lyric=cleanlrc(safeextractfromdict(download_result, ['data', 'lyric'], "")), cover_url=safeextractfromdict(download_result, ['data', 'pic'], ""), download_url=download_url,
-                download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+                raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'quality': quality}, source=self.source, song_name=legalizestring(safeextractfromdict(download_result, ['data', 'name'], None)), singers=legalizestring(safeextractfromdict(download_result, ['data', 'artist'], None)),
+                album=legalizestring(safeextractfromdict(download_result, ['data', 'album'], None)), ext=download_url.split('?')[0].split('.')[-1] or 'mp3', file_size=str(safeextractfromdict(download_result, ['data', 'size'], "")).removesuffix('MB').strip() + ' MB', identifier=search_result['id'],
+                duration_s=to_seconds_func(safeextractfromdict(download_result, ['data', 'duration'], "")), duration=seconds2hms(to_seconds_func(safeextractfromdict(download_result, ['data', 'duration'], ""))), lyric=cleanlrc(safeextractfromdict(download_result, ['data', 'lyric'], "")) or 'NULL',
+                cover_url=safeextractfromdict(download_result, ['data', 'pic'], ""), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
             )
             song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
             song_info.file_size = song_info.download_url_status['probe_status']['file_size']
@@ -215,7 +213,7 @@ class NeteaseMusicClient(BaseMusicClient):
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         cookies = self.default_cookies or request_overrides.get('cookies')
         if cookies and (cookies != DEFAULT_COOKIES): return SongInfo(source=self.source, raw_data={'quality': MUSIC_QUALITIES[-1]})
-        for imp_func in [self._parsewithcyruiapi, self._parsewithxiaoqinapi, self._parsewithcggapi, self._parsewithcunyuapi, self._parsewithxianyuwapi, self._parsewithtmetuapi, self._parsewithbugpkapi]:
+        for imp_func in [self._parsewithcyruiapi, self._parsewithxiaoqinapi, self._parsewithbugpkapi, self._parsewithcggapi, self._parsewithcunyuapi, self._parsewithxianyuwapi, self._parsewithtmetuapi]:
             try:
                 song_info_flac = imp_func(search_result, request_overrides)
                 if song_info_flac.with_valid_download_url: break
@@ -323,20 +321,20 @@ class NeteaseMusicClient(BaseMusicClient):
         resp = self.post('https://music.163.com/api/v6/playlist/detail', data={'id': playlist_id}, **request_overrides)
         resp.raise_for_status()
         playlist_results = resp2json(resp=resp)
-        track_ids, song_infos = [str(t['id']) for t in (safeextractfromdict(playlist_results, ['playlist', 'trackIds'], []) or [])], []
+        tracks, song_infos = (safeextractfromdict(playlist_results, ['playlist', 'tracks'], []) or []), []
         with Progress(TextColumn("{task.description}"), BarColumn(bar_width=None), MofNCompleteColumn(), TimeRemainingColumn(), refresh_per_second=10) as main_process_context:
-            main_progress_id = main_process_context.add_task(f"{len(track_ids)} songs found in playlist {playlist_id} >>> completed (0/{len(track_ids)})", total=len(track_ids))
-            for idx, track_id in enumerate(track_ids):
+            main_progress_id = main_process_context.add_task(f"{len(tracks)} songs found in playlist {playlist_id} >>> completed (0/{len(tracks)})", total=len(tracks))
+            for idx, track_info in enumerate(tracks):
                 if idx > 0: main_process_context.advance(main_progress_id, 1)
-                main_process_context.update(main_progress_id, description=f"{len(track_ids)} songs found in playlist {playlist_id} >>> completed ({idx}/{len(track_ids)})")
-                for third_part_api in [self._parsewithcyruiapi, self._parsewithcunyuapi, self._parsewithcggapi, self._parsewithtmetuapi]:
+                main_process_context.update(main_progress_id, description=f"{len(tracks)} songs found in playlist {playlist_id} >>> completed ({idx}/{len(tracks)})")
+                for third_part_api in [self._parsewithcyruiapi, self._parsewithxiaoqinapi, self._parsewithbugpkapi, self._parsewithcggapi, self._parsewithcunyuapi, self._parsewithxianyuwapi, self._parsewithtmetuapi]:
                     try:
-                        song_info = third_part_api({'id': track_id}, request_overrides=request_overrides)
+                        song_info = third_part_api(track_info, request_overrides=request_overrides)
                         if song_info.with_valid_download_url: song_infos.append(song_info); break
                     except:
                         continue
             main_process_context.advance(main_progress_id, 1)
-            main_process_context.update(main_progress_id, description=f"{len(track_ids)} songs found in playlist {playlist_id} >>> completed ({idx+1}/{len(track_ids)})")
+            main_process_context.update(main_progress_id, description=f"{len(tracks)} songs found in playlist {playlist_id} >>> completed ({idx+1}/{len(tracks)})")
         song_infos = self._removeduplicates(song_infos=song_infos)
         work_dir = self._constructuniqueworkdir(keyword=playlist_id)
         for song_info in song_infos:
