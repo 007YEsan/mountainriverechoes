@@ -158,8 +158,8 @@ class KugouMusicClient(BaseMusicClient):
                     lyric = cleanlrc(base64.b64decode(lyric).decode('utf-8'))
                 except:
                     lyric_result, lyric = dict(), 'NULL'
-                song_info.raw_data['lyric'] = lyric_result
-                song_info.lyric = lyric
+                song_info.raw_data['lyric'] = lyric_result if lyric_result else song_info.raw_data['lyric']
+                song_info.lyric = lyric if (lyric and (lyric not in {'NULL'})) else song_info.lyric
                 # --append to song_infos
                 song_infos.append(song_info)
                 # --judgement for search_size
