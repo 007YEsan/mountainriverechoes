@@ -47,12 +47,12 @@ class NeteaseMusicClient(BaseMusicClient):
             try: (resp := self.post('https://wyapi-eo.toubiec.cn/api/getSongUrl', json={'id': song_id, 'level': quality}, timeout=10, verify=False, **request_overrides)).raise_for_status()
             except Exception: break
             download_result = resp2json(resp=resp)
+            download_url: str = safeextractfromdict(download_result, ['data', 'url'], '')
+            if not download_url or not download_url.startswith('http'): continue
             try: (resp := self.post('https://wyapi-eo.toubiec.cn/api/getSongInfo', json={'id': song_id}, timeout=10, verify=False, **request_overrides)).raise_for_status(); download_result['song_info'] = resp2json(resp=resp)
             except Exception: pass
             try: (resp := self.post('https://wyapi-eo.toubiec.cn/api/getSongLyric', json={'id': song_id}, timeout=10, verify=False, **request_overrides)).raise_for_status(); lyric_result = resp2json(resp=resp)
             except Exception: lyric_result = {}
-            download_url: str = safeextractfromdict(download_result, ['data', 'url'], '')
-            if not download_url or not download_url.startswith('http'): continue
             ext = download_url.split('?')[0].split('.')[-1]
             song_info = SongInfo(
                 raw_data={'search': search_result, 'download': download_result, 'lyric': lyric_result, 'quality': quality}, source=self.source, song_name=legalizestring(safeextractfromdict(download_result, ['song_info', 'data', 'name'], None)), singers=legalizestring(safeextractfromdict(download_result, ['song_info', 'data', 'singer'], None) or ""),
