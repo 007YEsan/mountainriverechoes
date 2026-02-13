@@ -193,7 +193,7 @@ class KuwoMusicClient(BaseMusicClient):
         playlist_url = self.session.head(playlist_url, allow_redirects=True, **request_overrides).url
         hostname = obtainhostname(url=playlist_url)
         if not hostname or not hostmatchessuffix(hostname, KUWO_MUSIC_HOSTS): return []
-        try: playlist_id = parse_qs(urlparse(playlist_url).query, keep_blank_values=True).get('id')[0]
+        try: playlist_id = parse_qs(urlparse(playlist_url).query, keep_blank_values=False).get('id')[0]; assert playlist_id
         except: playlist_id = urlparse(playlist_url).path.strip('/').split('/')[-1]
         page, tracks, song_infos = 1, [], []
         while True:
@@ -202,6 +202,7 @@ class KuwoMusicClient(BaseMusicClient):
             playlist_results = resp2json(resp=resp)
             if (not safeextractfromdict(playlist_results, ['data', 'musicList'], [])) or (float(safeextractfromdict(playlist_results, ['data', 'total'], 0)) <= len(tracks)): break
             tracks.extend(safeextractfromdict(playlist_results, ['data', 'musicList'], []))
+        tracks = list({d["musicrid"]: d for d in tracks}.values())
         with Progress(TextColumn("{task.description}"), BarColumn(bar_width=None), MofNCompleteColumn(), TimeRemainingColumn(), refresh_per_second=10) as main_process_context:
             main_progress_id = main_process_context.add_task(f"{len(tracks)} songs found in playlist {playlist_id} >>> completed (0/{len(tracks)})", total=len(tracks))
             for idx, track_info in enumerate(tracks):

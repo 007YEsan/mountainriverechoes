@@ -301,7 +301,7 @@ class QQMusicClient(BaseMusicClient):
         playlist_url = self.session.head(playlist_url, allow_redirects=True, **request_overrides).url
         hostname = obtainhostname(url=playlist_url)
         if not hostname or not hostmatchessuffix(hostname, QQ_MUSIC_HOSTS): return []
-        try: playlist_id = parse_qs(urlparse(playlist_url).query, keep_blank_values=True).get('id')[0]
+        try: playlist_id = parse_qs(urlparse(playlist_url).query, keep_blank_values=False).get('id')[0]; assert playlist_id
         except: playlist_id = urlparse(playlist_url).path.strip('/').split('/')[-1]
         headers = {"Referer": f"https://y.qq.com/n/ryqq/playlist/{playlist_id}"}
         resp = self.get("https://c.y.qq.com/qzone/fcg-bin/fcg_ucc_getcdinfo_byids_cp.fcg", headers=headers, params={"disstid": str(playlist_id), "type": "1", "json": "1", "utf8": "1", "onlysong": "0", "format": "json"}, **request_overrides)
