@@ -120,7 +120,6 @@ class QianqianMusicClient(BaseMusicClient):
             resp.raise_for_status()
             search_results = resp2json(resp)['data']['typeTrack']
             for search_result in search_results:
-                print(search_result)
                 # --parse with official apis
                 try: song_info = self._parsewithofficialapiv1(search_result=search_result, request_overrides=request_overrides, song_info_flac=None, lossless_quality_is_sufficient=False)
                 except Exception: song_info = SongInfo(source=self.source)
