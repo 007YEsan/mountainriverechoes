@@ -21,8 +21,13 @@ class LRTSMusicClient(BaseMusicClient):
     def __init__(self, **kwargs):
         self.allowed_search_types = list(set(kwargs.pop('allowed_search_types', LRTSMusicClient.ALLOWED_SEARCH_TYPES)))
         super(LRTSMusicClient, self).__init__(**kwargs)
-        self.default_search_headers = {'User-Agent': 'Mozilla/5.0 (Linux; U; Android 4.1.1; zh-cn; MI2 Build/JRO03L) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30 XiaoMi/MiuiBrowser/1.0'}
-        self.default_download_headers = {'User-Agent': 'Mozilla/5.0 (Linux; U; Android 4.1.1; zh-cn; MI2 Build/JRO03L) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30 XiaoMi/MiuiBrowser/1.0'}
+        self.default_search_headers = {
+            "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7", "accept-encoding": "gzip, deflate, br, zstd", 
+            "accept-language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7", "cache-control": "max-age=0", "connection": "keep-alive", "sec-ch-ua": '"Not:A-Brand";v="99", "Google Chrome";v="145", "Chromium";v="145"',
+            "host": "m.lrts.me", "sec-ch-ua-mobile": "?0", "sec-ch-ua-platform": '"Windows"', "sec-fetch-dest": "document", "sec-fetch-mode": "navigate", "sec-fetch-site": "none", "sec-fetch-user": "?1",
+            "upgrade-insecure-requests": "1", "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36"
+        }
+        self.default_download_headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36"}
         self.default_headers = self.default_search_headers
         self._initsession()
     '''_constructsearchurls'''
@@ -34,7 +39,7 @@ class LRTSMusicClient(BaseMusicClient):
         default_rule.update(rule)
         # construct search urls based on search rules
         base_url = 'https://m.lrts.me/ajax/search?'
-        search_urls, page_size = [], self.search_size_per_page
+        search_urls, page_size = [], max(self.search_size_per_page, 40)
         for search_type in LRTSMusicClient.ALLOWED_SEARCH_TYPES:
             if search_type not in self.allowed_search_types: continue
             default_rule_search_type, count = copy.deepcopy(default_rule), 0
@@ -47,43 +52,43 @@ class LRTSMusicClient(BaseMusicClient):
         # return
         return search_urls
     '''_parsebookwithofficialapiv1'''
-    def _parsebookwithofficialapiv1(self, search_result: dict, request_overrides: dict = None):
+    def _parsebookwithofficialapiv1(self, section_idx, search_result: dict, request_overrides: dict = None):
         # init
-        request_overrides, album_id, song_id, song_info = request_overrides or {}, safeextractfromdict(search_result, ['book_info', 'id'], ''), search_result.get('id') or search_result.get('sectionId'), SongInfo(source=self.source)
+        request_overrides, book_id, song_id, song_info = request_overrides or {}, safeextractfromdict(search_result, ['book_info', 'id'], ''), search_result.get('id') or search_result.get('sectionId'), SongInfo(source=self.source)
         # parse
-        for op_type in range(1, 3):
-            resp = self.get(f"https://m.lrts.me/ajax/getPlayPath?entityId={album_id}&entityType=2&opType={op_type}&sections=[{song_id}]&type=0", **request_overrides)
-            resp.raise_for_status()
-            download_result = resp2json(resp=resp)
-            download_url = safeextractfromdict(download_result, ['list', 0, 'path'], '')
-            if not download_url or not download_url.startswith('http'): continue
-            song_info = SongInfo(
-                raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('name')), singers=legalizestring(safeextractfromdict(search_result, ['book_info', 'announcer'], None)), 
-                album=legalizestring(safeextractfromdict(search_result, ['book_info', 'name'], None)), ext=download_url.split('?')[0].split('.')[-1], file_size_bytes=search_result.get('size'), file_size=byte2mb(search_result.get('size')), identifier=song_id,
-                duration_s=int(float(search_result.get('length', 0) or 0)), duration=seconds2hms(int(float(search_result.get('length', 0) or 0))), lyric=None, cover_url=safeextractfromdict(search_result, ['book_info', 'cover'], None), download_url=download_url,
-                download_url_status=self.audio_link_tester.test(download_url, request_overrides),
-            )
-            if song_info.with_valid_download_url: break
+        try: (resp := self.get(f"https://m.lrts.me/ajax/getPlayPath?entityId={book_id}&entityType=3&opType=1&sections=[{section_idx}]&type=0&id={song_id}&section={section_idx}", **request_overrides)).raise_for_status(); download_result = resp2json(resp=resp)
+        except Exception: download_result = {}
+        download_url = safeextractfromdict(download_result, ['list', 0, 'path'], '')
+        if not download_url or not download_url.startswith('http'):
+            try: (resp := self.get(f"https://m.lrts.me/ajax/getListenPath?entityId={book_id}&entityType=3&opType=1&sections=[{section_idx}]&type=0&id={song_id}&section={section_idx}", **request_overrides)).raise_for_status(); download_result = resp2json(resp=resp)
+            except Exception: download_result = {}
+            download_url = safeextractfromdict(download_result, ['data', 'path'], '')
+        song_info = SongInfo(
+            raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('name')), singers=legalizestring(safeextractfromdict(search_result, ['book_info', 'announcer'], None)), 
+            album=legalizestring(safeextractfromdict(search_result, ['book_info', 'name'], None)), ext=download_url.split('?')[0].split('.')[-1], file_size_bytes=search_result.get('size'), file_size=byte2mb(search_result.get('size')), identifier=song_id,
+            duration_s=int(float(search_result.get('length', 0) or 0)), duration=seconds2hms(int(float(search_result.get('length', 0) or 0))), lyric=None, cover_url=safeextractfromdict(search_result, ['book_info', 'cover'], None), download_url=download_url,
+            download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+        )
         # return
         return song_info
     '''_parsealbumwithofficialapiv1'''
-    def _parsealbumwithofficialapiv1(self, search_result: dict, request_overrides: dict = None):
+    def _parsealbumwithofficialapiv1(self, section_idx, search_result: dict, request_overrides: dict = None):
         # init
         request_overrides, album_id, song_id, song_info = request_overrides or {}, safeextractfromdict(search_result, ['album_info', 'id'], ''), search_result.get('audioId') or search_result.get('sectionId'), SongInfo(source=self.source)
         # parse
-        for op_type in range(1, 3):
-            resp = self.get(f"https://m.lrts.me/ajax/getPlayPath?entityId={album_id}&entityType=2&opType={op_type}&sections=[{song_id}]&type=0", **request_overrides)
-            resp.raise_for_status()
-            download_result = resp2json(resp=resp)
-            download_url = safeextractfromdict(download_result, ['list', 0, 'path'], '')
-            if not download_url or not download_url.startswith('http'): continue
-            song_info = SongInfo(
-                raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('name')), singers=legalizestring(safeextractfromdict(search_result, ['album_info', 'nickName'], None)), 
-                album=legalizestring(safeextractfromdict(search_result, ['album_info', 'name'], None)), ext=download_url.split('?')[0].split('.')[-1], file_size_bytes=search_result.get('size'), file_size=byte2mb(search_result.get('size')), identifier=song_id,
-                duration_s=int(float(search_result.get('length', 0) or 0)), duration=seconds2hms(int(float(search_result.get('length', 0) or 0))), lyric=None, cover_url=safeextractfromdict(search_result, ['album_info', 'cover'], None), download_url=download_url,
-                download_url_status=self.audio_link_tester.test(download_url, request_overrides),
-            )
-            if song_info.with_valid_download_url: break
+        try: (resp := self.get(f"https://m.lrts.me/ajax/getPlayPath?entityId={album_id}&entityType=2&opType=1&sections=[{song_id}]&type=0", **request_overrides)).raise_for_status(); download_result = resp2json(resp=resp)
+        except Exception: download_result = {}
+        download_url = safeextractfromdict(download_result, ['list', 0, 'path'], '')
+        if not download_url or not download_url.startswith('http'):
+            try: (resp := self.get(f"https://m.lrts.me/ajax/getListenPath?entityId={album_id}&entityType=2&opType=1&sections=[{section_idx}]&type=0&id={song_id}&section={section_idx}", **request_overrides)).raise_for_status(); download_result = resp2json(resp=resp)
+            except Exception: download_result = {}
+            download_url = safeextractfromdict(download_result, ['data', 'path'], '')
+        song_info = SongInfo(
+            raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('name')), singers=legalizestring(safeextractfromdict(search_result, ['album_info', 'nickName'], None)), 
+            album=legalizestring(safeextractfromdict(search_result, ['album_info', 'name'], None)), ext=download_url.split('?')[0].split('.')[-1], file_size_bytes=search_result.get('size'), file_size=byte2mb(search_result.get('size')), identifier=song_id,
+            duration_s=int(float(search_result.get('length', 0) or 0)), duration=seconds2hms(int(float(search_result.get('length', 0) or 0))), lyric=None, cover_url=safeextractfromdict(search_result, ['album_info', 'cover'], None), download_url=download_url,
+            download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+        )
         # return
         return song_info
     '''_parsebybook'''
@@ -120,7 +125,7 @@ class LRTSMusicClient(BaseMusicClient):
                     progress.update(download_book_pid, description=f"{self.source}._parsebybook >>> ({track_idx}/{len(tracks)}) episodes completed in book {search_result['id']}")
                 eps_info, track['book_info'] = SongInfo(source=self.source), copy.deepcopy(search_result)
                 for parser in [self._parsebookwithofficialapiv1]:
-                    try: eps_info = parser(search_result=track, request_overrides=request_overrides)
+                    try: eps_info = parser(section_idx=track_idx+1, search_result=track, request_overrides=request_overrides)
                     except: continue
                     if eps_info.with_valid_download_url: break
                 if not eps_info.with_valid_download_url: continue
@@ -165,7 +170,7 @@ class LRTSMusicClient(BaseMusicClient):
                     progress.update(download_album_pid, description=f"{self.source}._parsebyalbum >>> ({track_idx}/{len(tracks)}) episodes completed in album {search_result['id']}")
                 eps_info, track['album_info'] = SongInfo(source=self.source), copy.deepcopy(search_result)
                 for parser in [self._parsealbumwithofficialapiv1]:
-                    try: eps_info = parser(search_result=track, request_overrides=request_overrides)
+                    try: eps_info = parser(section_idx=track_idx+1, search_result=track, request_overrides=request_overrides)
                     except: continue
                     if eps_info.with_valid_download_url: break
                 if not eps_info.with_valid_download_url: continue
