@@ -65,9 +65,9 @@ class LRTSMusicClient(BaseMusicClient):
             download_url = safeextractfromdict(download_result, ['data', 'path'], '')
         song_info = SongInfo(
             raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('name')), singers=legalizestring(safeextractfromdict(search_result, ['book_info', 'announcer'], None)), 
-            album=legalizestring(safeextractfromdict(search_result, ['book_info', 'name'], None)), ext=download_url.split('?')[0].split('.')[-1], file_size_bytes=search_result.get('size'), file_size=byte2mb(search_result.get('size')), identifier=song_id,
-            duration_s=int(float(search_result.get('length', 0) or 0)), duration=seconds2hms(int(float(search_result.get('length', 0) or 0))), lyric=None, cover_url=safeextractfromdict(search_result, ['book_info', 'cover'], None), download_url=download_url,
-            download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+            album=legalizestring(safeextractfromdict(search_result, ['book_info', 'name'], None)), ext=download_url.split('?')[0].split('.')[-1], file_size_bytes=float(search_result.get('size', 0) or 0), file_size=byte2mb(search_result.get('size', 0) or 0), 
+            identifier=song_id, duration_s=int(float(search_result.get('length', 0.0) or 0.0)), duration=seconds2hms(int(float(search_result.get('length', 0.0) or 0.0))), lyric=None, cover_url=safeextractfromdict(search_result, ['book_info', 'cover'], None), 
+            download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
         )
         # return
         return song_info
@@ -85,9 +85,9 @@ class LRTSMusicClient(BaseMusicClient):
             download_url = safeextractfromdict(download_result, ['data', 'path'], '')
         song_info = SongInfo(
             raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('name')), singers=legalizestring(safeextractfromdict(search_result, ['album_info', 'nickName'], None)), 
-            album=legalizestring(safeextractfromdict(search_result, ['album_info', 'name'], None)), ext=download_url.split('?')[0].split('.')[-1], file_size_bytes=search_result.get('size'), file_size=byte2mb(search_result.get('size')), identifier=song_id,
-            duration_s=int(float(search_result.get('length', 0) or 0)), duration=seconds2hms(int(float(search_result.get('length', 0) or 0))), lyric=None, cover_url=safeextractfromdict(search_result, ['album_info', 'cover'], None), download_url=download_url,
-            download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+            album=legalizestring(safeextractfromdict(search_result, ['album_info', 'name'], None)), ext=download_url.split('?')[0].split('.')[-1], file_size_bytes=float(search_result.get('size', 0) or 0), file_size=byte2mb(search_result.get('size', 0) or 0), 
+            identifier=song_id, duration_s=int(float(search_result.get('length', 0.0) or 0.0)), duration=seconds2hms(int(float(search_result.get('length', 0.0) or 0.0))), lyric=None, cover_url=safeextractfromdict(search_result, ['album_info', 'cover'], None), 
+            download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
         )
         # return
         return song_info
