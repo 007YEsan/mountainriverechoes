@@ -18,7 +18,7 @@
     <img src="https://static.pepy.tech/badge/musicdl" alt="PyPI - Downloads">
   </a>
   <a href="https://pypi.org/project/musicdl/">
-    <img src="https://static.pepy.tech/badge/musicdl/month" alt="PyPI - Downloads">
+    <img src="https://img.shields.io/pypi/dm/musicdl" alt="PyPI - Downloads">
   </a>
   <a href="https://github.com/CharlesPikachu/musicdl/issues">
     <img src="https://isitmaintained.com/badge/resolution/CharlesPikachu/musicdl.svg" alt="issue resolution" />
