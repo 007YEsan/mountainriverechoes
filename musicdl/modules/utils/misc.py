@@ -188,7 +188,7 @@ def isvalidresp(resp: requests.Response, valid_status_codes: list | tuple | set 
 
 
 '''safeextractfromdict'''
-def safeextractfromdict(data, progressive_keys, default_value):
+def safeextractfromdict(data, progressive_keys, default_value = None):
     try:
         result = data
         for key in progressive_keys: result = result[key]

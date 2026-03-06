@@ -89,6 +89,7 @@ class MusicClient():
                     search_result['song_name'], search_result['file_size'] if search_result['ext'] not in {'flac', 'wav', 'alac', 'ape', 'wv', 'tta', 'dsf', 'dff'} else colorize(search_result['file_size'], 'flac'),
                     search_result['duration'], search_result['album'], colorize('|'.join([s.upper() for s in [search_result['source'].removesuffix('MusicClient'), search_result['root_source']] if s]), 'highlight'),
                 ])
+        if not print_items: self.logger_handle.warning('No songs found from %s' % ', '.join(self.music_sources)); return []
         print(smarttrunctable(headers=print_titles, rows=print_items, no_trunc_cols=[0, 1, 3, 4, 6]))
         picked_ids = cursorpickintable(print_titles, print_items, row_ids, no_trunc_cols=[0, 1, 3, 4, 6])
         id2row = dict(zip(row_ids, print_items))
