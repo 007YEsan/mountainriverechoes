@@ -114,7 +114,7 @@ class MusicClient():
         max_workers, main_progress_lock = min(len(self.music_sources), 10), Lock()
         with Progress(TextColumn("{task.description}"), BarColumn(bar_width=None), MofNCompleteColumn(), TimeRemainingColumn(), refresh_per_second=10) as main_process_context:
             main_progress_id = main_process_context.add_task(f"ALL sources >>> completed (0/0)", total=0)
-            def _search(ms):
+            def search_func(ms):
                 try:
                     return ms, self.music_clients[ms].search(
                         keyword=keyword, num_threadings=self.clients_threadings[ms], request_overrides=self.requests_overrides[ms], rule=self.search_rules[ms], 
@@ -124,7 +124,7 @@ class MusicClient():
                     self.logger_handle.error(f'MusicClient.{ms}.search >>> {keyword} (Error: {err})')
                     return ms, []
             with ThreadPoolExecutor(max_workers=max_workers) as ex:
-                return dict(ex.map(_search, self.music_sources))
+                return dict(ex.map(search_func, self.music_sources))
     '''download'''
     def download(self, song_infos: list[dict]):
         classified_song_infos = {}
