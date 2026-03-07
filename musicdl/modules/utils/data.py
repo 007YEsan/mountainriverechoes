@@ -8,9 +8,9 @@ WeChat Official Account (微信公众号):
 '''
 from __future__ import annotations
 import os
-from .misc import sanitize_filepath
 from typing import Any, Dict, Optional
 from dataclasses import dataclass, field, fields
+from .misc import sanitize_filepath, safeextractfromdict, AudioLinkTester
 
 
 '''SongInfo'''
@@ -53,6 +53,7 @@ class SongInfo:
         if isinstance(self.download_url, str): is_valid_format = self.download_url and self.download_url.startswith('http')
         else: is_valid_format = self.download_url
         is_downloadable = isinstance(self.download_url_status, dict) and self.download_url_status.get('ok')
+        if not is_downloadable and (safeextractfromdict(self.download_url_status, ['probe_status', 'ext'], None) in AudioLinkTester.VALID_AUDIO_EXTS): is_downloadable = True
         return bool(is_valid_format and is_downloadable)
     # save info
     work_dir: Optional[str] = './'
