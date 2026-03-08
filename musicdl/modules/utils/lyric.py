@@ -27,12 +27,10 @@ def fractoseconds(frac: str | None) -> float:
 
 '''extractdurationsecondsfromlrc'''
 def extractdurationsecondsfromlrc(lrc: str) -> Optional[float]:
-    if not lrc: return None
+    if not lrc or (lrc == 'NULL'): return None
     max_t, time_pattern_re = None, re.compile(r"\[(?:(\d{1,2}):)?(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?\]")
     for h, m, s, frac in time_pattern_re.findall(lrc):
-        hh = int(h) if h else 0
-        mm = int(m)
-        ss = int(s)
+        hh = int(h) if h else 0; mm = int(m); ss = int(s)
         t = hh * 3600 + mm * 60 + ss + fractoseconds(frac)
         max_t = t if (max_t is None or t > max_t) else max_t
     return max_t

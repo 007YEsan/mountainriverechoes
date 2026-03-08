@@ -12,7 +12,6 @@ import base64
 import json_repair
 from bs4 import BeautifulSoup
 from .base import BaseMusicClient
-from rich.progress import Progress
 from pathvalidate import sanitize_filepath
 from ..utils.hosts import JOOX_MUSIC_HOSTS
 from urllib.parse import urlencode, urlparse, parse_qs

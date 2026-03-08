@@ -11,7 +11,8 @@ from urllib.parse import urlsplit
 
 
 '''settings'''
-JOOX_MUSIC_HOSTS = {"joox.com", }
+FIVESING_MUSIC_HOSTS = {"5sing.kugou.com",}
+JOOX_MUSIC_HOSTS = {"joox.com",}
 KUWO_MUSIC_HOSTS = {"kuwo.cn", "www.kuwo.cn", "m.kuwo.cn", "mobile.kuwo.cn",}
 KUGOU_MUSIC_HOSTS = {"www.kugou.com", "m.kugou.com", "kugou.com", "h5.kugou.com",}
 MIGU_MUSIC_HOSTS = {"music.migu.cn", "m.music.migu.cn", "h5.nf.migu.cn", "c.migu.cn", "migu.cn"}
