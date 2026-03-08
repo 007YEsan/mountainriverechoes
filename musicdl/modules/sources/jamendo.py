@@ -21,21 +21,12 @@ class JamendoMusicClient(BaseMusicClient):
     def __init__(self, **kwargs):
         super(JamendoMusicClient, self).__init__(**kwargs)
         self.default_search_headers = {
-            "referer": "https://www.jamendo.com/search?q=musicdl", "sec-ch-ua": "\"Google Chrome\";v=\"143\", \"Chromium\";v=\"143\", \"Not A(Brand\";v=\"24\"",
-            "sec-ch-ua-mobile": "?0", "sec-ch-ua-platform": "\"Windows\"", "sec-fetch-dest": "empty", "sec-fetch-mode": "cors", "sec-fetch-site": "same-origin",
-            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36", "x-jam-version": "4gvfvv",
-            "x-jam-call": "$536ab7feabd2404af7b6e54b4db74039734b58b3*0.5310391483096057~", "x-requested-with": "XMLHttpRequest",
+            "referer": "https://www.jamendo.com/search?q=musicdl", "sec-ch-ua": "\"Google Chrome\";v=\"143\", \"Chromium\";v=\"143\", \"Not A(Brand\";v=\"24\"", "sec-ch-ua-mobile": "?0", "sec-ch-ua-platform": "\"Windows\"", "sec-fetch-dest": "empty", "sec-fetch-mode": "cors", "sec-fetch-site": "same-origin",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36", "x-jam-version": "4gvfvv", "x-jam-call": "$536ab7feabd2404af7b6e54b4db74039734b58b3*0.5310391483096057~", "x-requested-with": "XMLHttpRequest",
         }
-        self.default_download_headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36',
-        }
+        self.default_download_headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36"}
         self.default_headers = self.default_search_headers
         self._initsession()
-    '''_makexjamcall'''
-    def _makexjamcall(self, path: str = '/api/search') -> str:
-        rand = str(random.random())
-        digest = hashlib.sha1((path + rand).encode("utf-8")).hexdigest()
-        return f"${digest}*{rand}~"
     '''_constructsearchurls'''
     def _constructsearchurls(self, keyword: str, rule: dict = None, request_overrides: dict = None):
         # init
@@ -54,6 +45,11 @@ class JamendoMusicClient(BaseMusicClient):
             count += page_size
         # return
         return search_urls
+    '''_makexjamcall'''
+    def _makexjamcall(self, path: str = '/api/search') -> str:
+        rand = str(random.random())
+        digest = hashlib.sha1((path + rand).encode("utf-8")).hexdigest()
+        return f"${digest}*{rand}~"
     '''_search'''
     @usesearchheaderscookies
     def _search(self, keyword: str = '', search_url: str = '', request_overrides: dict = None, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
