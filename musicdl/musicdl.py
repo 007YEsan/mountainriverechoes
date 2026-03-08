@@ -41,6 +41,7 @@ DEFAULT_MUSIC_SOURCES = ['MiguMusicClient', 'NeteaseMusicClient', 'QQMusicClient
 
 '''MusicClient'''
 class MusicClient():
+    LOSSLESS_QUALITY_DEFINITIONS = {'flac', 'wav', 'alac', 'ape', 'wv', 'tta', 'dsf', 'dff'}
     def __init__(self, music_sources: list = [], init_music_clients_cfg: dict = {}, clients_threadings: dict = {}, requests_overrides: dict = {}, search_rules: dict = {}):
         # assert
         assert isinstance(music_sources, list) and isinstance(init_music_clients_cfg, dict) and isinstance(clients_threadings, dict) and \
@@ -85,9 +86,9 @@ class MusicClient():
                 song_infos[str(song_info_pointer)] = search_result
                 row_ids.append(str(song_info_pointer))
                 print_items.append([
-                    colorize(str(song_info_pointer), 'number'), colorize(search_result['singers'][:12] + '...' if len(search_result['singers']) > 15 else search_result['singers'], 'singer'), 
-                    search_result['song_name'], search_result['file_size'] if search_result['ext'] not in {'flac', 'wav', 'alac', 'ape', 'wv', 'tta', 'dsf', 'dff'} else colorize(search_result['file_size'], 'flac'),
-                    search_result['duration'], search_result['album'], colorize('|'.join([s.upper() for s in [search_result['source'].removesuffix('MusicClient'), search_result['root_source']] if s]), 'highlight'),
+                    colorize(str(song_info_pointer), 'number'), colorize(str(search_result['singers'])[:12] + '...' if len(str(search_result['singers'])) > 15 else str(search_result['singers']), 'singer'), str(search_result['song_name']), 
+                    str(search_result['file_size']) if search_result['ext'] not in MusicClient.LOSSLESS_QUALITY_DEFINITIONS else colorize(str(search_result['file_size']), 'flac'), str(search_result['duration']), str(search_result['album']), 
+                    colorize('|'.join([str(s).upper() for s in [str(search_result['source']).removesuffix('MusicClient'), search_result['root_source']] if s]), 'highlight')
                 ])
         if not print_items: self.logger_handle.warning('No songs found from %s' % ', '.join(self.music_sources)); return []
         print(smarttrunctable(headers=print_titles, rows=print_items, no_trunc_cols=[0, 1, 3, 4, 6]))

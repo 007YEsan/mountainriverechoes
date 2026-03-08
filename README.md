@@ -423,22 +423,24 @@ print(MusicClientBuilder.REGISTERED_MODULES)
 
 From musicdl v2.9.0 onward, support for downloading user playlists from each platform will be added gradually. The platforms currently supported are as follows:
 
-- [NeteaseMusicClient | 网易云音乐](https://music.163.com/)
-- [QQMusicClient | QQ音乐](https://y.qq.com/)
+- [JooxMusicClient | QQ音乐海外版](https://www.joox.com/hk)
 - [KuwoMusicClient | 酷我音乐](http://www.kuwo.cn/)
 - [KugouMusicClient | 酷狗音乐](https://www.kugou.com/)
-- [QianqianMusicClient | 千千音乐](https://music.91q.com/)
 - [MiguMusicClient | 咪咕音乐](https://music.migu.cn/v5/#/musicLibrary)
+- [NeteaseMusicClient | 网易云音乐](https://music.163.com/)
+- [QQMusicClient | QQ音乐](https://y.qq.com/)
+- [QianqianMusicClient | 千千音乐](https://music.91q.com/)
 
 Specifically, you only need to run the following command in the terminal, musicdl will automatically detect the playlist in the link and download it in batch:
 
 ```sh
-musicdl -p "https://music.163.com/#/playlist?id=3039971654" -m NeteaseMusicClient
-musicdl -p "https://y.qq.com/n/ryqq_v2/playlist/8740590963" -m QQMusicClient
+musicdl -p "https://www.joox.com/hk/playlist/MqgK_LYD3Sb3I9Iziq+8NA==" -m JooxMusicClient
 musicdl -p "https://www.kuwo.cn/playlist_detail/2358858706" -m KuwoMusicClient
 musicdl -p "https://www.kugou.com/yy/special/single/3280341.html" -m KugouMusicClient
-musicdl -p "https://music.91q.com/songlist/309319" -m QianqianMusicClient
 musicdl -p "https://music.migu.cn/v5/#/playlist?playlistId=228114498&playlistType=ordinary" -m MiguMusicClient
+musicdl -p "https://music.163.com/#/playlist?id=3039971654" -m NeteaseMusicClient
+musicdl -p "https://y.qq.com/n/ryqq_v2/playlist/8740590963" -m QQMusicClient
+musicdl -p "https://music.91q.com/songlist/309319" -m QianqianMusicClient
 ```
 
 Alternatively, use the following code to invoke it,
