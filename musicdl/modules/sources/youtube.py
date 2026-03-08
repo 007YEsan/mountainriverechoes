@@ -13,7 +13,7 @@ from ytmusicapi import YTMusic
 from .base import BaseMusicClient
 from rich.progress import Progress
 from ..utils.youtubeutils import YouTube, REPAIDAPI_KEYS
-from ..utils import legalizestring, resp2json, usesearchheaderscookies, byte2mb, seconds2hms, usedownloadheaderscookies, touchdir, safeextractfromdict, SongInfo, SongInfoUtils
+from ..utils import legalizestring, resp2json, usesearchheaderscookies, byte2mb, seconds2hms, usedownloadheaderscookies, touchdir, safeextractfromdict, SongInfo, SongInfoUtils, AudioLinkTester
 
 
 '''YouTubeMusicClient'''

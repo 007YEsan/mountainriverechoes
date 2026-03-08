@@ -22,7 +22,7 @@ from ..utils import touchdir, byte2mb, resp2json, seconds2hms, legalizestring, s
 '''MiguMusicClient'''
 class MiguMusicClient(BaseMusicClient):
     source = 'MiguMusicClient'
-    MUSIC_QUALITIES = {'LQ': 'mp3', 'PQ': 'mp3', 'HQ': 'mp3', 'SQ': 'flac', 'ZQ': 'flac', 'Z3D': 'flac', 'ZQ24': 'flac', 'ZQ32': 'flac', }
+    MUSIC_QUALITIES = {'LQ': 'mp3', 'PQ': 'mp3', 'HQ': 'mp3', 'SQ': 'flac', 'ZQ': 'flac', 'Z3D': 'flac', 'ZQ24': 'flac', 'ZQ32': 'flac'}
     def __init__(self, **kwargs):
         super(MiguMusicClient, self).__init__(**kwargs)
         self.default_search_headers = {
