@@ -22,7 +22,7 @@ from ..utils.hosts import KUGOU_MUSIC_HOSTS
 from urllib.parse import urlparse, parse_qs, urljoin
 from ..utils.kugouutils import KugouMusicClientUtils, MUSIC_QUALITIES
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
-from ..utils import touchdir, legalizestring, byte2mb, resp2json, seconds2hms, usesearchheaderscookies, safeextractfromdict, optionalimport, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo
+from ..utils import touchdir, legalizestring, byte2mb, resp2json, seconds2hms, usesearchheaderscookies, safeextractfromdict, optionalimport, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo, AudioLinkTester
 warnings.filterwarnings('ignore')
 
 

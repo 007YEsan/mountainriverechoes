@@ -93,7 +93,7 @@ class QianqianMusicClient(BaseMusicClient):
                     lyric=None, cover_url=search_result.get('pic'), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
                 )
                 song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
-                song_info.file_size = song_info.download_url_status['probe_status']['file_size']
+                song_info.file_size = song_info.download_url_status['probe_status']['file_size']; song_info.ext = song_info.download_url_status['probe_status']['ext']
                 if (song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS) and (song_info.download_url_status['probe_status']['ext'] in AudioLinkTester.VALID_AUDIO_EXTS): song_info.ext = song_info.download_url_status['probe_status']['ext']
                 elif (song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS): song_info.ext = 'mp3'
                 if song_info.with_valid_download_url: break
@@ -140,13 +140,14 @@ class QianqianMusicClient(BaseMusicClient):
         playlist_id, song_infos = urlparse(playlist_url).path.strip('/').split('/')[-1], []
         if (not (hostname := obtainhostname(url=playlist_url))) or (not hostmatchessuffix(hostname, QIANQIAN_MUSIC_HOSTS)): return song_infos
         # get tracks in playlist
-        tracks_in_playlist, page = [], 1
+        tracks_in_playlist, page, playlist_result_first = [], 1, None
         while True:
             params = {'pageNo': page, 'pageSize': 50, 'appid': QianqianMusicClient.APPID, 'id': playlist_id}
             try: (resp := self.get(f"https://music.91q.com/v1/tracklist/info", params=self._addsignandtstoparams(params=params), **request_overrides)).raise_for_status()
             except Exception: break
             if (not safeextractfromdict((playlist_result := resp2json(resp=resp)), ['data', 'trackList'], [])) or (float(safeextractfromdict(playlist_result, ['data', 'trackCount'], 0)) <= len(tracks_in_playlist)): break
             tracks_in_playlist.extend(safeextractfromdict(playlist_result, ['data', 'trackList'], [])); page += 1
+            if not playlist_result_first: playlist_result_first = copy.deepcopy(playlist_result)
         tracks_in_playlist = list({d["TSID"]: d for d in tracks_in_playlist}.values())
         # parse track by track in playlist
         with Progress(TextColumn("{task.description}"), BarColumn(bar_width=None), MofNCompleteColumn(), TimeRemainingColumn(), refresh_per_second=10) as main_process_context:
@@ -160,7 +161,7 @@ class QianqianMusicClient(BaseMusicClient):
             main_process_context.advance(main_progress_id, 1)
             main_process_context.update(main_progress_id, description=f"{len(tracks_in_playlist)} songs found in playlist {playlist_id} >>> completed ({idx+1}/{len(tracks_in_playlist)})")
         # post processing
-        playlist_name = safeextractfromdict(playlist_result, ['data', 'title'], None)
+        playlist_name = safeextractfromdict(playlist_result_first, ['data', 'title'], None)
         song_infos = self._removeduplicates(song_infos=song_infos); work_dir = self._constructuniqueworkdir(keyword=playlist_name or f"playlist-{playlist_id}")
         for song_info in song_infos:
             song_info.work_dir = work_dir; episodes = song_info.episodes if isinstance(song_info.episodes, list) else []

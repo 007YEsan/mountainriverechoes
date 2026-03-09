@@ -82,7 +82,7 @@ class BilibiliMusicClient(BaseMusicClient):
                 )
                 if eps_info.cover_url and (not eps_info.cover_url.startswith('http')): eps_info.cover_url = f'https:{eps_info.cover_url}'
                 eps_info.download_url_status['probe_status'] = self.audio_link_tester.probe(eps_info.download_url, request_overrides)
-                eps_info.file_size = eps_info.download_url_status['probe_status']['file_size']
+                eps_info.file_size = eps_info.download_url_status['probe_status']['file_size']; eps_info.ext = eps_info.download_url_status['probe_status']['ext']
                 if eps_info.ext in {'m4s', 'mp4'}: eps_info.ext = 'm4a'
                 if (eps_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS) and (eps_info.download_url_status['probe_status']['ext'] in AudioLinkTester.VALID_AUDIO_EXTS): eps_info.ext = eps_info.download_url_status['probe_status']['ext']
                 elif (eps_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS): eps_info.ext = 'mp3'

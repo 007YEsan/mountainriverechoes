@@ -134,7 +134,7 @@ class YouTubeMusicClient(BaseMusicClient):
                 lyric='NULL', cover_url=search_result.get('thumbnail') or safeextractfromdict(search_result, ['thumbnails', -1, 'url'], None), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
             )
             song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
-            song_info.file_size = song_info.download_url_status['probe_status']['file_size']
+            song_info.file_size = song_info.download_url_status['probe_status']['file_size']; song_info.ext = song_info.download_url_status['probe_status']['ext']
             if song_info.ext in {'mp4', 'm4a', 'weba'}: song_info.ext = 'm4a'
             if (song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS) and (song_info.download_url_status['probe_status']['ext'] in AudioLinkTester.VALID_AUDIO_EXTS): song_info.ext = song_info.download_url_status['probe_status']['ext']
             elif (song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS): song_info.ext = 'mp3'
@@ -162,7 +162,7 @@ class YouTubeMusicClient(BaseMusicClient):
                 lyric='NULL', cover_url=search_result.get('thumbnail') or safeextractfromdict(search_result, ['thumbnails', -1, 'url'], None), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
             )
             song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
-            song_info.file_size = song_info.download_url_status['probe_status']['file_size']
+            song_info.file_size = song_info.download_url_status['probe_status']['file_size']; song_info.ext = song_info.download_url_status['probe_status']['ext']
             if song_info.ext in {'mp4', 'm4a', 'weba'}: song_info.ext = 'm4a'
             if (song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS) and (song_info.download_url_status['probe_status']['ext'] in AudioLinkTester.VALID_AUDIO_EXTS): song_info.ext = song_info.download_url_status['probe_status']['ext']
             elif (song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS): song_info.ext = 'mp3'

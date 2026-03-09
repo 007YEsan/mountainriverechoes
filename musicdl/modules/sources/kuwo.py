@@ -20,7 +20,7 @@ from ..utils.hosts import KUWO_MUSIC_HOSTS
 from ..utils.kuwoutils import KuwoMusicClientUtils
 from urllib.parse import urlencode, urlparse, parse_qs
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
-from ..utils import touchdir, optionalimport, legalizestring, resp2json, seconds2hms, usesearchheaderscookies, safeextractfromdict, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo
+from ..utils import touchdir, optionalimport, legalizestring, resp2json, seconds2hms, usesearchheaderscookies, safeextractfromdict, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo, AudioLinkTester
 warnings.filterwarnings('ignore')
 
 

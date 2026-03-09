@@ -37,13 +37,13 @@ class SongInfoUtils:
         song_info.file_size = byte2mb(size=size)
         # tinytag parse
         try: tag = TinyTag.get(str(path))
-        except Exception as err: logger_handle.warning(f'SongInfoUtils.fillsongtechinfo >>> {str(path)} (Err: {err})', disable_print=disable_print); return song_info
-        if tag.duration: song_info.duration_s = int(round(tag.duration)); song_info.duration = seconds2hms(tag.duration)
-        if tag.bitrate: song_info.bitrate = int(round(tag.bitrate))
-        if tag.samplerate: song_info.samplerate = int(tag.samplerate)
-        if tag.channels: song_info.channels = int(tag.channels)
-        if getattr(tag, "codec", None): song_info.codec = tag.codec
-        elif getattr(tag, "extra", None) and isinstance(tag.extra, dict): song_info.codec = tag.extra.get("codec") or tag.extra.get("mime-type")
+        except Exception as err: logger_handle.warning(f'SongInfoUtils.fillsongtechinfo >>> {str(path)} (Err: {err})', disable_print=disable_print); tag = None
+        if tag and tag.duration: song_info.duration_s = int(round(tag.duration)); song_info.duration = seconds2hms(tag.duration)
+        if tag and tag.bitrate: song_info.bitrate = int(round(tag.bitrate))
+        if tag and tag.samplerate: song_info.samplerate = int(tag.samplerate)
+        if tag and tag.channels: song_info.channels = int(tag.channels)
+        if tag and getattr(tag, "codec", None): song_info.codec = tag.codec
+        elif tag and getattr(tag, "extra", None) and isinstance(tag.extra, dict): song_info.codec = tag.extra.get("codec") or tag.extra.get("mime-type")
         # lyric
         if os.environ.get('ENABLE_WHISPERLRC', 'False').lower() == 'true' and ((not song_info.lyric) or (song_info.lyric == 'NULL')):
             lyric_result = WhisperLRC(model_size_or_path='small').fromfilepath(str(path))
