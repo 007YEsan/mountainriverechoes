@@ -9,6 +9,7 @@ WeChat Official Account (微信公众号):
 import re
 import os
 import html
+import copy
 import emoji
 import errno
 import pickle
@@ -43,10 +44,8 @@ def estimatedurationwithfilesizebr(file_size_bytes: int, br_kbps: float, return_
 def estimatedurationwithfilelink(filelink: str = '', headers: dict = None, request_overrides: dict = None):
     headers, request_overrides = headers or {}, request_overrides or {}
     try:
-        resp = requests.get(filelink, headers=headers, timeout=10, **request_overrides)
-        resp.raise_for_status()
-        f = BytesIO(resp.content)
-        audio = MutagenFile(f)
+        (resp := requests.get(filelink, headers=headers, timeout=10, **request_overrides)).raise_for_status()
+        audio = MutagenFile(BytesIO(resp.content))
         length = getattr(audio.info, "length", 0)
         return int(length)
     except:
@@ -126,10 +125,8 @@ def shortenpathsinsonginfos(song_infos: list, max_path: int = 240, keep_ext: boo
     for info in song_infos:
         raw_path = (info.save_path or "").strip()
         if not raw_path or raw_path.upper() == "NULL": continue
-        src_path = Path(raw_path)
-        output_dir = src_path.parent.resolve(); output_dir.mkdir(parents=True, exist_ok=True)
-        ext = src_path.suffix if keep_ext else ""
-        stem = src_path.stem
+        src_path = Path(raw_path); output_dir = src_path.parent.resolve(); output_dir.mkdir(parents=True, exist_ok=True)
+        ext = src_path.suffix if keep_ext else ""; stem = src_path.stem
         digest = hashlib.md5(str(src_path).encode("utf-8")).hexdigest()
         for hash_len in (8, 10):
             hash_suffix = f"-{digest[:hash_len]}" if with_hash_suffix else ""
@@ -291,7 +288,7 @@ class AudioLinkTester(object):
         return None
     '''probe'''
     def probe(self, url: str, request_overrides: dict = None):
-        request_overrides, naive_guess_ext = request_overrides or {}, url.split('?')[0].split('.')[-1]
+        request_overrides, naive_guess_ext = copy.deepcopy(request_overrides or {}), url.split('?')[0].split('.')[-1]
         if 'headers' not in request_overrides: request_overrides['headers'] = self.headers
         if 'timeout' not in request_overrides: request_overrides['timeout'] = self.timeout
         if 'cookies' not in request_overrides: request_overrides['cookies'] = self.cookies
@@ -326,7 +323,7 @@ class AudioLinkTester(object):
         return outputs
     '''test'''
     def test(self, url: str, request_overrides: dict = None):
-        request_overrides, naive_guess_ext = request_overrides or {}, url.split('?')[0].split('.')[-1]
+        request_overrides, naive_guess_ext = copy.deepcopy(request_overrides or {}), url.split('?')[0].split('.')[-1]
         if 'headers' not in request_overrides: request_overrides['headers'] = self.headers
         if 'timeout' not in request_overrides: request_overrides['timeout'] = self.timeout
         if 'cookies' not in request_overrides: request_overrides['cookies'] = self.cookies

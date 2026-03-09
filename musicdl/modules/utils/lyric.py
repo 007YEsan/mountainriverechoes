@@ -8,6 +8,7 @@ WeChat Official Account (微信公众号):
 '''
 import os
 import re
+import copy
 import tempfile
 import requests
 from .importutils import optionalimportfrom
@@ -118,7 +119,7 @@ class WhisperLRC:
     '''downloadtotmpdir'''
     @staticmethod
     def downloadtotmpdir(url: str, headers: dict = None, timeout: int = 300, cookies: dict = None, request_overrides: dict = None):
-        headers, cookies, request_overrides = headers or {}, cookies or {}, request_overrides or {}
+        headers, cookies, request_overrides = headers or {}, cookies or {}, copy.deepcopy(request_overrides or {})
         if 'headers' not in request_overrides: request_overrides['headers'] = headers
         if 'timeout' not in request_overrides: request_overrides['timeout'] = timeout
         if 'cookies' not in request_overrides: request_overrides['cookies'] = cookies

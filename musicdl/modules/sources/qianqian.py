@@ -17,7 +17,7 @@ from pathvalidate import sanitize_filepath
 from urllib.parse import urlencode, urlparse
 from ..utils.hosts import QIANQIAN_MUSIC_HOSTS
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
-from ..utils import touchdir, byte2mb, resp2json, seconds2hms, legalizestring, safeextractfromdict, usesearchheaderscookies, cookies2string, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo
+from ..utils import touchdir, byte2mb, resp2json, seconds2hms, legalizestring, safeextractfromdict, usesearchheaderscookies, cookies2string, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo, AudioLinkTester
 
 
 '''QianqianMusicClient'''

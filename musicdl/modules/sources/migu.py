@@ -16,7 +16,7 @@ from pathvalidate import sanitize_filepath
 from ..utils.hosts import MIGU_MUSIC_HOSTS
 from urllib.parse import urlencode, urlparse, parse_qs, urlsplit, urljoin
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
-from ..utils import touchdir, byte2mb, resp2json, seconds2hms, legalizestring, safeextractfromdict, usesearchheaderscookies, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo
+from ..utils import touchdir, byte2mb, resp2json, seconds2hms, legalizestring, safeextractfromdict, usesearchheaderscookies, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo, AudioLinkTester
 
 
 '''MiguMusicClient'''

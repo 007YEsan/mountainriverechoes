@@ -133,12 +133,8 @@ class BaseMusicClient():
         # construct search urls
         search_urls = self._constructsearchurls(keyword=keyword, rule=rule, request_overrides=request_overrides)
         # multi threadings for searching music files
-        if main_process_context is None:
-            owns_progress = True
-            main_process_context = Progress(TextColumn("{task.description}"), BarColumn(bar_width=None), MofNCompleteColumn(), TimeRemainingColumn(), refresh_per_second=10)
-            main_process_context.__enter__()
-        else:
-            owns_progress = False
+        if main_process_context is None: owns_progress = True; main_process_context = Progress(TextColumn("{task.description}"), BarColumn(bar_width=None), MofNCompleteColumn(), TimeRemainingColumn(), refresh_per_second=10); main_process_context.__enter__()
+        else: owns_progress = False
         if main_progress_lock is None: main_progress_lock = Lock()
         with main_progress_lock:
             progress_id = main_process_context.add_task(f"{self.source}.search >>> completed (0/{len(search_urls)})", total=len(search_urls))
@@ -180,7 +176,7 @@ class BaseMusicClient():
     '''_download'''
     @usedownloadheaderscookies
     def _download(self, song_info: SongInfo, request_overrides: dict = None, downloaded_song_infos: list[SongInfo] = [], progress: Progress = None, song_progress_id: int = 0):
-        request_overrides = request_overrides or {}
+        request_overrides = copy.deepcopy(request_overrides or {})
         if song_info.protocol.upper() in {'HLS'}:
             try:
                 hls_downloader = HLSDownloader(

@@ -113,3 +113,15 @@ class SongInfo:
     def get(self, key: str, default: Any = None) -> Any:
         if key in self.fieldnames(): return getattr(self, key)
         return default
+    '''largerthan'''
+    def largerthan(self, song_info: SongInfo):
+        # file_size_a
+        try: file_size_a = float(self.file_size.removesuffix('MB').strip())
+        except Exception: file_size_a = 0.0
+        if not isinstance(file_size_a, (int, float)): file_size_a = 0.0
+        # file_size_b
+        try: file_size_b = float(song_info.file_size.removesuffix('MB').strip())
+        except Exception: file_size_b = 0.0
+        if not isinstance(file_size_b, (int, float)): file_size_b = 0.0
+        # compare
+        return bool(file_size_a > file_size_b)

@@ -267,8 +267,7 @@ class QQMusicClient(BaseMusicClient):
                 if not song_info.with_valid_download_url: continue
                 # --lyric results
                 params = {'songmid': str(search_result['mid']), 'g_tk': '5381', 'loginUin': '0', 'hostUin': '0', 'format': 'json', 'inCharset': 'utf8', 'outCharset': 'utf-8', 'platform': 'yqq'}
-                request_overrides = copy.deepcopy(request_overrides)
-                request_overrides.pop('headers', {})
+                request_overrides = copy.deepcopy(request_overrides); request_overrides.pop('headers', {})
                 try:
                     resp = self.get('https://c.y.qq.com/lyric/fcgi-bin/fcg_query_lyric_new.fcg', headers={'Referer': 'https://y.qq.com/portal/player.html'}, params=params, **request_overrides)
                     lyric_result: dict = resp2json(resp) or {'lyric': ''}
