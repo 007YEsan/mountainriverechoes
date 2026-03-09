@@ -216,7 +216,7 @@ class YouTubeMusicClient(BaseMusicClient):
                 try: resp = candidate_api['api'](**candidate_api['inputs']); candidate_api['method'] in ('rapidapi',) and resp.raise_for_status(); search_results = resp2json(resp=resp)['result'] if candidate_api['method'] in ('rapidapi',) else [s for s in resp if s['resultType'] == 'song'] if candidate_api['method'] in ('ytmusicapi',) else (_ for _ in ()).throw(ValueError(f"Unsupported method: {candidate_api['method']}")); assert len(search_results) > 0; break
                 except Exception: continue
             for search_result in search_results:
-                # --parse with thirdpart apis
+                # --parse with third part apis
                 song_info_flac = self._parsewiththirdpartapis(search_result=search_result, request_overrides=request_overrides)
                 # --parse with official apis
                 try: song_info = self._parsewithofficialapiv1(search_result=search_result, song_info_flac=song_info_flac, lossless_quality_is_sufficient=False, request_overrides=request_overrides)
