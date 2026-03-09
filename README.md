@@ -444,7 +444,7 @@ musicdl -p "https://www.kugou.com/yy/special/single/3280341.html" -m KugouMusicC
 musicdl -p "https://music.migu.cn/v5/#/playlist?playlistId=228114498&playlistType=ordinary" -m MiguMusicClient
 musicdl -p "https://music.163.com/#/playlist?id=3039971654" -m NeteaseMusicClient
 musicdl -p "https://y.qq.com/n/ryqq_v2/playlist/8740590963" -m QQMusicClient
-musicdl -p "https://music.91q.com/songlist/309319" -m QianqianMusicClient
+musicdl -p "https://music.91q.com/songlist/295893" -m QianqianMusicClient
 ```
 
 Alternatively, use the following code to invoke it,
