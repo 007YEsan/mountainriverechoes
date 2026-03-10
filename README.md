@@ -471,7 +471,7 @@ If you have a new playlist link (*e.g.*, `https://www.kugou.com/songlist/gcid_3z
 3. **Find the ID**: Search for the keyword `"specialid"` in the response. The number immediately following it is your special ID.
 4. **Construct the URL**: Replace `{YOUR_SPECIAL_ID}` in the format below with the number you found:
    > `https://www.kugou.com/yy/special/single/{YOUR_SPECIAL_ID}.html`
-5. **Run**: Use this newly constructed link as the playlist input for `musicdl`.
+5. **Run**: Use this newly constructed link as the playlist input for musicdl.
 
 </details>
 
