@@ -460,7 +460,7 @@ music_client.download(song_infos=song_infos)
 
 Common Issues and Solutions (FQA):
 
-- *How to Parse New Kugou Web Playlist URLs (*e.g.*, "https://www.kugou.com/songlist/gcid_3zs9qlpmzdz003/")?*   
+- **How to Parse New Kugou Web Playlist URLs (*e.g.*, "https://www.kugou.com/songlist/gcid_3zs9qlpmzdz003/")?**   
   For a playlist link like this, you first need to open it in your browser. 
   After making sure you are already logged into KuGou Music in the browser, use network traffic capture to obtain the special ID yourself. 
   Specifically, in the returned HTML page, search for the keyword "specialid", and the number following it is the special ID. 
