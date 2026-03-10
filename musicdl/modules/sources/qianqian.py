@@ -88,12 +88,12 @@ class QianqianMusicClient(BaseMusicClient):
                 if not download_url or not str(download_url).startswith('http'): continue
                 file_size_bytes, duration_in_secs = safeextractfromdict(download_result, ['data', 'size'], 0), safeextractfromdict(download_result, ['data', 'duration'], 0)
                 song_info = SongInfo(
-                    raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('title', None)), singers=legalizestring(', '.join([singer.get('name') for singer in (search_result.get('artist', []) or []) if isinstance(singer, dict) and singer.get('name', None)])),
-                    album=legalizestring(search_result.get('albumTitle')), ext=safeextractfromdict(download_result, ['data', 'format'], None) or download_url.split('?')[0].split('.')[-1], file_size_bytes=file_size_bytes, file_size=byte2mb(file_size_bytes), identifier=song_id, duration_s=duration_in_secs, duration=seconds2hms(duration_in_secs), 
-                    lyric=None, cover_url=search_result.get('pic'), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+                    raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('title')), singers=legalizestring(', '.join([singer.get('name') for singer in (search_result.get('artist', []) or []) if isinstance(singer, dict) and singer.get('name')])),
+                    album=legalizestring(search_result.get('albumTitle', None)), ext=download_url.split('?')[0].split('.')[-1], file_size_bytes=file_size_bytes, file_size=byte2mb(file_size_bytes), identifier=song_id, duration_s=duration_in_secs, duration=seconds2hms(duration_in_secs), lyric=None, cover_url=search_result.get('pic'), 
+                    download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
                 )
                 song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
-                song_info.file_size = song_info.download_url_status['probe_status']['file_size']; song_info.ext = song_info.download_url_status['probe_status']['ext']
+                song_info.file_size = song_info.download_url_status['probe_status']['file_size']
                 if (song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS) and (song_info.download_url_status['probe_status']['ext'] in AudioLinkTester.VALID_AUDIO_EXTS): song_info.ext = song_info.download_url_status['probe_status']['ext']
                 elif (song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS): song_info.ext = 'mp3'
                 if song_info.with_valid_download_url: break
