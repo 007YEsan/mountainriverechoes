@@ -266,7 +266,7 @@ class AudioLinkTester(object):
     AUDIO_CT_PREFIX = "audio/"
     AUDIO_CT_EXTRA = {"application/octet-stream", "application/x-flac", "application/flac", "application/x-mpegurl", "video/mp4"}
     MAGIC = [(b"ID3", "mp3"), (b"\xFF\xFB", "mp3"), (b"fLaC", "flac"), (b"RIFF", "wav"), (b"OggS", "ogg"), (b"MThd", "midi"), (b"\x00\x00\x00\x18ftyp", "mp4/m4a")]
-    CTYPE_TO_EXT = {"audio/mpeg": "mp3", "audio/mp3": "mp3", "audio/mp4": "m4a", "audio/x-m4a": "m4a", "audio/aac": "aac", "audio/wav": "wav", "video/mp4": "mp4", "audio/x-wav": "wav", "audio/flac": "flac", "audio/x-flac": "flac", "audio/ogg": "ogg", "audio/opus": "opus", "audio/x-aac": "ogg"}
+    CTYPE_TO_EXT = {"audio/mpeg": "mp3", "audio/mp3": "mp3", "audio/mp4": "m4a", "audio/x-m4a": "m4a", "audio/aac": "aac", "audio/wav": "wav", "video/mp4": "mp4", "audio/x-wav": "wav", "audio/flac": "flac", "audio/x-flac": "flac", "audio/ogg": "ogg", "audio/opus": "opus", "audio/x-aac": "ogg", "audio/x-ogg": "ogg"}
     def __init__(self, timeout=(5, 15), headers: dict = None, cookies: dict = None):
         self.session = requests.Session()
         self.timeout = timeout
