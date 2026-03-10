@@ -90,6 +90,7 @@ class NeteaseMusicClient(BaseMusicClient):
         for quality in MUSIC_QUALITIES:
             try: (resp := self.get(url=f'https://api-v2.cenguigui.cn/api/netease/music_v1.php?id={song_id}&type=json&level={quality}', timeout=10, **request_overrides)).raise_for_status()
             except Exception: break
+            if '获取歌曲地址失败，可能是会员到期了' in resp2json(resp=resp)['data']['url']: break
             if 'data' not in (download_result := resp2json(resp=resp)) or (safe_obtain_filesize_func(download_result['data']) < 0.01): continue
             if not (download_url := safeextractfromdict(download_result, ['data', 'url'], '')) or not str(download_url).startswith('http'): continue
             song_info = SongInfo(
@@ -248,7 +249,7 @@ class NeteaseMusicClient(BaseMusicClient):
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         cookies = self.default_cookies or request_overrides.get('cookies')
         if cookies and (cookies != DEFAULT_COOKIES): return SongInfo(source=self.source, raw_data={'quality': MUSIC_QUALITIES[-1]})
-        for imp_func in [self._parsewithbugpkapi, self._parsewithcggapi, self._parsewithcyruiapi, self._parsewithcunyuapi, self._parsewithyutangxiaowuapi, self._parsewithxianyuwapi, self._parsewithxiaoqinapi, self._parsewithtmetuapi]:
+        for imp_func in [self._parsewithcggapi, self._parsewithbugpkapi, self._parsewithcyruiapi, self._parsewithcunyuapi, self._parsewithyutangxiaowuapi, self._parsewithxianyuwapi, self._parsewithxiaoqinapi, self._parsewithtmetuapi]:
             try: song_info_flac = imp_func(search_result, request_overrides); assert song_info_flac.with_valid_download_url; break
             except: song_info_flac = SongInfo(source=self.source, raw_data={'quality': MUSIC_QUALITIES[-1]})
         return song_info_flac
