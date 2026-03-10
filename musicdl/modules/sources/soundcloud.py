@@ -6,12 +6,15 @@ Author:
 WeChat Official Account (微信公众号):
     Charles的皮卡丘
 '''
+import os
 import re
 import copy
 from .base import BaseMusicClient
-from urllib.parse import urlencode
-from rich.progress import Progress
-from ..utils import legalizestring, resp2json, usesearchheaderscookies, seconds2hms, safeextractfromdict, SongInfo, AudioLinkTester
+from pathvalidate import sanitize_filepath
+from urllib.parse import urlencode, urlparse
+from ..utils.hosts import SOUNDCLOUD_MUSIC_HOSTS
+from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
+from ..utils import touchdir, legalizestring, resp2json, usesearchheaderscookies, seconds2hms, safeextractfromdict, hostmatchessuffix, obtainhostname, useparseheaderscookies, SongInfo, AudioLinkTester
 
 
 '''SoundCloudMusicClient'''
@@ -73,6 +76,8 @@ class SoundCloudMusicClient(BaseMusicClient):
         codec_rank_func = lambda codec: {"opus": 4, "aac": 3, "abr": 2, "mp3": 1, "unknown": 0}.get((codec or "").lower(), 0)
         protocol_rank_func = lambda t: {"progressive": 2, "hls": 1}.get((safeextractfromdict(t, ["format", "protocol"], "") or "").lower(), 0)
         sort_key_func = lambda t: (lambda c, br: (quality_rank_func(t), br, codec_rank_func(c), protocol_rank_func(t)))(guess_codec_func(t), guess_bitrate_kbps_func(t))
+        # supplement incomplete tracks
+        if not safeextractfromdict(search_result, ['media', 'transcodings'], []): search_result = resp2json(self.get(f"https://api-v2.soundcloud.com/tracks/{song_id}", params={"client_id": self.client_id}, **request_overrides))
         # obtain basic song_info
         if lossless_quality_is_sufficient and song_info_flac.with_valid_download_url and (song_info_flac.ext in lossless_quality_definitions): song_info = song_info_flac
         else:
@@ -93,7 +98,7 @@ class SoundCloudMusicClient(BaseMusicClient):
                     download_url = (download_result := resp2json(resp=resp)).get('url')
                     if not download_url or not str(download_url).startswith('http'): continue
                 if str(protocol).lower() in {'hls'}:
-                    try: (resp := self.session.head(download_url, allow_redirects=True, **request_overrides)).raise_for_status()
+                    try: (resp := self.get(download_url, allow_redirects=True, **request_overrides)).raise_for_status()
                     except Exception: continue
                     download_url_status = {'ok': True}
                 else:
@@ -137,4 +142,34 @@ class SoundCloudMusicClient(BaseMusicClient):
         except Exception as err:
             progress.update(progress_id, description=f"{self.source}.search >>> {search_url} (Error: {err})")
         # return
+        return song_infos
+    '''parseplaylist'''
+    @useparseheaderscookies
+    def parseplaylist(self, playlist_url: str, request_overrides: dict = None):
+        # init
+        request_overrides = request_overrides or {}; self._updateclientid()
+        playlist_url = self.session.head(playlist_url, allow_redirects=True, **request_overrides).url
+        playlist_id, song_infos = urlparse(playlist_url).path.strip('/').split('/')[-1].removesuffix('.html').removesuffix('.htm'), []
+        if (not (hostname := obtainhostname(url=playlist_url))) or (not hostmatchessuffix(hostname, SOUNDCLOUD_MUSIC_HOSTS)): return song_infos
+        # get tracks in playlist
+        (resp := self.get("https://api-v2.soundcloud.com/resolve", params={"url": playlist_url, "client_id": self.client_id}, **request_overrides)).raise_for_status()
+        tracks_in_playlist = (playlist_result := resp2json(resp=resp))['tracks']; playlist_id = playlist_result['id']
+        # parse track by track in playlist
+        with Progress(TextColumn("{task.description}"), BarColumn(bar_width=None), MofNCompleteColumn(), TimeRemainingColumn(), refresh_per_second=10) as main_process_context:
+            main_progress_id = main_process_context.add_task(f"{len(tracks_in_playlist)} songs found in playlist {playlist_id} >>> completed (0/{len(tracks_in_playlist)})", total=len(tracks_in_playlist))
+            for idx, track_info in enumerate(tracks_in_playlist):
+                if idx > 0: main_process_context.advance(main_progress_id, 1)
+                main_process_context.update(main_progress_id, description=f"{len(tracks_in_playlist)} songs found in playlist {playlist_id} >>> completed ({idx}/{len(tracks_in_playlist)})")
+                try: song_info = self._parsewithofficialapiv1(search_result=track_info, song_info_flac=None, lossless_quality_is_sufficient=False, request_overrides=request_overrides)
+                except Exception: song_info = SongInfo(source=self.source)
+                if song_info.with_valid_download_url: song_infos.append(song_info)
+            main_process_context.advance(main_progress_id, 1)
+            main_process_context.update(main_progress_id, description=f"{len(tracks_in_playlist)} songs found in playlist {playlist_id} >>> completed ({idx+1}/{len(tracks_in_playlist)})")
+        # post processing
+        playlist_name = safeextractfromdict(playlist_result, ['title'], None)
+        song_infos = self._removeduplicates(song_infos=song_infos); work_dir = self._constructuniqueworkdir(keyword=playlist_name or f"playlist-{playlist_id}")
+        for song_info in song_infos:
+            song_info.work_dir = work_dir; episodes = song_info.episodes if isinstance(song_info.episodes, list) else []
+            for eps_info in episodes: eps_info.work_dir = sanitize_filepath(os.path.join(work_dir, song_info.song_name)); touchdir(work_dir)
+        # return results
         return song_infos
