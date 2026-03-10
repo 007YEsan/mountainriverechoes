@@ -299,7 +299,7 @@ class AudioLinkTester(object):
             resp.raise_for_status()
             resp_headers, final_url = resp.headers, resp.url
             resp.close()
-            file_size, ctype = byte2mb(resp_headers.get('content-length')), resp_headers.get('content-type')
+            file_size, ctype = byte2mb(resp_headers.get('content-length')), str(resp_headers.get('content-type')).removesuffix('; charset=UTF-8')
             if ctype == 'image/jpg; charset=UTF-8' or ctype == 'image/jpg': ctype = 'audio/mpeg'
             if ctype == 'text/plain' and naive_guess_ext == 'm4s': ctype = 'audio/mp4'
             ext = self.CTYPE_TO_EXT.get(ctype, 'NULL')
@@ -313,7 +313,7 @@ class AudioLinkTester(object):
             resp.raise_for_status()
             resp_headers, final_url = resp.headers, resp.url
             resp.close()
-            file_size, ctype = byte2mb(resp_headers.get('content-length')), resp_headers.get('content-type')
+            file_size, ctype = byte2mb(resp_headers.get('content-length')), str(resp_headers.get('content-type')).removesuffix('; charset=UTF-8')
             if ctype == 'image/jpg; charset=UTF-8' or ctype == 'image/jpg': ctype = 'audio/mpeg'
             if ctype == 'text/plain' and naive_guess_ext == 'm4s': ctype = 'audio/mp4'
             ext = self.CTYPE_TO_EXT.get(ctype, 'NULL')
