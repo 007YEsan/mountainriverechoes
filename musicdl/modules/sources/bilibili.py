@@ -23,7 +23,11 @@ class BilibiliMusicClient(BaseMusicClient):
             "Sec-Fetch-Dest": "document", "Sec-Fetch-Mode": "navigate", "Sec-Fetch-Site": "none", "Sec-Fetch-User": "?1", "Accept-Encoding": "gzip, deflate", "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
             "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6,zh-TW;q=0.5", "Sec-Ch-Ua-Platform": '"Windows"', "Cache-Control": "max-age=0", "Upgrade-Insecure-Requests": "1", 
         }
-        self.default_download_headers = copy.deepcopy(self.default_search_headers)
+        self.default_download_headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 Edg/121.0.0.0", "Sec-Ch-Ua": '"Not A(Brand";v="99", "Microsoft Edge";v="121", "Chromium";v="121"', "Referer": "https://www.bilibili.com/", "Sec-Ch-Ua-Mobile": "?0", 
+            "Sec-Fetch-Dest": "document", "Sec-Fetch-Mode": "navigate", "Sec-Fetch-Site": "none", "Sec-Fetch-User": "?1", "Accept-Encoding": "gzip, deflate", "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+            "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6,zh-TW;q=0.5", "Sec-Ch-Ua-Platform": '"Windows"', "Cache-Control": "max-age=0", "Upgrade-Insecure-Requests": "1", 
+        }
         self.default_headers = self.default_search_headers
         default_cookies = {
             "buvid3": "2E109C72-251F-3827-FA8E-921FA0D7EC5291319infoc", "b_nut": "1676213591", "i-wanna-go-back": "-1", "_uuid": "2B2D7A6C-8310C-1167-F548-2F1095A6E93F290252infoc", "buvid4": "31696B5F-BB23-8F2B-3310-8B3C55FB49D491966-023021222-WcoPnBbwgLUAZ6TJuAUN8Q%3D%3D", "CURRENT_FNVAL": "4048", "nostalgia_conf": "-1", 

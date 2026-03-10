@@ -26,7 +26,8 @@ class QingtingMusicClient(BaseMusicClient):
     def __init__(self, **kwargs):
         self.allowed_search_types = list(set(kwargs.pop('allowed_search_types', QingtingMusicClient.ALLOWED_SEARCH_TYPES)))
         super(QingtingMusicClient, self).__init__(**kwargs)
-        if self.default_cookies: assert ("qingting_id" in self.default_cookies) and (("access_token" in self.default_cookies) or ("refresh_token" in self.default_cookies)), '"qingting_id", "access_token" and "refresh_token" should be configured, refer to "https://musicdl.readthedocs.io/zh/latest/Quickstart.html#qingtingfm-audio-radio-download"'
+        if self.default_search_cookies: assert ("qingting_id" in self.default_search_cookies) and (("access_token" in self.default_search_cookies) or ("refresh_token" in self.default_search_cookies)), '"qingting_id", "access_token" and "refresh_token" should be configured, refer to "https://musicdl.readthedocs.io/zh/latest/Quickstart.html#qingtingfm-audio-radio-download"'
+        if self.default_download_cookies: assert ("qingting_id" in self.default_download_cookies) and (("access_token" in self.default_download_cookies) or ("refresh_token" in self.default_download_cookies)), '"qingting_id", "access_token" and "refresh_token" should be configured, refer to "https://musicdl.readthedocs.io/zh/latest/Quickstart.html#qingtingfm-audio-radio-download"'
         self.default_search_headers = {"User-Agent": "QingTing-iOS/10.7.9.0 com.Qting.QTTour Mozilla/5.0 (iPhone; CPU iPhone OS 16_6_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148", "QT-App-Version": "10.7.9.0"}
         self.default_download_headers = {"User-Agent": "QingTing-iOS/10.7.9.0 com.Qting.QTTour Mozilla/5.0 (iPhone; CPU iPhone OS 16_6_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148", "QT-App-Version": "10.7.9.0"}
         self.default_headers = self.default_search_headers

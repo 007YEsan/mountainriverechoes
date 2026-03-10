@@ -11,7 +11,7 @@ import copy
 from .base import BaseMusicClient
 from urllib.parse import urlencode
 from rich.progress import Progress
-from ..utils import legalizestring, resp2json, usesearchheaderscookies, seconds2hms, safeextractfromdict, SongInfo
+from ..utils import legalizestring, resp2json, usesearchheaderscookies, seconds2hms, safeextractfromdict, SongInfo, AudioLinkTester
 
 
 '''SoundCloudMusicClient'''
@@ -19,17 +19,17 @@ class SoundCloudMusicClient(BaseMusicClient):
     source = 'SoundCloudMusicClient'
     def __init__(self, **kwargs):
         super(SoundCloudMusicClient, self).__init__(**kwargs)
-        if self.default_cookies: assert ("oauth_token" in self.default_cookies), '"oauth_token" should be configured, refer to https://musicdl.readthedocs.io/zh/latest/Quickstart.html#soundcloud-music-download'
+        if self.default_search_cookies: assert ("oauth_token" in self.default_search_cookies), '"oauth_token" should be configured, refer to https://musicdl.readthedocs.io/zh/latest/Quickstart.html#soundcloud-music-download'
+        if self.default_parse_cookies: assert ("oauth_token" in self.default_parse_cookies), '"oauth_token" should be configured, refer to https://musicdl.readthedocs.io/zh/latest/Quickstart.html#soundcloud-music-download'
+        if self.default_download_cookies: assert ("oauth_token" in self.default_download_cookies), '"oauth_token" should be configured, refer to https://musicdl.readthedocs.io/zh/latest/Quickstart.html#soundcloud-music-download'
         self.client_id = None
-        self.default_search_headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 Edg/121.0.0.0",
-        }
-        self.default_download_headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 Edg/121.0.0.0",
-        }
+        self.default_search_headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36"}
+        self.default_parse_headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36"}
+        self.default_download_headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36"}
         self.default_headers = self.default_search_headers
-        if self.default_search_cookies: self.default_search_headers.update({'Authorization': self.default_cookies["oauth_token"]})
-        if self.default_download_cookies: self.default_download_headers.update({'Authorization': self.default_cookies["oauth_token"]})
+        if self.default_search_cookies: self.default_search_headers.update({'Authorization': self.default_search_cookies["oauth_token"]})
+        if self.default_parse_cookies: self.default_parse_headers.update({'Authorization': self.default_parse_cookies["oauth_token"]})
+        if self.default_download_cookies: self.default_download_headers.update({'Authorization': self.default_download_cookies["oauth_token"]})
         self._initsession()
     '''_updateclientid'''
     def _updateclientid(self, request_overrides: dict = None):
