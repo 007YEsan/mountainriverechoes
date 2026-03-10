@@ -460,11 +460,20 @@ music_client.download(song_infos=song_infos)
 
 Common Issues and Solutions (FQA):
 
-- **How to Parse New Kugou Web Playlist URLs (*e.g.*, "https://www.kugou.com/songlist/gcid_3zs9qlpmzdz003/")?**   
-  For a playlist link like this, you first need to open it in your browser. 
-  After making sure you are already logged into KuGou Music in the browser, use network traffic capture to obtain the special ID yourself. 
-  Specifically, in the returned HTML page, search for the keyword "specialid", and the number following it is the special ID. 
-  Then construct a link like "https://www.kugou.com/yy/special/single/{YOUR_SPECIAL_ID}.html" and use it as the playlist input for musicdl.
+<details>
+<summary><b>How to Parse New Kugou Web Playlist URLs?</b></summary>
+<br>
+
+If you have a new playlist link (*e.g.*, `https://www.kugou.com/songlist/gcid_3zs9qlpmzdz003/`), you need to manually extract the `special ID` via your browser. Follow these steps:
+
+1. **Open & Login**: Open the playlist link in your browser and ensure you are already logged into KuGou Music.
+2. **Inspect Network**: Open your browser's Developer Tools (F12) and use network traffic capture to inspect the returned HTML page.
+3. **Find the ID**: Search for the keyword `"specialid"` in the response. The number immediately following it is your special ID.
+4. **Construct the URL**: Replace `{YOUR_SPECIAL_ID}` in the format below with the number you found:
+   > `https://www.kugou.com/yy/special/single/{YOUR_SPECIAL_ID}.html`
+5. **Run**: Use this newly constructed link as the playlist input for `musicdl`.
+
+</details>
 
 #### WhisperLRC
 
