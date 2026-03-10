@@ -119,7 +119,7 @@ class JooxMusicClient(BaseMusicClient):
         # init
         request_overrides, lang, country = request_overrides or {}, 'zh_TW', 'hk'
         playlist_url = self.session.head(playlist_url, allow_redirects=True, **request_overrides).url
-        playlist_id, song_infos = urlparse(playlist_url).path.strip('/').split('/')[-1], []
+        playlist_id, song_infos = urlparse(playlist_url).path.strip('/').split('/')[-1].removesuffix('.html').removesuffix('.htm'), []
         if (not (hostname := obtainhostname(url=playlist_url))) or (not hostmatchessuffix(hostname, JOOX_MUSIC_HOSTS)): return song_infos
         # get tracks in playlist
         (resp := self.get(playlist_url, **request_overrides)).raise_for_status()

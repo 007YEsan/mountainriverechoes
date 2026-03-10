@@ -132,7 +132,7 @@ class MiguMusicClient(BaseMusicClient):
         request_overrides = request_overrides or {}
         playlist_url = self.session.head(playlist_url, allow_redirects=True, **request_overrides).url
         try: playlist_id, song_infos = parse_qs(urlsplit(urlsplit(playlist_url).fragment).query).get('playlistId')[0], []; assert playlist_id
-        except: playlist_id, song_infos = urlparse(playlist_url).path.strip('/').split('/')[-1], []
+        except: playlist_id, song_infos = urlparse(playlist_url).path.strip('/').split('/')[-1].removesuffix('.html').removesuffix('.htm'), []
         if (not (hostname := obtainhostname(url=playlist_url))) or (not hostmatchessuffix(hostname, MIGU_MUSIC_HOSTS)): return song_infos
         # get tracks in playlist
         tracks_in_playlist, page, playlist_result_first = [], 1, {}

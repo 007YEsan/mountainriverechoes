@@ -137,7 +137,7 @@ class QianqianMusicClient(BaseMusicClient):
         # init
         request_overrides = request_overrides or {}
         playlist_url = self.session.head(playlist_url, allow_redirects=True, **request_overrides).url
-        playlist_id, song_infos = urlparse(playlist_url).path.strip('/').split('/')[-1], []
+        playlist_id, song_infos = urlparse(playlist_url).path.strip('/').split('/')[-1].removesuffix('.html').removesuffix('.htm'), []
         if (not (hostname := obtainhostname(url=playlist_url))) or (not hostmatchessuffix(hostname, QIANQIAN_MUSIC_HOSTS)): return song_infos
         # get tracks in playlist
         tracks_in_playlist, page, playlist_result_first = [], 1, None
