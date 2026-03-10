@@ -145,9 +145,10 @@ class QianqianMusicClient(BaseMusicClient):
             params = {'pageNo': page, 'pageSize': 50, 'appid': QianqianMusicClient.APPID, 'id': playlist_id}
             try: (resp := self.get(f"https://music.91q.com/v1/tracklist/info", params=self._addsignandtstoparams(params=params), **request_overrides)).raise_for_status()
             except Exception: break
-            if (not safeextractfromdict((playlist_result := resp2json(resp=resp)), ['data', 'trackList'], [])) or (float(safeextractfromdict(playlist_result, ['data', 'trackCount'], 0)) <= len(tracks_in_playlist)): break
+            if (not safeextractfromdict((playlist_result := resp2json(resp=resp)), ['data', 'trackList'], [])): break
             tracks_in_playlist.extend(safeextractfromdict(playlist_result, ['data', 'trackList'], [])); page += 1
             if not playlist_result_first: playlist_result_first = copy.deepcopy(playlist_result)
+            if (float(safeextractfromdict(playlist_result, ['data', 'trackCount'], 0)) <= len(tracks_in_playlist)): break
         tracks_in_playlist = list({d["TSID"]: d for d in tracks_in_playlist}.values())
         # parse track by track in playlist
         with Progress(TextColumn("{task.description}"), BarColumn(bar_width=None), MofNCompleteColumn(), TimeRemainingColumn(), refresh_per_second=10) as main_process_context:

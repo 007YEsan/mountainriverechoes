@@ -215,9 +215,10 @@ class KugouMusicClient(BaseMusicClient):
             kugou_signature_func = lambda api_url: hashlib.md5(("OIlwieks28dk2k092lksi2UIkp" + "".join(sorted(str(api_url).split("?", 1)[1].split("&"))) + "OIlwieks28dk2k092lksi2UIkp").encode("utf-8")).hexdigest()
             try: (resp := self.get(api_url + '&signature=' + kugou_signature_func(api_url), headers=headers, **request_overrides)).raise_for_status()
             except Exception: continue
-            if (not safeextractfromdict((playlist_result := resp2json(resp=resp)), ['data', 'info'], [])) or (float(safeextractfromdict(playlist_result, ['data', 'count'], 0)) <= len(tracks_in_playlist)): break
+            if (not safeextractfromdict((playlist_result := resp2json(resp=resp)), ['data', 'info'], [])): break
             tracks_in_playlist.extend(safeextractfromdict(playlist_result, ['data', 'info'], [])); page += 1
             if not playlist_result_first: playlist_result_first = copy.deepcopy(playlist_result)
+            if (float(safeextractfromdict(playlist_result, ['data', 'count'], 0)) <= len(tracks_in_playlist)): break
         tracks_in_playlist = list({d["hash"]: d for d in tracks_in_playlist}.values())
         # parse track by track in playlist
         with Progress(TextColumn("{task.description}"), BarColumn(bar_width=None), MofNCompleteColumn(), TimeRemainingColumn(), refresh_per_second=10) as main_process_context:

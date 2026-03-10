@@ -139,9 +139,10 @@ class MiguMusicClient(BaseMusicClient):
         while True:
             try: (resp := self.get(f"https://app.c.nf.migu.cn/MIGUM3.0/resource/playlist/song/v2.0?pageNo={page}&pageSize=50&playlistId={playlist_id}", **request_overrides)).raise_for_status()
             except Exception: break
-            if (not safeextractfromdict((playlist_result := resp2json(resp=resp)), ['data', 'songList'], [])) or (float(safeextractfromdict(playlist_result, ['data', 'totalCount'], 0)) <= len(tracks_in_playlist)): break
+            if (not safeextractfromdict((playlist_result := resp2json(resp=resp)), ['data', 'songList'], [])): break
             tracks_in_playlist.extend(safeextractfromdict(playlist_result, ['data', 'songList'], [])); page += 1
             if not playlist_result_first: playlist_result_first = copy.deepcopy(playlist_result)
+            if (float(safeextractfromdict(playlist_result, ['data', 'totalCount'], 0)) <= len(tracks_in_playlist)): break
         tracks_in_playlist = list({d["contentId"]: d for d in tracks_in_playlist}.values())
         try: (resp := self.get(f'https://app.c.nf.migu.cn/resource/playlist/v2.0?playlistId={playlist_id}', **request_overrides)).raise_for_status(); playlist_result_first['meta_info'] = resp2json(resp=resp)
         except Exception: pass

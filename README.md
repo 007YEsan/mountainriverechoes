@@ -432,6 +432,7 @@ From musicdl v2.9.0 onward, support for downloading user playlists from each pla
 - [NeteaseMusicClient | 网易云音乐](https://music.163.com/)
 - [QQMusicClient | QQ音乐](https://y.qq.com/)
 - [QianqianMusicClient | 千千音乐](https://music.91q.com/)
+- [StreetVoiceMusicClient | 街声](https://www.streetvoice.cn/)
 
 Specifically, you only need to run the following command in the terminal, musicdl will automatically detect the playlist in the link and download it in batch:
 
@@ -445,6 +446,7 @@ musicdl -p "https://music.migu.cn/v5/#/playlist?playlistId=228114498&playlistTyp
 musicdl -p "https://music.163.com/#/playlist?id=3039971654" -m NeteaseMusicClient
 musicdl -p "https://y.qq.com/n/ryqq_v2/playlist/8740590963" -m QQMusicClient
 musicdl -p "https://music.91q.com/songlist/295893" -m QianqianMusicClient
+musicdl -p "https://www.streetvoice.cn/morgan22/playlists/436444/" -m StreetVoiceMusicClient
 ```
 
 Alternatively, use the following code to invoke it,
