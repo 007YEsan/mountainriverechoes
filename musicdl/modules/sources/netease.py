@@ -175,6 +175,31 @@ class NeteaseMusicClient(BaseMusicClient):
             if song_info.with_valid_download_url: break
         # return
         return song_info
+    '''_parsewithnycnmbyfunsapi'''
+    def _parsewithnycnmbyfunsapi(self, search_result: dict, request_overrides: dict = None):
+        # init
+        decrypt_func, REQUEST_KEYS = lambda t: base64.b64decode(str(t).encode('utf-8')).decode('utf-8'), ['OTJiMWE4ZWQyMjg5ZmI4ZTk4NTAxZWMyYzE2Yzk4MWRmMWI1NzliMjhhM2Y2ZjIyMDFiYmJlNDc2YmI3Njc0MA==']
+        request_overrides, song_id = request_overrides or {}, search_result['id']
+        # parse
+        for quality in MUSIC_QUALITIES[4:]:
+            try: (resp := self.get(f'https://api.nycnm.cn/API/163music.php?ids={song_id}&level={quality}&type=json&apikey={decrypt_func(random.choice(REQUEST_KEYS))}', timeout=10, **request_overrides)).raise_for_status(); download_result = resp2json(resp=resp)
+            except Exception: break
+            try: download_url = self.get(f'https://api.byfuns.top/1/?id={song_id}&level={quality}', timeout=10, **request_overrides).text.strip()
+            except Exception: break
+            if not str(download_url).startswith('http'): continue
+            lyric, download_url_status = cleanlrc(safeextractfromdict(download_result, ['lyric'], 'NULL')) or 'NULL', self.audio_link_tester.test(download_url, request_overrides)
+            song_info = SongInfo(
+                raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'quality': quality}, source=self.source, song_name=legalizestring(download_result.get('name')), singers=legalizestring(str(download_result.get('ar_name')).replace('/', ', ') if download_result.get('ar_name') else download_result.get('ar_name')), album=legalizestring(download_result.get('al_name')), 
+                ext=download_url.split('?')[0].split('.')[-1], file_size_bytes=None, file_size=None, identifier=song_id, duration_s=extractdurationsecondsfromlrc(lyric), duration=seconds2hms(extractdurationsecondsfromlrc(lyric)), lyric=lyric, cover_url=download_result.get('pic'), download_url=download_url, download_url_status=download_url_status,
+            )
+            song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
+            song_info.file_size = song_info.download_url_status['probe_status']['file_size']
+            if song_info.album == 'NULL': song_info.album = legalizestring(safeextractfromdict(search_result, ['al', 'name'], None))
+            if (song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS) and (song_info.download_url_status['probe_status']['ext'] in AudioLinkTester.VALID_AUDIO_EXTS): song_info.ext = song_info.download_url_status['probe_status']['ext']
+            elif (song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS): song_info.ext = 'mp3'
+            if song_info.with_valid_download_url: break
+        # return
+        return song_info
     '''_parsewithcunyuapi'''
     def _parsewithcunyuapi(self, search_result: dict, request_overrides: dict = None):
         # init
@@ -249,7 +274,7 @@ class NeteaseMusicClient(BaseMusicClient):
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         cookies = self.default_cookies or request_overrides.get('cookies')
         if cookies and (cookies != DEFAULT_COOKIES): return SongInfo(source=self.source, raw_data={'quality': MUSIC_QUALITIES[-1]})
-        for imp_func in [self._parsewithcggapi, self._parsewithbugpkapi, self._parsewithcyruiapi, self._parsewithcunyuapi, self._parsewithyutangxiaowuapi, self._parsewithxianyuwapi, self._parsewithxiaoqinapi, self._parsewithtmetuapi]:
+        for imp_func in [self._parsewithcggapi, self._parsewithbugpkapi, self._parsewithcyruiapi, self._parsewithcunyuapi, self._parsewithyutangxiaowuapi, self._parsewithnycnmbyfunsapi, self._parsewithxianyuwapi, self._parsewithxiaoqinapi, self._parsewithtmetuapi]:
             try: song_info_flac = imp_func(search_result, request_overrides); assert song_info_flac.with_valid_download_url; break
             except: song_info_flac = SongInfo(source=self.source, raw_data={'quality': MUSIC_QUALITIES[-1]})
         return song_info_flac
