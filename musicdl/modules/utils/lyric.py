@@ -75,7 +75,7 @@ class SodaTimedLyricsParser:
     '''parsetimedlyrics'''
     @staticmethod
     def parsetimedlyrics(text: str) -> List[Dict[str, Any]]:
-        if not text: return []
+        if not text or text in {'NULL'}: return []
         text = text.replace(r"\u003C", "<").replace(r"\u003E", ">")
         lines_out: List[Dict[str, Any]] = []
         for raw_line in text.splitlines():

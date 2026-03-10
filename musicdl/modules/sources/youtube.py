@@ -222,6 +222,7 @@ class YouTubeMusicClient(BaseMusicClient):
                 try: song_info = self._parsewithofficialapiv1(search_result=search_result, song_info_flac=song_info_flac, lossless_quality_is_sufficient=False, request_overrides=request_overrides)
                 except Exception: song_info = SongInfo(source=self.source)
                 # --append to song_infos
+                if not song_info.with_valid_download_url: song_info = song_info_flac
                 if not song_info.with_valid_download_url: continue
                 song_infos.append(song_info)
                 # --judgement for search_size

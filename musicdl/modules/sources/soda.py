@@ -60,71 +60,63 @@ class SodaMusicClient(BaseMusicClient):
             count += page_size
         # return
         return search_urls
+    '''_parsewithofficialapiv1'''
+    def _parsewithofficialapiv1(self, search_result: dict, song_info_flac: SongInfo = None, lossless_quality_is_sufficient: bool = True, lossless_quality_definitions: set | list | tuple = {'flac'}, request_overrides: dict = None) -> "SongInfo":
+        # init
+        song_info, request_overrides, song_info_flac = SongInfo(source=self.source), request_overrides or {}, song_info_flac or SongInfo(source=self.source)
+        if (not isinstance(search_result, dict)) or (not (song_id := safeextractfromdict(search_result, ['entity', 'track', 'id'], None))): return song_info
+        rank_audio_func = lambda video_list: sorted(video_list, key=lambda x: (x.get('Size'), x.get('Bitrate')), reverse=True)
+        # obtain basic song_info
+        if lossless_quality_is_sufficient and song_info_flac.with_valid_download_url and (song_info_flac.ext in lossless_quality_definitions): song_info = song_info_flac
+        else:
+            (resp := self.get(f'https://api.qishui.com/luna/pc/track_v2?track_id={song_id}&media_type=track&queue_type=', **request_overrides)).raise_for_status()
+            (resp := self.get((download_result := resp2json(resp))['track_player']['url_player_info'], **request_overrides)).raise_for_status()
+            download_result['url_player_info_response'] = resp2json(resp)
+            audios_sorted: list[dict] = rank_audio_func(safeextractfromdict(download_result, ['url_player_info_response', 'Result', 'Data', 'PlayInfoList'], []) or [])
+            audios_sorted: list[dict] = [a for a in audios_sorted if (a.get('MainPlayUrl') or a.get('BackupPlayUrl'))]
+            for audio_sorted in audios_sorted:
+                download_url = audio_sorted.get('MainPlayUrl') or audio_sorted.get('BackupPlayUrl'); play_auth = safeextractfromdict(audio_sorted, ['PlayAuth'], '')
+                song_info = SongInfo(
+                    raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'play_auth': play_auth}, source=self.source, song_name=legalizestring(safeextractfromdict(search_result, ['entity', 'track', 'name'], None)), singers=legalizestring(', '.join([singer.get('name') for singer in (safeextractfromdict(search_result, ['entity', 'track', 'artists'], []) or []) if isinstance(singer, dict) and singer.get('name')])), album=legalizestring(safeextractfromdict(search_result, ['entity', 'track', 'album', 'name'], None)), ext=audio_sorted.get('Format', 'm4a'), file_size_bytes=audio_sorted.get('Size', 0), file_size=byte2mb(audio_sorted.get('Size', 0)), 
+                    identifier=str(song_id), duration_s=audio_sorted.get('Duration'), duration=seconds2hms(audio_sorted.get('Duration')), lyric=cleanlrc(SodaTimedLyricsParser.tolrclinelevel(SodaTimedLyricsParser.parsetimedlyrics(safeextractfromdict(download_result, ['lyric', 'content'], '')))) or 'NULL', cover_url=str(safeextractfromdict(search_result, ['entity', 'track', 'album', 'url_cover', 'urls', 0], '')) + str(safeextractfromdict(search_result, ['entity', 'track', 'album', 'url_cover', 'uri'], '')) + '~c5_375x375.jpg', download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+                )
+                song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
+                song_info.file_size = song_info.download_url_status['probe_status']['file_size']; song_info.ext = song_info.download_url_status['probe_status']['ext']
+                if (song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS) and (song_info.download_url_status['probe_status']['ext'] in AudioLinkTester.VALID_AUDIO_EXTS): song_info.ext = song_info.download_url_status['probe_status']['ext']
+                elif (song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS): song_info.ext = 'mp3'
+                if song_info.with_valid_download_url: break
+        if not song_info.with_valid_download_url: return song_info
+        # supplement lyric results
+        try:
+            (resp := self.get(f'https://music.douyin.com/qishui/share/track?track_id={song_id}', **request_overrides)).raise_for_status()
+            lyric_result = json_repair.loads(re.search(r'_ROUTER_DATA\s*=\s*({[\s\S]*?});', resp.text).group(1).strip())
+            sentences, lrc_list = lyric_result['loaderData']['track_page']['audioWithLyricsOption']['lyrics']['sentences'], []
+            for sentence in sentences:
+                if not isinstance(sentence, dict): continue
+                start_ms = sentence.get('startMs', 0); sentence_text = "".join([w.get('text', '') for w in sentence.get('words', []) if isinstance(w, dict)])
+                minutes, seconds, m_seconds = start_ms // 60000, (start_ms % 60000) // 1000, start_ms % 1000; time_tag = f"[{minutes:02d}:{seconds:02d}.{m_seconds:03d}]"
+                lrc_list.append(f"{time_tag}{sentence_text}")
+            lyric = cleanlrc("\n".join(lrc_list)) or 'NULL'
+        except Exception: lyric_result, lyric = {}, 'NULL'
+        song_info.raw_data['lyric'] = lyric_result if lyric_result else song_info.raw_data['lyric']
+        song_info.lyric = lyric if (lyric and (lyric not in {'NULL'})) else song_info.lyric
+        # return
+        return song_info
     '''_search'''
     @usesearchheaderscookies
     def _search(self, keyword: str = '', search_url: str = '', request_overrides: dict = None, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
         # init
         request_overrides = request_overrides or {}
-        rank_audio_func = lambda video_list: sorted(video_list, key=lambda x: (x.get('Size'), x.get('Bitrate')), reverse=True)
         # successful
         try:
             # --search results
-            resp = self.get(search_url, **request_overrides)
-            resp.raise_for_status()
-            search_results = resp2json(resp)['result_groups'][0]['data']
-            for search_result in search_results:
-                # --download results
-                if not isinstance(search_result, dict) or not safeextractfromdict(search_result, ['entity', 'track', 'id'], None): continue
-                song_info, song_id = SongInfo(source=self.source), search_result['entity']['track']['id']
-                try:
-                    resp = self.get(f'https://api.qishui.com/luna/pc/track_v2?track_id={song_id}&media_type=track&queue_type=', **request_overrides)
-                    resp.raise_for_status()
-                    download_result: dict = resp2json(resp)
-                    if 'track_player' not in download_result: continue
-                    resp = self.get(download_result['track_player']['url_player_info'])
-                    resp.raise_for_status()
-                    download_result['url_player_info_response'] = resp2json(resp)
-                except:
-                    continue
-                audios = safeextractfromdict(download_result, ['url_player_info_response', 'Result', 'Data', 'PlayInfoList'], [])
-                if not audios or not isinstance(audios, list): continue
-                audios_sorted: list[dict] = rank_audio_func(audios)
-                audios_sorted = [a for a in audios_sorted if (a.get('MainPlayUrl') or a.get('BackupPlayUrl'))]
-                if not audios_sorted: continue
-                for audio_sorted in audios_sorted:
-                    download_url = audio_sorted.get('MainPlayUrl') or audio_sorted.get('BackupPlayUrl')
-                    play_auth = safeextractfromdict(audio_sorted, ['PlayAuth'], '')
-                    song_info = SongInfo(
-                        raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'play_auth': play_auth}, source=self.source, song_name=legalizestring(safeextractfromdict(search_result, ['entity', 'track', 'name'], None)), singers=legalizestring(', '.join([singer.get('name') for singer in (safeextractfromdict(search_result, ['entity', 'track', 'artists'], []) or []) if isinstance(singer, dict) and singer.get('name')])),
-                        album=legalizestring(safeextractfromdict(search_result, ['entity', 'track', 'album', 'name'], None)), ext=safeextractfromdict(audio_sorted, ['Format'], 'm4a'), file_size_bytes=safeextractfromdict(audio_sorted, ['Size'], 0), file_size=byte2mb(safeextractfromdict(audio_sorted, ['Size'], 0)), identifier=song_id, duration_s=audio_sorted.get('Duration', None), duration=seconds2hms(audio_sorted.get('Duration', None)), 
-                        lyric=cleanlrc(SodaTimedLyricsParser.tolrclinelevel(SodaTimedLyricsParser.parsetimedlyrics(safeextractfromdict(download_result, ['lyric', 'content'], "")))) or 'NULL', cover_url=str(safeextractfromdict(search_result, ['entity', 'track', 'album', 'url_cover', 'urls', 0], '')) + str(safeextractfromdict(search_result, ['entity', 'track', 'album', 'url_cover', 'uri'], '')) + '~c5_375x375.jpg', download_url=download_url, 
-                        download_url_status=self.audio_link_tester.test(download_url, request_overrides),
-                    )
-                    song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
-                    song_info.file_size = song_info.download_url_status['probe_status']['file_size']
-                    song_info.ext = song_info.download_url_status['probe_status']['ext'] if (song_info.download_url_status['probe_status']['ext'] and song_info.download_url_status['probe_status']['ext'] not in ('NULL',)) else song_info.ext
-                    if song_info.with_valid_download_url: break
-                if not song_info.with_valid_download_url: continue
-                # --lyric results
-                try:
-                    resp = self.get(f'https://music.douyin.com/qishui/share/track?track_id={song_id}', **request_overrides)
-                    resp.raise_for_status()
-                    lyric_result = json_repair.loads(re.search(r'_ROUTER_DATA\s*=\s*({[\s\S]*?});', resp.text).group(1).strip())
-                    sentences, lrc_list = lyric_result['loaderData']['track_page']['audioWithLyricsOption']['lyrics']['sentences'], []
-                    for sentence in sentences:
-                        if not isinstance(sentence, dict): continue
-                        start_ms = sentence.get('startMs', 0)
-                        sentence_text = "".join([w.get('text', '') for w in sentence.get('words', []) if isinstance(w, dict)])
-                        minutes, seconds, m_seconds = start_ms // 60000, (start_ms % 60000) // 1000, start_ms % 1000
-                        time_tag = f"[{minutes:02d}:{seconds:02d}.{m_seconds:03d}]"
-                        lrc_list.append(f"{time_tag}{sentence_text}")
-                    lyric = cleanlrc("\n".join(lrc_list)) or 'NULL'
-                except:
-                    lyric_result, lyric = {}, 'NULL'
-                # --update song_info
-                song_info.raw_data['lyric'] = lyric_result
-                song_info.lyric = lyric
+            (resp := self.get(search_url, **request_overrides)).raise_for_status()
+            for search_result in resp2json(resp)['result_groups'][0]['data']:
+                # --parse with official apis
+                try: song_info = self._parsewithofficialapiv1(search_result=search_result, song_info_flac=None, lossless_quality_is_sufficient=False, request_overrides=request_overrides)
+                except Exception: song_info = SongInfo(source=self.source)
                 # --append to song_infos
+                if not song_info.with_valid_download_url: continue
                 song_infos.append(song_info)
                 # --judgement for search_size
                 if self.strict_limit_search_size_per_page and len(song_infos) >= self.search_size_per_page: break
