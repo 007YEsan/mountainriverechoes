@@ -460,7 +460,7 @@ music_client.download(song_infos=song_infos)
 
 Common Issues and Solutions (FQA):
 
-<details>
+<details style="margin-bottom: 24px;">
 <summary><b>How to Parse New Kugou Web Playlist URLs?</b></summary>
 <br>
 
