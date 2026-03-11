@@ -13,10 +13,12 @@ import base64
 import tempfile
 from pathlib import Path
 from .base import BaseMusicClient
-from rich.progress import Progress
-from urllib.parse import urlencode
+from pathvalidate import sanitize_filepath
+from ..utils.hosts import TIDAL_MUSIC_HOSTS
+from urllib.parse import urlencode, urlparse
+from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
 from ..utils.tidalutils import TIDALMusicClientUtils, SearchResult, SessionStorage, Track, TidalTvSession, StreamUrl, Artist
-from ..utils import legalizestring, resp2json, seconds2hms, touchdir, replacefile, usesearchheaderscookies, usedownloadheaderscookies, safeextractfromdict, cleanlrc, SongInfo, SongInfoUtils
+from ..utils import legalizestring, resp2json, seconds2hms, touchdir, replacefile, usesearchheaderscookies, usedownloadheaderscookies, safeextractfromdict, useparseheaderscookies, hostmatchessuffix, obtainhostname, cleanlrc, SongInfo, SongInfoUtils
 
 
 '''TIDALMusicClient'''
@@ -143,4 +145,52 @@ class TIDALMusicClient(BaseMusicClient):
         except Exception as err:
             progress.update(progress_id, description=f"{self.source}.search >>> {search_url} (Error: {err})")
         # return
+        return song_infos
+    '''parseplaylist'''
+    @useparseheaderscookies
+    def parseplaylist(self, playlist_url: str, request_overrides: dict = None):
+        # init
+        request_overrides = request_overrides or {}
+        playlist_url = self.session.head(playlist_url, allow_redirects=True, **request_overrides).url
+        playlist_id, song_infos = urlparse(playlist_url).path.strip('/').split('/')[-1].removesuffix('.html').removesuffix('.htm'), []
+        if (not (hostname := obtainhostname(url=playlist_url))) or (not hostmatchessuffix(hostname, TIDAL_MUSIC_HOSTS)): return song_infos
+        self.tidal_tv_session.refresh(request_overrides=request_overrides); TIDALMusicClientUtils.SESSION_STORAGE = self.tidal_tv_session.getstorage()
+        self.default_headers.update({"Authorization": f"Bearer {self.tidal_tv_session.access_token}"})
+        self.default_search_headers.update({"Authorization": f"Bearer {self.tidal_tv_session.access_token}"})
+        self.default_parse_headers.update({"Authorization": f"Bearer {self.tidal_tv_session.access_token}"})
+        self.default_download_headers.update({"Authorization": f"Bearer {self.tidal_tv_session.access_token}"})
+        # get tracks in playlist
+        tracks_in_playlist, page, page_size, playlist_result_first = [], 1, 50, {}
+        while True:
+            params = {'offset': (page - 1) * page_size, 'limit': page_size, 'countryCode': self.tidal_tv_session.country_code, 'locale': 'en_US', 'deviceType': 'BROWSER'}
+            try: (resp := self.get(f"https://tidal.com/v1/playlists/{playlist_id}/items", params=params, **request_overrides)).raise_for_status()
+            except Exception: break
+            if (not safeextractfromdict((playlist_result := resp2json(resp=resp)), ['items'], [])): break
+            tracks_in_playlist.extend(safeextractfromdict(playlist_result, ['items'], [])); page += 1
+            if not playlist_result_first: playlist_result_first = copy.deepcopy(playlist_result)
+            if (float(safeextractfromdict(playlist_result, ['totalNumberOfItems'], 0)) <= len(tracks_in_playlist)): break
+        for track_idx in range(len(tracks_in_playlist)):
+            try: tracks_in_playlist[track_idx] = aigpy.model.dictToModel(tracks_in_playlist[track_idx]['item'], Track()); assert tracks_in_playlist[track_idx].id
+            except Exception: continue
+        tracks_in_playlist = list({d.id: d for d in tracks_in_playlist}.values())
+        try: playlist_result_first['meta_info'] = resp2json(self.get(f'https://tidal.com/v1/playlists/{playlist_id}?countryCode={self.tidal_tv_session.country_code}&locale=en_US&deviceType=BROWSER', **request_overrides))
+        except Exception: pass
+        # parse track by track in playlist
+        with Progress(TextColumn("{task.description}"), BarColumn(bar_width=None), MofNCompleteColumn(), TimeRemainingColumn(), refresh_per_second=10) as main_process_context:
+            main_progress_id = main_process_context.add_task(f"{len(tracks_in_playlist)} songs found in playlist {playlist_id} >>> completed (0/{len(tracks_in_playlist)})", total=len(tracks_in_playlist))
+            for idx, track_info in enumerate(tracks_in_playlist):
+                if idx > 0: main_process_context.advance(main_progress_id, 1)
+                main_process_context.update(main_progress_id, description=f"{len(tracks_in_playlist)} songs found in playlist {playlist_id} >>> completed ({idx}/{len(tracks_in_playlist)})")
+                try: song_info = self._parsewithofficialapiv1(search_result=track_info, song_info_flac=None, lossless_quality_is_sufficient=False, request_overrides=request_overrides)
+                except Exception: song_info = SongInfo(source=self.source)
+                if song_info.with_valid_download_url: song_infos.append(song_info)
+            main_process_context.advance(main_progress_id, 1)
+            main_process_context.update(main_progress_id, description=f"{len(tracks_in_playlist)} songs found in playlist {playlist_id} >>> completed ({idx+1}/{len(tracks_in_playlist)})")
+        # post processing
+        playlist_name = safeextractfromdict(playlist_result_first, ['meta_info', 'title'], None)
+        song_infos = self._removeduplicates(song_infos=song_infos); work_dir = self._constructuniqueworkdir(keyword=playlist_name or f"playlist-{playlist_id}")
+        for song_info in song_infos:
+            song_info.work_dir = work_dir; episodes = song_info.episodes if isinstance(song_info.episodes, list) else []
+            for eps_info in episodes: eps_info.work_dir = sanitize_filepath(os.path.join(work_dir, song_info.song_name)); touchdir(work_dir)
+        # return results
         return song_infos

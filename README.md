@@ -65,9 +65,9 @@
 
 # 🎉 What's New
 
+- 2026-03-11: Released musicdl v2.9.10 — meticulously refactored the core code for Qishui Music, SoundCloud, TIDAL, and Apple Music to support playlist parsing and downloading across these platforms; fixed several existing bugs.
 - 2026-03-10: Released musicdl v2.9.9 — refactored the code for QQ Music, Migu Music, Kugou Music, Kuwo Music, Qianqian Music, NetEase Cloud Music, YouTube Music, JOOX Music, Jamendo Music, Bilibili Music, 5SING Music, and StreetVoice to better support playlist parsing and future feature expansion; also improved the downloadable audio quality for some of the above platforms, such as Jamendo Music; fix some known bugs.
 - 2026-03-07: Released musicdl v2.9.8 — fixed multiple third-party music search and download platforms; resolved a bug in determining whether music download links are available; unified the code style across the e-book platform and third-party music platforms.
-- 2026-02-24: Released musicdl v2.9.7 — fix some bugs in musicdl, and add support for searching and downloading books and albums from LanRenTingShu site.
 
 
 # 🎵 Introduction
@@ -436,6 +436,7 @@ From musicdl v2.9.0 onward, support for downloading user playlists from each pla
 - [SoundCloudMusicClient | 声云](https://soundcloud.com/discover)
 - [StreetVoiceMusicClient | 街声](https://www.streetvoice.cn/)
 - [SodaMusicClient | 汽水音乐](https://www.douyin.com/qishui/)
+- [TIDALMusicClient | TIDAL (提供HiFi音质的流媒体平台)](https://tidal.com/)
 
 Specifically, you only need to run the following command in the terminal, musicdl will automatically detect the playlist in the link and download it in batch:
 
@@ -469,6 +470,8 @@ musicdl -p "https://www.streetvoice.cn/morgan22/playlists/436444/" -m StreetVoic
 musicdl -p "https://soundcloud.com/pandadub/sets/the-lost-ship" -m SoundCloudMusicClient
 # Parse and Download Soda Music Playlist
 musicdl -p "https://qishui.douyin.com/s/iHFSgNKw/" -m SodaMusicClient
+# Parse and Download TIDAL Music Playlist
+musicdl -p "https://tidal.com/playlist/a94e7dce-da66-413d-81a5-990328afa3c9" -m TIDALMusicClient -i "{'TIDALMusicClient': {'default_parse_cookies': your_vip_cookies_with_str_or_dict_format}}"
 ```
 
 Alternatively, use the following code to invoke it,
