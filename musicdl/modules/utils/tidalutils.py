@@ -423,8 +423,7 @@ class TidalSession(ABC):
     def getsubscription(self, request_overrides: dict = None) -> str:
         if not self.access_token: return
         request_overrides = request_overrides or {}
-        resp = requests.get(f"https://api.tidal.com/v1/users/{self.user_id}/subscription", params={"countryCode": self.country_code}, headers=self.auth_headers, **request_overrides)
-        resp.raise_for_status()
+        (resp := requests.get(f"https://api.tidal.com/v1/users/{self.user_id}/subscription", params={"countryCode": self.country_code}, headers=self.auth_headers, **request_overrides)).raise_for_status()
         return resp.json()["subscription"]["type"]
     '''valid'''
     def valid(self, request_overrides: dict = None):
@@ -457,35 +456,28 @@ class TidalMobileSession(TidalSession):
     '''auth'''
     def auth(self, username: str, password: str, request_overrides: dict = None):
         session, request_overrides = requests.Session(), request_overrides or {}
-        resp = session.post("https://dd.tidal.com/js/", data={"jsData": f'{{"opts":"endpoint,ajaxListenerPath","ua":"Mozilla/5.0 (Linux; Android 13; Pixel 8 Build/TQ2A.230505.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/119.0.6045.163 Mobile Safari/537.36"}}', "ddk": "1F633CDD8EF22541BD6D9B1B8EF13A", "Referer": "https%3A%2F%2Ftidal.com%2F", "responsePage": "origin", "ddv": "4.17.0"}, headers={"user-agent": "Mozilla/5.0 (Linux; Android 13; Pixel 8 Build/TQ2A.230505.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/119.0.6045.163 Mobile Safari/537.36", "content-type": "application/x-www-form-urlencoded"}, **request_overrides)
-        resp.raise_for_status()
+        (resp := session.post("https://dd.tidal.com/js/", data={"jsData": f'{{"opts":"endpoint,ajaxListenerPath","ua":"Mozilla/5.0 (Linux; Android 13; Pixel 8 Build/TQ2A.230505.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/119.0.6045.163 Mobile Safari/537.36"}}', "ddk": "1F633CDD8EF22541BD6D9B1B8EF13A", "Referer": "https%3A%2F%2Ftidal.com%2F", "responsePage": "origin", "ddv": "4.17.0"}, headers={"user-agent": "Mozilla/5.0 (Linux; Android 13; Pixel 8 Build/TQ2A.230505.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/119.0.6045.163 Mobile Safari/537.36", "content-type": "application/x-www-form-urlencoded"}, **request_overrides)).raise_for_status()
         assert safeextractfromdict(resp.json(), ['cookie'], "")
         dd_cookie = safeextractfromdict(resp.json(), ['cookie'], "").split(";")[0]
         session.cookies[dd_cookie.split("=")[0]] = dd_cookie.split("=")[1]
         params = {"response_type": "code", "redirect_uri": self.redirect_uri, "lang": "en_US", "appMode": "android", "client_id": self.client_id, "client_unique_key": self.client_unique_key, "code_challenge": self.code_challenge, "code_challenge_method": "S256", "restrict_signup": "true"}
-        resp = session.get("https://login.tidal.com/authorize", params=params, headers={"user-agent": "Mozilla/5.0 (Linux; Android 13; Pixel 8 Build/TQ2A.230505.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/119.0.6045.163 Mobile Safari/537.36", "accept-language": "en-US", "x-requested-with": "com.aspiro.tidal"}, **request_overrides)
-        resp.raise_for_status()
-        resp = session.post(self.TIDAL_LOGIN_BASE + "email", params=params, json={"email": username}, headers={"user-agent": "Mozilla/5.0 (Linux; Android 13; Pixel 8 Build/TQ2A.230505.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/119.0.6045.163 Mobile Safari/537.36", "x-csrf-token": session.cookies["_csrf-token"], "accept": "application/json, text/plain, */*", "content-type": "application/json", "accept-language": "en-US", "x-requested-with": "com.aspiro.tidal"}, **request_overrides)
-        resp.raise_for_status()
+        (resp := session.get("https://login.tidal.com/authorize", params=params, headers={"user-agent": "Mozilla/5.0 (Linux; Android 13; Pixel 8 Build/TQ2A.230505.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/119.0.6045.163 Mobile Safari/537.36", "accept-language": "en-US", "x-requested-with": "com.aspiro.tidal"}, **request_overrides)).raise_for_status()
+        (resp := session.post(self.TIDAL_LOGIN_BASE + "email", params=params, json={"email": username}, headers={"user-agent": "Mozilla/5.0 (Linux; Android 13; Pixel 8 Build/TQ2A.230505.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/119.0.6045.163 Mobile Safari/537.36", "x-csrf-token": session.cookies["_csrf-token"], "accept": "application/json, text/plain, */*", "content-type": "application/json", "accept-language": "en-US", "x-requested-with": "com.aspiro.tidal"}, **request_overrides)).raise_for_status()
         assert resp.json()['isValidEmail'] and not resp.json()['newUser']
-        resp = session.post(self.TIDAL_LOGIN_BASE + "email/user/existing", params=params, json={"email": username, "password": password}, headers={"User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 8 Build/TQ2A.230505.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/119.0.6045.163 Mobile Safari/537.36", "x-csrf-token": session.cookies["_csrf-token"], "accept": "application/json, text/plain, */*", "content-type": "application/json", "accept-language": "en-US", "x-requested-with": "com.aspiro.tidal"}, **request_overrides)
-        resp.raise_for_status()
+        (resp := session.post(self.TIDAL_LOGIN_BASE + "email/user/existing", params=params, json={"email": username, "password": password}, headers={"User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 8 Build/TQ2A.230505.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/119.0.6045.163 Mobile Safari/537.36", "x-csrf-token": session.cookies["_csrf-token"], "accept": "application/json, text/plain, */*", "content-type": "application/json", "accept-language": "en-US", "x-requested-with": "com.aspiro.tidal"}, **request_overrides)).raise_for_status()
         resp = session.get("https://login.tidal.com/success", allow_redirects=False, headers={"user-agent": "Mozilla/5.0 (Linux; Android 13; Pixel 8 Build/TQ2A.230505.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/119.0.6045.163 Mobile Safari/537.36", "accept-language": "en-US", "x-requested-with": "com.aspiro.tidal"}, **request_overrides)
         assert resp.status_code == 302
         oauth_code = parse_qs(urlparse(resp.headers["location"]).query)["code"][0]
-        resp = requests.post(self.TIDAL_AUTH_BASE + "oauth2/token", data={"code": oauth_code, "client_id": self.client_id, "grant_type": "authorization_code", "redirect_uri": self.redirect_uri, "scope": "r_usr w_usr w_sub", "code_verifier": self.code_verifier, "client_unique_key": self.client_unique_key}, headers={"User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 8 Build/TQ2A.230505.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/119.0.6045.163 Mobile Safari/537.36"}, **request_overrides)
-        resp.raise_for_status()
+        (resp := requests.post(self.TIDAL_AUTH_BASE + "oauth2/token", data={"code": oauth_code, "client_id": self.client_id, "grant_type": "authorization_code", "redirect_uri": self.redirect_uri, "scope": "r_usr w_usr w_sub", "code_verifier": self.code_verifier, "client_unique_key": self.client_unique_key}, headers={"User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 8 Build/TQ2A.230505.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/119.0.6045.163 Mobile Safari/537.36"}, **request_overrides)).raise_for_status()
         self.access_token, self.refresh_token = resp.json()["access_token"], resp.json()["refresh_token"]
         self.expires = datetime.now() + timedelta(seconds=resp.json()["expires_in"])
-        resp = requests.get("https://api.tidal.com/v1/sessions", headers=self.auth_headers, **request_overrides)
-        resp.raise_for_status()
+        (resp := requests.get("https://api.tidal.com/v1/sessions", headers=self.auth_headers, **request_overrides)).raise_for_status()
         self.user_id, self.country_code = resp.json()["userId"], resp.json()["countryCode"]
     '''refresh'''
     def refresh(self, request_overrides: dict = None):
         assert self.refresh_token is not None
         request_overrides = request_overrides or {}
-        resp = requests.post(self.TIDAL_AUTH_BASE + "oauth2/token", data={"refresh_token": self.refresh_token, "client_id": self.client_id, "grant_type": "refresh_token"}, **request_overrides)
-        resp.raise_for_status()
+        (resp := requests.post(self.TIDAL_AUTH_BASE + "oauth2/token", data={"refresh_token": self.refresh_token, "client_id": self.client_id, "grant_type": "refresh_token"}, **request_overrides)).raise_for_status()
         self.access_token = resp.json()["access_token"]
         self.expires = datetime.now() + timedelta(seconds=resp.json()["expires_in"])
         if "refresh_token" in resp.json(): self.refresh_token = resp.json()["refresh_token"]
@@ -515,8 +507,7 @@ class TidalTvSession(TidalSession):
     '''auth'''
     def auth(self, request_overrides: dict = None):
         session, request_overrides = requests.Session(), request_overrides or {}
-        resp = session.post(self.TIDAL_AUTH_BASE + "oauth2/device_authorization", data={"client_id": self.client_id, "scope": "r_usr+w_usr+w_sub"}, **request_overrides)
-        resp.raise_for_status()
+        (resp := session.post(self.TIDAL_AUTH_BASE + "oauth2/device_authorization", data={"client_id": self.client_id, "scope": "r_usr+w_usr+w_sub"}, **request_overrides)).raise_for_status()
         device_code, user_code = resp.json()["deviceCode"], resp.json()["userCode"]
         user_login_url = f'https://link.tidal.com/{user_code}'
         msg = f'Opening {user_login_url} in the browser, log in or sign up to TIDAL manually to continue (in 300 seconds please).'
@@ -537,17 +528,14 @@ class TidalTvSession(TidalSession):
         resp.raise_for_status()
         self.access_token, self.refresh_token = resp.json()["access_token"], resp.json()["refresh_token"]
         self.expires = datetime.now() + timedelta(seconds=resp.json()["expires_in"])
-        resp = session.get("https://api.tidal.com/v1/sessions", headers=self.auth_headers, **request_overrides)
-        resp.raise_for_status()
+        (resp := session.get("https://api.tidal.com/v1/sessions", headers=self.auth_headers, **request_overrides)).raise_for_status()
         self.user_id, self.country_code = resp.json()["userId"], resp.json()["countryCode"]
-        resp = session.get("https://api.tidal.com/v1/users/{}?countryCode={}".format(self.user_id, self.country_code), headers=self.auth_headers, **request_overrides)
-        resp.raise_for_status()
+        (resp := session.get("https://api.tidal.com/v1/users/{}?countryCode={}".format(self.user_id, self.country_code), headers=self.auth_headers, **request_overrides)).raise_for_status()
     '''refresh'''
     def refresh(self, request_overrides: dict = None):
         assert self.refresh_token is not None
         request_overrides = request_overrides or {}
-        resp = requests.post(self.TIDAL_AUTH_BASE + "oauth2/token", data={"refresh_token": self.refresh_token, "client_id": self.client_id, "client_secret": self.client_secret, "grant_type": "refresh_token"}, **request_overrides)
-        resp.raise_for_status()
+        (resp := requests.post(self.TIDAL_AUTH_BASE + "oauth2/token", data={"refresh_token": self.refresh_token, "client_id": self.client_id, "client_secret": self.client_secret, "grant_type": "refresh_token"}, **request_overrides)).raise_for_status()
         self.access_token = resp.json()["access_token"]
         self.expires = datetime.now() + timedelta(seconds=resp.json()["expires_in"])
         if "refresh_token" in resp.json(): self.refresh_token = resp.json()["refresh_token"]
@@ -950,7 +938,7 @@ class TIDALMusicClientUtils:
     '''downloadcoverbytes'''
     @staticmethod
     def downloadcoverbytes(url: str, album: Optional[Album]) -> Optional[bytes]:
-        try: resp = requests.get(url, timeout=30); resp.raise_for_status()
+        try: (resp := requests.get(url, timeout=30)).raise_for_status()
         except Exception: return None
         if not resp.content: return None
         return resp.content
@@ -981,8 +969,7 @@ class TIDALMusicClientUtils:
     def tidalhifiapiget(path, params: Optional[dict] = None, urlpre: str = 'https://api.tidalhifi.com/v1/', request_overrides: dict = None):
         request_overrides, headers, params = request_overrides or {}, {'authorization': f'Bearer {TIDALMusicClientUtils.SESSION_STORAGE.access_token}'}, dict(params or {})
         params['countryCode'] = TIDALMusicClientUtils.SESSION_STORAGE.country_code
-        resp = requests.get(urlpre + path, headers=headers, params=params, **request_overrides)
-        resp.raise_for_status()
+        (resp := requests.get(urlpre + path, headers=headers, params=params, **request_overrides)).raise_for_status()
         return resp.json()
     '''getstreamurlofficialapi'''
     @staticmethod
