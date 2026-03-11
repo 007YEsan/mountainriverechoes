@@ -12,8 +12,6 @@ import copy
 import json_repair
 from pathlib import Path
 from .base import BaseMusicClient
-from urllib.parse import urlencode
-from rich.progress import Progress
 from pathvalidate import sanitize_filepath
 from ..utils.hosts import SODA_MUSIC_HOSTS
 from ..utils.sodautils import AudioDecryptor

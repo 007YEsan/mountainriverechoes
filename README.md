@@ -423,6 +423,7 @@ print(MusicClientBuilder.REGISTERED_MODULES)
 
 From musicdl v2.9.0 onward, support for downloading user playlists from each platform will be added gradually. The platforms currently supported are as follows:
 
+- [AppleMusicClient | 苹果音乐](https://music.apple.com/)
 - [FiveSingMusicClient | 5SING音乐](https://5sing.kugou.com/index.html)
 - [JamendoMusicClient | 简音乐 (欧美流行音乐)](https://www.jamendo.com/)
 - [JooxMusicClient | QQ音乐海外版](https://www.joox.com/hk)
@@ -439,17 +440,34 @@ From musicdl v2.9.0 onward, support for downloading user playlists from each pla
 Specifically, you only need to run the following command in the terminal, musicdl will automatically detect the playlist in the link and download it in batch:
 
 ```sh
+# Parse and Download Apple Music Playlist
+# >>> not use wrapper
+musicdl -p "https://music.apple.com/cn/playlist/%E5%8D%81%E5%A4%A7%E4%B8%93%E8%BE%91/pl.u-mJy81mECzBL49zM" -m AppleMusicClient -i "{'AppleMusicClient': {'default_parse_cookies': your_vip_cookies_with_str_or_dict_format}}"
+# >>> use wrapper
+musicdl -p "https://music.apple.com/cn/playlist/%E5%8D%81%E5%A4%A7%E4%B8%93%E8%BE%91/pl.u-mJy81mECzBL49zM" -m AppleMusicClient -i "{'AppleMusicClient': {'use_wrapper': True, 'wrapper_account_url': 'http://127.0.0.1:30020/', 'wrapper_decrypt_ip': '127.0.0.1:10020'}}"
+# Parse and Download 5SING Music Playlist
 musicdl -p "https://5sing.kugou.com/yeluoluo/dj/631b3fa72418b11003089b8d.html" -m FiveSingMusicClient
+# Parse and Download Jamendo Music Playlist
 musicdl -p "https://www.jamendo.com/playlist/500544876/best-of-february-2020" -m JamendoMusicClient
+# Parse and Download Joox Music Playlist
 musicdl -p "https://www.joox.com/hk/playlist/MqgK_LYD3Sb3I9Iziq+8NA==" -m JooxMusicClient
+# Parse and Download Kuwo Music Playlist
 musicdl -p "https://www.kuwo.cn/playlist_detail/2358858706" -m KuwoMusicClient
+# Parse and Download Kugou Music Playlist
 musicdl -p "https://www.kugou.com/yy/special/single/3280341.html" -m KugouMusicClient
+# Parse and Download Migu Music Playlist
 musicdl -p "https://music.migu.cn/v5/#/playlist?playlistId=228114498&playlistType=ordinary" -m MiguMusicClient
+# Parse and Download NetEase Music Playlist
 musicdl -p "https://music.163.com/#/playlist?id=3039971654" -m NeteaseMusicClient
+# Parse and Download QQ Music Playlist
 musicdl -p "https://y.qq.com/n/ryqq_v2/playlist/8740590963" -m QQMusicClient
+# Parse and Download QianQian Music Playlist
 musicdl -p "https://music.91q.com/songlist/295893" -m QianqianMusicClient
+# Parse and Download StreetVoice Music Playlist
 musicdl -p "https://www.streetvoice.cn/morgan22/playlists/436444/" -m StreetVoiceMusicClient
+# Parse and Download SoundCloud Music Playlist
 musicdl -p "https://soundcloud.com/pandadub/sets/the-lost-ship" -m SoundCloudMusicClient
+# Parse and Download Soda Music Playlist
 musicdl -p "https://qishui.douyin.com/s/iHFSgNKw/" -m SodaMusicClient
 ```
 
@@ -478,6 +496,15 @@ If you have a new playlist link (*e.g.*, `https://www.kugou.com/songlist/gcid_3z
 4. **Construct the URL**: Replace `{YOUR_SPECIAL_ID}` in the format below with the number you found:
    > `https://www.kugou.com/yy/special/single/{YOUR_SPECIAL_ID}.html`
 5. **Run**: Use this newly constructed link as the playlist input for musicdl.
+
+</details>
+
+<details style="margin-bottom: 24px;">
+<summary><b>Why is The Downloaded Apple Music Playlist Incomplete?</b></summary>
+<br>
+
+musicdl currently only supports parsing playlists with a maximum of 300 tracks. 
+If your playlist exceeds this limit, please manually split the large playlist into several smaller ones, and then use musicdl to parse and download them individually.
 
 </details>
 
