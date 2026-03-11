@@ -14,8 +14,12 @@ from pathlib import Path
 from .base import BaseMusicClient
 from urllib.parse import urlencode
 from rich.progress import Progress
+from pathvalidate import sanitize_filepath
+from ..utils.hosts import SODA_MUSIC_HOSTS
 from ..utils.sodautils import AudioDecryptor
-from ..utils import legalizestring, byte2mb, resp2json, usesearchheaderscookies, safeextractfromdict, seconds2hms, usedownloadheaderscookies, cleanlrc, SongInfo, SodaTimedLyricsParser, AudioLinkTester
+from urllib.parse import urlencode, urlparse, parse_qs
+from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
+from ..utils import touchdir, legalizestring, byte2mb, resp2json, usesearchheaderscookies, safeextractfromdict, seconds2hms, usedownloadheaderscookies, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo, SodaTimedLyricsParser, AudioLinkTester
 
 
 '''SodaMusicClient'''
@@ -45,9 +49,8 @@ class SodaMusicClient(BaseMusicClient):
         self.search_size_per_page = min(self.search_size_per_page, 20)
         # search rules
         default_rule = {
-            'aid': '386088', 'app_name': '', 'region': '', 'geo_region': '', 'os_region': '', 'sim_region': '', 'device_id': '', 'cdid': '', 'iid': '', 'version_name': '',
-            'version_code': '', 'channel': '', 'build_mode': '', 'network_carrier': '', 'ac': '', 'tz_name': '', 'resolution': '', 'device_platform': '', 'device_type': '',
-            'os_version': '', 'fp': '', 'q': keyword, 'cursor': 0, 'search_id': '', 'search_method': 'input', 'debug_params': '', 'from_search_id': '', 'search_scene': '',
+            'aid': '386088', 'app_name': 'luna_pc', 'region': 'cn', 'geo_region': 'cn', 'os_region': 'cn', 'sim_region': '', 'device_id': '1088932190113307', 'cdid': '', 'iid': '2332504177791808', 'version_name': '3.0.0', 'version_code': '30000000', 'channel': 'official', 'build_mode': 'master', 'network_carrier': '', 'ac': 'wifi', 'tz_name': 'Asia/Shanghai', 
+            'resolution': '', 'device_platform': 'windows', 'device_type': 'Windows', 'os_version': 'Windows 11 Home China', 'fp': '1088932190113307', 'q': keyword, 'cursor': 0, 'search_id': '4ee2bc52-db9b-42c3-85cf-cdac2fe02efe', 'search_method': 'input', 'debug_params': '', 'from_search_id': 'aa21093-d49e-4d29-b6c7-548b170d12a0', 'search_scene': '',
         }
         default_rule.update(rule)
         # construct search urls based on search rules
@@ -125,4 +128,46 @@ class SodaMusicClient(BaseMusicClient):
         # failure
         except Exception as err:
             progress.update(progress_id, description=f"{self.source}.search >>> {search_url} (Error: {err})")
+        return song_infos
+    '''parseplaylist'''
+    @useparseheaderscookies
+    def parseplaylist(self, playlist_url: str, request_overrides: dict = None):
+        # init
+        request_overrides = request_overrides or {}
+        playlist_url = self.session.head(playlist_url, allow_redirects=True, **request_overrides).url
+        try: playlist_id, song_infos = parse_qs(urlparse(playlist_url).query, keep_blank_values=False).get('playlist_id')[0], []; assert playlist_id
+        except: playlist_id, song_infos = urlparse(playlist_url).path.strip('/').split('/')[-1].removesuffix('.html').removesuffix('.htm'), []
+        if (not (hostname := obtainhostname(url=playlist_url))) or (not hostmatchessuffix(hostname, SODA_MUSIC_HOSTS)): return song_infos
+        # get tracks in playlist
+        tracks_in_playlist, page, page_size, playlist_result_first = [], 1, 20, {}
+        while True:
+            params = {'playlist_id': playlist_id, 'cursor': str(page_size * (page - 1)), 'cnt': str(page_size), 'aid': '386088', 'device_platform': 'web', 'channel': 'pc_web'}
+            try: (resp := self.get(f"https://api.qishui.com/luna/pc/playlist/detail?", params=params, **request_overrides)).raise_for_status()
+            except Exception: break
+            if (not safeextractfromdict((playlist_result := resp2json(resp=resp)), ['media_resources'], [])): break
+            tracks_in_playlist.extend(safeextractfromdict(playlist_result, ['media_resources'], [])); page += 1
+            if not playlist_result_first: playlist_result_first = copy.deepcopy(playlist_result)
+            if (float(safeextractfromdict(playlist_result, ['playlist', 'count_tracks'], 0)) <= len(tracks_in_playlist)): break
+        tracks_in_playlist = list({d["id"]: d for d in tracks_in_playlist}.values())
+        for track_idx in range(len(tracks_in_playlist)):
+            try: tracks_in_playlist[track_idx]['entity']['track'] = safeextractfromdict(tracks_in_playlist[track_idx], ['entity', 'track_wrapper', 'track'], {})
+            except Exception: continue
+        # parse track by track in playlist
+        with Progress(TextColumn("{task.description}"), BarColumn(bar_width=None), MofNCompleteColumn(), TimeRemainingColumn(), refresh_per_second=10) as main_process_context:
+            main_progress_id = main_process_context.add_task(f"{len(tracks_in_playlist)} songs found in playlist {playlist_id} >>> completed (0/{len(tracks_in_playlist)})", total=len(tracks_in_playlist))
+            for idx, track_info in enumerate(tracks_in_playlist):
+                if idx > 0: main_process_context.advance(main_progress_id, 1)
+                main_process_context.update(main_progress_id, description=f"{len(tracks_in_playlist)} songs found in playlist {playlist_id} >>> completed ({idx}/{len(tracks_in_playlist)})")
+                try: song_info = self._parsewithofficialapiv1(search_result=track_info, song_info_flac=None, lossless_quality_is_sufficient=False, request_overrides=request_overrides)
+                except Exception: song_info = SongInfo(source=self.source)
+                if song_info.with_valid_download_url: song_infos.append(song_info)
+            main_process_context.advance(main_progress_id, 1)
+            main_process_context.update(main_progress_id, description=f"{len(tracks_in_playlist)} songs found in playlist {playlist_id} >>> completed ({idx+1}/{len(tracks_in_playlist)})")
+        # post processing
+        playlist_name = safeextractfromdict(playlist_result_first, ['playlist', 'title'], None)
+        song_infos = self._removeduplicates(song_infos=song_infos); work_dir = self._constructuniqueworkdir(keyword=playlist_name or f"playlist-{playlist_id}")
+        for song_info in song_infos:
+            song_info.work_dir = work_dir; episodes = song_info.episodes if isinstance(song_info.episodes, list) else []
+            for eps_info in episodes: eps_info.work_dir = sanitize_filepath(os.path.join(work_dir, song_info.song_name)); touchdir(work_dir)
+        # return results
         return song_infos

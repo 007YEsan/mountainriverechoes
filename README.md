@@ -434,6 +434,7 @@ From musicdl v2.9.0 onward, support for downloading user playlists from each pla
 - [QianqianMusicClient | 千千音乐](https://music.91q.com/)
 - [SoundCloudMusicClient | 声云](https://soundcloud.com/discover)
 - [StreetVoiceMusicClient | 街声](https://www.streetvoice.cn/)
+- [SodaMusicClient | 汽水音乐](https://www.douyin.com/qishui/)
 
 Specifically, you only need to run the following command in the terminal, musicdl will automatically detect the playlist in the link and download it in batch:
 
@@ -449,6 +450,7 @@ musicdl -p "https://y.qq.com/n/ryqq_v2/playlist/8740590963" -m QQMusicClient
 musicdl -p "https://music.91q.com/songlist/295893" -m QianqianMusicClient
 musicdl -p "https://www.streetvoice.cn/morgan22/playlists/436444/" -m StreetVoiceMusicClient
 musicdl -p "https://soundcloud.com/pandadub/sets/the-lost-ship" -m SoundCloudMusicClient
+musicdl -p "https://qishui.douyin.com/s/iHFSgNKw/" -m SodaMusicClient
 ```
 
 Alternatively, use the following code to invoke it,
