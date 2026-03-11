@@ -442,7 +442,7 @@ class TidalMobileSession(TidalSession):
         {'client_id': 'zU4XHVVkc2tDPo4t', 'client_secret': 'VJKhDFqJPqvsPVNBV6ukXTJmwlvbttP7wlMlrc72se4='}, {'client_id': 'fX2JxdmntZWK0ixT', 'client_secret': '1Nm5AfDAjxrgJFJbKNWLeAyKGVGmINuXPPLHVXAvxAg='},
         {'client_id': 'Dt4NnnGCAeHlCFnZ', 'client_secret': 'fmEBbWpJYd6eR6THNksXWEZSTNPWmIejTMNxncSGHmU='},
     ]
-    def __init__(self, client_id: str = '7m7Ap0JC9j1cOM3n'):
+    def __init__(self, client_id: str = 'fX2JxdmntZWK0ixT'):
         super(TidalMobileSession, self).__init__()
         self.client_id = client_id
         self.redirect_uri = "https://tidal.com/android/login/auth"
@@ -491,7 +491,7 @@ class TidalTvSession(TidalSession):
         {'client_id': 'zU4XHVVkc2tDPo4t', 'client_secret': 'VJKhDFqJPqvsPVNBV6ukXTJmwlvbttP7wlMlrc72se4='}, {'client_id': 'fX2JxdmntZWK0ixT', 'client_secret': '1Nm5AfDAjxrgJFJbKNWLeAyKGVGmINuXPPLHVXAvxAg='},
         {'client_id': 'Dt4NnnGCAeHlCFnZ', 'client_secret': 'fmEBbWpJYd6eR6THNksXWEZSTNPWmIejTMNxncSGHmU='},
     ]
-    def __init__(self, client_id: str = '7m7Ap0JC9j1cOM3n', client_secret: str = 'vRAdA108tlvkJpTsGZS8rGZ7xTlbJ0qaZ2K9saEzsgY='):
+    def __init__(self, client_id: str = 'fX2JxdmntZWK0ixT', client_secret: str = '1Nn9AfDAjxrgJFJbKNWLeAyKGVGmINuXPPLHVXAvxAg='):
         super(TidalTvSession, self).__init__()
         self.client_id = client_id
         self.client_secret = client_secret
