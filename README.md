@@ -485,25 +485,26 @@ music_client.download(song_infos=song_infos)
 Common Issues and Solutions (FQA):
 
 <details style="margin-bottom: 24px;">
-<summary><b>How to Parse New Kugou Web Playlist URLs?</b></summary>
+<summary><em>How to Parse New Kugou Web Playlist URLs?</em></summary>
 <br>
 
 If you have a new playlist link (*e.g.*, `https://www.kugou.com/songlist/gcid_3zs9qlpmzdz003/`), you need to manually extract the `special ID` via your browser. Follow these steps:
 
-1. **Open & Login**: Open the playlist link in your browser and ensure you are already logged into KuGou Music.
-2. **Inspect Network**: Open your browser's Developer Tools (F12) and use network traffic capture to inspect the returned HTML page.
-3. **Find the ID**: Search for the keyword `"specialid"` in the response. The number immediately following it is your special ID.
-4. **Construct the URL**: Replace `{YOUR_SPECIAL_ID}` in the format below with the number you found:
-   > `https://www.kugou.com/yy/special/single/{YOUR_SPECIAL_ID}.html`
-5. **Run**: Use this newly constructed link as the playlist input for musicdl.
+1. *Open & Login*: Open the playlist link in your browser and ensure you are already logged into KuGou Music.
+2. *Inspect Network*: Open your browser's Developer Tools (F12) and use network traffic capture to inspect the returned HTML page.
+3. *Find the ID*: Search for the keyword `"specialid"` in the response. The number immediately following it is your special ID.
+4. *Construct the URL*: Replace `{YOUR_SPECIAL_ID}` in the format below with the number you found:
+   - `https://www.kugou.com/yy/special/single/{YOUR_SPECIAL_ID}.html`
+5. *Run*: Use this newly constructed link as the playlist input for musicdl.
 
 </details>
 
 <details style="margin-bottom: 24px;">
-<summary><b>Why is The Downloaded Apple Music Playlist Incomplete?</b></summary>
+<summary><em>Why is The Downloaded Apple Music Playlist Incomplete?</em></summary>
 <br>
 
 musicdl currently only supports parsing playlists with a maximum of 300 tracks. 
+
 If your playlist exceeds this limit, please manually split the large playlist into several smaller ones, and then use musicdl to parse and download them individually.
 
 </details>
