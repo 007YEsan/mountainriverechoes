@@ -171,7 +171,7 @@ class BaseMusicClient():
         return song_infos
     '''_download'''
     @usedownloadheaderscookies
-    def _download(self, song_info: SongInfo, request_overrides: dict = None, downloaded_song_infos: list[SongInfo] = [], progress: Progress = None, song_progress_id: int = 0):
+    def _download(self, song_info: SongInfo, request_overrides: dict = None, downloaded_song_infos: list[SongInfo] = [], progress: Progress = None, song_progress_id: int = 0, auto_supplement_song: bool = True):
         request_overrides = copy.deepcopy(request_overrides or {})
         if song_info.protocol.upper() in {'HLS'}:
             try:
@@ -181,7 +181,7 @@ class BaseMusicClient():
                     disable_print=self.disable_print, request_overrides=request_overrides
                 )
                 hls_downloader.download(song_info.download_url, song_info.save_path, quality='best', keep_segments=False, temp_subdir=str(song_info.identifier), progress=progress, progress_id=song_progress_id)
-                downloaded_song_infos.append(SongInfoUtils.fillsongtechinfo(copy.deepcopy(song_info), logger_handle=self.logger_handle, disable_print=self.disable_print))
+                downloaded_song_infos.append(SongInfoUtils.supplsonginfothensavelyricsthenwritetags(copy.deepcopy(song_info), logger_handle=self.logger_handle, disable_print=self.disable_print) if auto_supplement_song else copy.deepcopy(song_info))
             except Exception as err:
                 progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name[:10] + '...' if len(song_info.song_name) > 13 else song_info.song_name[:13]} (Error: {err})")
         elif song_info.protocol.upper() in {'HTTP'} and song_info.downloaded_contents:
@@ -192,7 +192,7 @@ class BaseMusicClient():
                 with open(song_info.save_path, "wb") as fp: fp.write(song_info.downloaded_contents)
                 progress.advance(song_progress_id, total_size)
                 progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name[:10] + '...' if len(song_info.song_name) > 13 else song_info.song_name[:13]} (Success)")
-                downloaded_song_infos.append(SongInfoUtils.fillsongtechinfo(copy.deepcopy(song_info), logger_handle=self.logger_handle, disable_print=self.disable_print))
+                downloaded_song_infos.append(SongInfoUtils.supplsonginfothensavelyricsthenwritetags(copy.deepcopy(song_info), logger_handle=self.logger_handle, disable_print=self.disable_print) if auto_supplement_song else copy.deepcopy(song_info))
             except Exception as err:
                 progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name[:10] + '...' if len(song_info.song_name) > 13 else song_info.song_name[:13]} (Error: {err})")
         elif song_info.protocol.upper() in {'HTTP'}:
@@ -213,16 +213,15 @@ class BaseMusicClient():
                             progress.advance(song_progress_id, len(chunk))
                             progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name[:10] + '...' if len(song_info.song_name) > 13 else song_info.song_name[:13]} (Downloading: {downloading_text})")
                     progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name[:10] + '...' if len(song_info.song_name) > 13 else song_info.song_name[:13]} (Success)")
-                    downloaded_song_infos.append(SongInfoUtils.fillsongtechinfo(copy.deepcopy(song_info), logger_handle=self.logger_handle, disable_print=self.disable_print))
+                downloaded_song_infos.append(SongInfoUtils.supplsonginfothensavelyricsthenwritetags(copy.deepcopy(song_info), logger_handle=self.logger_handle, disable_print=self.disable_print) if auto_supplement_song else copy.deepcopy(song_info))
             except Exception as err:
                 progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name[:10] + '...' if len(song_info.song_name) > 13 else song_info.song_name[:13]} (Error: {err})")
         return downloaded_song_infos
     '''download'''
     @usedownloadheaderscookies
-    def download(self, song_infos: list[SongInfo], num_threadings: int = 5, request_overrides: dict = None):
+    def download(self, song_infos: list[SongInfo], num_threadings: int = 5, request_overrides: dict = None, auto_supplement_song: bool = True):
         # init
-        request_overrides = request_overrides or {}
-        shortenpathsinsonginfos(song_infos=song_infos)
+        request_overrides = request_overrides or {}; shortenpathsinsonginfos(song_infos=song_infos)
         # logging
         self.logger_handle.info(f'Start to download music files using {self.source}.', disable_print=self.disable_print)
         # multi threadings for downloading music files
@@ -234,7 +233,7 @@ class BaseMusicClient():
                 desc = f"{self.source}.download >>> {song_info.song_name[:10] + '...' if len(song_info.song_name) > 13 else song_info.song_name[:13]} (Preparing)"
                 song_progress_ids.append(progress.add_task(desc, total=None, kind='download'))
             with ThreadPoolExecutor(max_workers=num_threadings) as pool:
-                for song_progress_id, song_info in zip(song_progress_ids, song_infos): submitted_tasks.append(pool.submit(self._download, song_info, request_overrides, downloaded_song_infos, progress, song_progress_id))
+                for song_progress_id, song_info in zip(song_progress_ids, song_infos): submitted_tasks.append(pool.submit(self._download, song_info, request_overrides, downloaded_song_infos, progress, song_progress_id, auto_supplement_song))
                 for _ in as_completed(submitted_tasks):
                     progress.advance(songs_progress_id, 1)
                     num_downloaded_songs = int(progress.tasks[songs_progress_id].completed)

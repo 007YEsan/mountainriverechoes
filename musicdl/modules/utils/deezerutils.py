@@ -50,3 +50,12 @@ class DeezerMusicClientUtils():
             return "\n".join(lrc_lines)
         else:
             return lyrics_node.get("text")
+    '''decryptdownloadedaudiofile'''
+    @staticmethod
+    def decryptdownloadedaudiofile(src_path: str, dst_path: str, blowfish_key: str):
+        encrypt_chunk_size = 3 * 2048
+        with open(src_path, "rb") as src, open(dst_path, "wb") as dst:
+            while True:
+                if not (data := src.read(encrypt_chunk_size)): break
+                decrypted_chunk = DeezerMusicClientUtils.decryptchunk(blowfish_key, data[:2048]) + data[2048:] if len(data) >= 2048 else data
+                dst.write(decrypted_chunk)

@@ -17,7 +17,7 @@ from ..utils.hosts import SODA_MUSIC_HOSTS
 from urllib.parse import urlencode, urlparse, parse_qs
 from ..utils.sodautils import AudioDecryptor, SodaTimedLyricsParser
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
-from ..utils import touchdir, legalizestring, byte2mb, resp2json, usesearchheaderscookies, safeextractfromdict, seconds2hms, usedownloadheaderscookies, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo, AudioLinkTester
+from ..utils import touchdir, legalizestring, byte2mb, resp2json, usesearchheaderscookies, safeextractfromdict, seconds2hms, usedownloadheaderscookies, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo, AudioLinkTester, SongInfoUtils
 
 
 '''SodaMusicClient'''
@@ -32,13 +32,13 @@ class SodaMusicClient(BaseMusicClient):
         self._initsession()
     '''_download'''
     @usedownloadheaderscookies
-    def _download(self, song_info: SongInfo, request_overrides: dict = None, downloaded_song_infos: list = [], progress: Progress = None, song_progress_id: int = 0):
-        downloaded_song_infos = super()._download(song_info=song_info, request_overrides=request_overrides, downloaded_song_infos=downloaded_song_infos, progress=progress, song_progress_id=song_progress_id)
+    def _download(self, song_info: SongInfo, request_overrides: dict = None, downloaded_song_infos: list = [], progress: Progress = None, song_progress_id: int = 0, auto_supplement_song: bool = True):
+        super()._download(song_info=song_info, request_overrides=request_overrides, downloaded_song_infos=[], progress=progress, song_progress_id=song_progress_id, auto_supplement_song=False)
         with open(song_info.save_path, "rb") as fp: file_data = bytearray(fp.read())
-        output_filepath = Path(song_info.save_path)
-        output_filepath = output_filepath.parent / f'{output_filepath.stem}.m4a'
+        output_filepath = (output_filepath := Path(song_info.save_path)).parent / f'{output_filepath.stem}.m4a'
         AudioDecryptor.decrypt(file_data=file_data, play_auth=song_info.raw_data['play_auth'], output_filepath=str(output_filepath))
         if not os.path.samefile(song_info.save_path, str(output_filepath)): os.remove(song_info.save_path)
+        song_info._save_path = str(output_filepath); downloaded_song_infos.append(SongInfoUtils.supplsonginfothensavelyricsthenwritetags(copy.deepcopy(song_info), logger_handle=self.logger_handle, disable_print=self.disable_print) if auto_supplement_song else copy.deepcopy(song_info))
         return downloaded_song_infos
     '''_constructsearchurls'''
     def _constructsearchurls(self, keyword: str, rule: dict = None, request_overrides: dict = None):
