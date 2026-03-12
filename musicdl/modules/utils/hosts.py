@@ -12,6 +12,7 @@ from urllib.parse import urlsplit
 
 '''settings'''
 APPLE_MUSIC_HOSTS = {"music.apple.com", "geo.music.apple.com", "embed.music.apple.com", "itunes.apple.com", "geo.itunes.apple.com", "apple.com"}
+DEEZER_MUSIC_HOSTS = {"deezer.com", "www.deezer.com", "deezer.page.link",}
 FIVESING_MUSIC_HOSTS = {"5sing.kugou.com",}
 JOOX_MUSIC_HOSTS = {"joox.com",}
 JAMENDO_MUSIC_HOSTS = {"jamendo.com",}

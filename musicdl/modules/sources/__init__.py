@@ -16,6 +16,7 @@ from .kugou import KugouMusicClient
 from .twot58 import TwoT58MusicClient
 from .fangpi import FangpiMusicClient
 from .buguyy import BuguyyMusicClient
+from .deezer import DeezerMusicClient
 from ..utils import BaseModuleBuilder
 from .netease import NeteaseMusicClient
 from .youtube import YouTubeMusicClient
@@ -39,11 +40,11 @@ from ..common import GDStudioMusicClient, TuneHubMusicClient, MP3JuiceMusicClien
 class MusicClientBuilder(BaseModuleBuilder):
     REGISTERED_MODULES = {
         # Platforms in Greater China
-        'NeteaseMusicClient': NeteaseMusicClient, 'QianqianMusicClient': QianqianMusicClient, 'KuwoMusicClient': KuwoMusicClient, 'KugouMusicClient': KugouMusicClient, 'MiguMusicClient': MiguMusicClient,
-        'QQMusicClient': QQMusicClient, 'BilibiliMusicClient': BilibiliMusicClient, 'FiveSingMusicClient': FiveSingMusicClient, 'SodaMusicClient': SodaMusicClient, 'StreetVoiceMusicClient': StreetVoiceMusicClient,
+        'QQMusicClient': QQMusicClient, 'BilibiliMusicClient': BilibiliMusicClient, 'KugouMusicClient': KugouMusicClient, 'StreetVoiceMusicClient': StreetVoiceMusicClient, 'SodaMusicClient': SodaMusicClient, 
+        'NeteaseMusicClient': NeteaseMusicClient, 'QianqianMusicClient': QianqianMusicClient, 'FiveSingMusicClient': FiveSingMusicClient, 'MiguMusicClient': MiguMusicClient, 'KuwoMusicClient': KuwoMusicClient, 
         # Global Streaming / Indie
         'YouTubeMusicClient': YouTubeMusicClient, 'JooxMusicClient': JooxMusicClient, 'AppleMusicClient': AppleMusicClient, 'JamendoMusicClient': JamendoMusicClient, 'TIDALMusicClient': TIDALMusicClient,
-        'SoundCloudMusicClient': SoundCloudMusicClient,
+        'SoundCloudMusicClient': SoundCloudMusicClient, 'DeezerMusicClient': DeezerMusicClient,
         # Audio / Radio
         'XimalayaMusicClient': XimalayaMusicClient, 'LizhiMusicClient': LizhiMusicClient, 'QingtingMusicClient': QingtingMusicClient, 'LRTSMusicClient': LRTSMusicClient,
         # Aggregators / Multi-Source Gateways

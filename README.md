@@ -99,6 +99,7 @@ If you are a copyright or rights holder and believe that this repository infring
 |                                          | [SodaMusicClient](https://www.douyin.com/qishui/)                  | [汽水音乐](https://www.douyin.com/qishui/)                                   | ✅        | ✅         | [soda.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/soda.py)                   |
 |                                          | [StreetVoiceMusicClient](https://www.streetvoice.cn/)              | [街声](https://www.streetvoice.cn/)                                          | ✅        | ✅         | [streetvoice.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/streetvoice.py)     |
 | **Global Streaming / Indie**             | [AppleMusicClient](https://music.apple.com/)                       | [苹果音乐](https://music.apple.com/)                                         | ✅        | ✅         | [apple.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/apple.py)                 |
+|                                          | [DeezerMusicClient](https://www.deezer.com/us/)                    | [Deezer (法国音乐平台)](https://www.deezer.com/us/)                          | ✅        | ✅         | [deezer.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/deezer.py)               |
 |                                          | [JamendoMusicClient](https://www.jamendo.com/)                     | [简音乐 (欧美流行音乐)](https://www.jamendo.com/)                            | ✅        | ✅         | [jamendo.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/jamendo.py)             |
 |                                          | [JooxMusicClient](https://www.joox.com/intl)                       | [JOOX (QQ音乐海外版)](https://www.joox.com/intl)                             | ✅        | ✅         | [joox.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/joox.py)                   |
 |                                          | [SoundCloudMusicClient](https://soundcloud.com/discover)           | [SoundCloud (声云)](https://soundcloud.com/discover)                         | ✅        | ✅         | [soundcloud.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/soundcloud.py)       |
@@ -424,6 +425,7 @@ print(MusicClientBuilder.REGISTERED_MODULES)
 From musicdl v2.9.0 onward, support for downloading user playlists from each platform will be added gradually. The platforms currently supported are as follows:
 
 - [AppleMusicClient | 苹果音乐](https://music.apple.com/)
+- [DeezerMusicClient | Deezer (法国音乐平台)](https://www.deezer.com/us/)
 - [FiveSingMusicClient | 5SING音乐](https://5sing.kugou.com/index.html)
 - [JamendoMusicClient | 简音乐 (欧美流行音乐)](https://www.jamendo.com/)
 - [JooxMusicClient | QQ音乐海外版](https://www.joox.com/hk)
@@ -446,6 +448,8 @@ Specifically, you only need to run the following command in the terminal, musicd
 musicdl -p "https://music.apple.com/cn/playlist/%E5%8D%81%E5%A4%A7%E4%B8%93%E8%BE%91/pl.u-mJy81mECzBL49zM" -m AppleMusicClient -i "{'AppleMusicClient': {'default_parse_cookies': your_vip_cookies_with_str_or_dict_format}}"
 # >>> use wrapper
 musicdl -p "https://music.apple.com/cn/playlist/%E5%8D%81%E5%A4%A7%E4%B8%93%E8%BE%91/pl.u-mJy81mECzBL49zM" -m AppleMusicClient -i "{'AppleMusicClient': {'use_wrapper': True, 'wrapper_account_url': 'http://127.0.0.1:30020/', 'wrapper_decrypt_ip': '127.0.0.1:10020'}}"
+# Parse and Download Deezer Music Playlist
+musicdl -p "https://www.deezer.com/us/playlist/4697225044" -m DeezerMusicClient -i "{'DeezerMusicClient': {'default_parse_cookies': your_vip_cookies_with_str_or_dict_format}}"
 # Parse and Download 5SING Music Playlist
 musicdl -p "https://5sing.kugou.com/yeluoluo/dj/631b3fa72418b11003089b8d.html" -m FiveSingMusicClient
 # Parse and Download Jamendo Music Playlist
