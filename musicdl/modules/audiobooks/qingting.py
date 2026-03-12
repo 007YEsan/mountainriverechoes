@@ -32,8 +32,7 @@ class QingtingMusicClient(BaseMusicClient):
         self.default_download_headers = {"User-Agent": "QingTing-iOS/10.7.9.0 com.Qting.QTTour Mozilla/5.0 (iPhone; CPU iPhone OS 16_6_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148", "QT-App-Version": "10.7.9.0"}
         self.default_headers = self.default_search_headers
         self.auth_info = copy.deepcopy(self.default_search_cookies or self.default_download_cookies)
-        self.default_search_cookies = {}
-        self.default_download_cookies = {}
+        self.default_search_cookies = {}; self.default_download_cookies = {}
         self._initsession()
     '''_auth'''
     def _auth(self, request_overrides: dict = None):

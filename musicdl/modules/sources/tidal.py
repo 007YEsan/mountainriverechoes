@@ -27,7 +27,7 @@ class TIDALMusicClient(BaseMusicClient):
     def __init__(self, **kwargs):
         super(TIDALMusicClient, self).__init__(**kwargs)
         assert self.default_search_cookies or self.default_download_cookies or self.default_parse_cookies, f'{self.source}.__init__ >>> cookies are not configured, so TIDAL is unavailable, refer to https://musicdl.readthedocs.io/zh/latest/Quickstart.html#tidal-high-quality-music-download.'
-        session_storage = SessionStorage(**self.default_search_cookies or self.default_download_cookies or self.default_parse_cookies)
+        session_storage = SessionStorage(**(self.default_search_cookies or self.default_download_cookies or self.default_parse_cookies))
         self.tidal_tv_session = TidalTvSession(session_storage.client_id, session_storage.client_secret)
         self.tidal_tv_session.setstorage(session_storage); TIDALMusicClientUtils.SESSION_STORAGE = session_storage
         self.default_search_headers = {"X-Tidal-Token": self.tidal_tv_session.client_id, "Authorization": f"Bearer {self.tidal_tv_session.access_token}", "Connection": "Keep-Alive", "Accept-Encoding": "gzip", "User-Agent": "TIDAL_ANDROID/1039 okhttp/3.14.9"}
