@@ -14,10 +14,10 @@ from pathlib import Path
 from .base import BaseMusicClient
 from pathvalidate import sanitize_filepath
 from ..utils.hosts import SODA_MUSIC_HOSTS
-from ..utils.sodautils import AudioDecryptor
 from urllib.parse import urlencode, urlparse, parse_qs
+from ..utils.sodautils import AudioDecryptor, SodaTimedLyricsParser
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
-from ..utils import touchdir, legalizestring, byte2mb, resp2json, usesearchheaderscookies, safeextractfromdict, seconds2hms, usedownloadheaderscookies, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo, SodaTimedLyricsParser, AudioLinkTester
+from ..utils import touchdir, legalizestring, byte2mb, resp2json, usesearchheaderscookies, safeextractfromdict, seconds2hms, usedownloadheaderscookies, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo, AudioLinkTester
 
 
 '''SodaMusicClient'''
