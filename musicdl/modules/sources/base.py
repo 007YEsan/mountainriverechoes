@@ -23,7 +23,7 @@ from fake_useragent import UserAgent
 from pathvalidate import sanitize_filepath
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn, DownloadColumn, TransferSpeedColumn, TimeRemainingColumn, MofNCompleteColumn, ProgressColumn
-from ..utils import LoggerHandle, AudioLinkTester, SongInfo, SongInfoUtils, HLSDownloader, touchdir, usedownloadheaderscookies, usesearchheaderscookies, useparseheaderscookies, cookies2dict, cookies2string, shortenpathsinsonginfos, optionalimport
+from ..utils import LoggerHandle, AudioLinkTester, SongInfo, SongInfoUtils, HLSDownloader, touchdir, usedownloadheaderscookies, usesearchheaderscookies, useparseheaderscookies, cookies2dict, cookies2string, shortenpathsinsonginfos, optionalimport, optionalimportfrom
 
 
 '''AudioAwareColumn'''
@@ -42,10 +42,8 @@ class AudioAwareColumn(ProgressColumn):
 '''BaseMusicClient'''
 class BaseMusicClient():
     source = 'BaseMusicClient'
-    def __init__(self, search_size_per_source: int = 5, auto_set_proxies: bool = False, random_update_ua: bool = False, enable_search_curl_cffi: bool = False, enable_parse_curl_cffi: bool = False,
-                 enable_download_curl_cffi: bool = False, maintain_session: bool = False, logger_handle: LoggerHandle = None, disable_print: bool = False, work_dir: str = 'musicdl_outputs',
-                 max_retries: int = 3, freeproxy_settings: dict = None, default_search_cookies: dict | str = None, default_download_cookies: dict | str = None, default_parse_cookies: dict | str = None,
-                 strict_limit_search_size_per_page: bool = True, search_size_per_page: int = 10, quark_parser_config: dict = None):
+    def __init__(self, search_size_per_source: int = 5, auto_set_proxies: bool = False, random_update_ua: bool = False, enable_search_curl_cffi: bool = False, enable_parse_curl_cffi: bool = False, enable_download_curl_cffi: bool = False, maintain_session: bool = False, logger_handle: LoggerHandle = None, disable_print: bool = False, work_dir: str = 'musicdl_outputs', 
+                 max_retries: int = 3, freeproxy_settings: dict = None, default_search_cookies: dict | str = None, default_download_cookies: dict | str = None, default_parse_cookies: dict | str = None, strict_limit_search_size_per_page: bool = True, search_size_per_page: int = 10, quark_parser_config: dict = None):
         # set up work dir
         touchdir(work_dir)
         # set attributes
@@ -82,12 +80,9 @@ class BaseMusicClient():
         self.default_headers = self.default_search_headers
         self._initsession()
         # proxied_session_client
-        self.proxied_session_client = None
-        if auto_set_proxies:
-            from freeproxy import freeproxy
-            default_freeproxy_settings = dict(disable_print=True, proxy_sources=['ProxiflyProxiedSession'], max_tries=20, init_proxied_session_cfg={})
-            default_freeproxy_settings.update(self.freeproxy_settings)
-            self.proxied_session_client = freeproxy.ProxiedSessionClient(**default_freeproxy_settings)
+        freeproxy = optionalimportfrom('freeproxy', 'freeproxy')
+        (default_freeproxy_settings := dict(disable_print=True, proxy_sources=['ProxiflyProxiedSession'], max_tries=20, init_proxied_session_cfg={})).update(self.freeproxy_settings)
+        self.proxied_session_client = freeproxy.ProxiedSessionClient(**default_freeproxy_settings) if auto_set_proxies else None
     '''_listccimpersonates'''
     def _listccimpersonates(self):
         curl_cffi = optionalimport('curl_cffi')
@@ -97,6 +92,7 @@ class BaseMusicClient():
         return sorted({m.decode("utf-8", "ignore") for p in root.rglob("*") if p.suffix in exts for m in pat.findall(p.read_bytes())})
     '''_initsession'''
     def _initsession(self):
+        if self.maintain_session and getattr(self, 'session', None) and getattr(self, 'audio_link_tester', None) and getattr(self, 'quark_audio_link_tester', None): return
         curl_cffi = optionalimport('curl_cffi')
         self.session = requests.Session() if not self.enable_curl_cffi else curl_cffi.requests.Session()
         self.session.headers = self.default_headers
