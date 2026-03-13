@@ -60,6 +60,7 @@ class DeezerMusicClient(BaseMusicClient):
     def _constructsearchurls(self, keyword: str, rule: dict = None, request_overrides: dict = None):
         # init
         rule, request_overrides = rule or {}, request_overrides or {}; self._updateauthinfo(request_overrides=request_overrides)
+        if (not self.default_cookies or 'arl' not in self.default_cookies): self.logger_handle.warning(f'{self.source}._constructsearchurls >>> cookies are not configured, so song downloads are restricted and only the preview portion of the track can be downloaded.')
         # search rules
         default_rule = {'q': keyword, 'index': 1, 'limit': 20}
         default_rule.update(rule)
@@ -184,6 +185,7 @@ class DeezerMusicClient(BaseMusicClient):
         playlist_url = self.session.head(playlist_url, allow_redirects=True, **request_overrides).url
         playlist_id, song_infos = urlparse(playlist_url).path.strip('/').split('/')[-1].removesuffix('.html').removesuffix('.htm'), []
         if (not (hostname := obtainhostname(url=playlist_url))) or (not hostmatchessuffix(hostname, DEEZER_MUSIC_HOSTS)): return song_infos
+        if (not self.default_cookies or 'arl' not in self.default_cookies): self.logger_handle.warning(f'{self.source}.parseplaylist >>> cookies are not configured, so song downloads are restricted and only the preview portion of the track can be downloaded.')
         # get tracks in playlist
         tracks_in_playlist, page, page_size, playlist_result_first = [], 1, 500, {}
         while True:
