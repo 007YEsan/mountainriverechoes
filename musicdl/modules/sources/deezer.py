@@ -45,7 +45,7 @@ class DeezerMusicClient(BaseMusicClient):
         super()._download(song_info=song_info, request_overrides=request_overrides, downloaded_song_infos=[], progress=progress, song_progress_id=song_progress_id, auto_supplement_song=False)
         if DeezerMusicClientUtils.IS_ENCRYPTED_RPATTERN.search(song_info.download_url) is None: downloaded_song_infos.append(SongInfoUtils.supplsonginfothensavelyricsthenwritetags(copy.deepcopy(song_info), logger_handle=self.logger_handle, disable_print=self.disable_print) if auto_supplement_song else copy.deepcopy(song_info)); return downloaded_song_infos
         output_filepath = (output_filepath := Path(song_info.save_path)).parent / f'{output_filepath.stem}.decrypt'
-        blowfish_key = DeezerMusicClientUtils.generateblowfishkey(song_info.raw_data.get('id'))
+        blowfish_key = DeezerMusicClientUtils.generateblowfishkey(str(song_info.raw_data.get('id')))
         DeezerMusicClientUtils.decryptdownloadedaudiofile(src_path=str(song_info.save_path), dst_path=str(output_filepath), blowfish_key=blowfish_key)
         replacefile(str(output_filepath), str(song_info.save_path))
         downloaded_song_infos.append(SongInfoUtils.supplsonginfothensavelyricsthenwritetags(copy.deepcopy(song_info), logger_handle=self.logger_handle, disable_print=self.disable_print) if auto_supplement_song else copy.deepcopy(song_info))

@@ -250,7 +250,7 @@ class BaseMusicClient():
         return downloaded_song_infos
     '''parseplaylist'''
     @useparseheaderscookies
-    def parseplaylist(self, playlist_url: str):
+    def parseplaylist(self, playlist_url: str, request_overrides: dict = None):
         raise NotImplementedError(f'Not supported now to parse playlist from {self.source}')
     '''_autosetproxies'''
     def _autosetproxies(self):

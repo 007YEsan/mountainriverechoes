@@ -25,7 +25,7 @@ class DeezerMusicClientUtils():
     '''generateblowfishkey'''
     @staticmethod
     def generateblowfishkey(track_id: str) -> bytes:
-        md5_hash = hashlib.md5(track_id.encode()).hexdigest()
+        md5_hash = hashlib.md5(str(track_id).encode()).hexdigest()
         return "".join(chr(functools.reduce(lambda x, y: x ^ y, map(ord, t))) for t in zip(md5_hash[:16], md5_hash[16:], DeezerMusicClientUtils.BLOWFISH_SECRET)).encode()
     '''getencryptedfileurl'''
     @staticmethod
