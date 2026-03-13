@@ -52,6 +52,7 @@ class DeezerMusicClient(BaseMusicClient):
         return downloaded_song_infos
     '''_updateauthinfo'''
     def _updateauthinfo(self, request_overrides: dict = None):
+        if self.auth_info: return
         request_overrides = request_overrides or {}
         (resp := self.post('http://www.deezer.com/ajax/gw-light.php', params={'api_version': "1.0", 'api_token': 'null', 'input': '3', 'method': 'deezer.getUserData'}, **request_overrides)).raise_for_status()
         self.auth_info = resp2json(resp=resp)
