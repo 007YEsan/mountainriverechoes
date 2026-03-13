@@ -20,9 +20,9 @@ from ..utils import touchdir, legalizestring, resp2json, usesearchheaderscookies
 '''SoundCloudMusicClient'''
 class SoundCloudMusicClient(BaseMusicClient):
     source = 'SoundCloudMusicClient'
+    CLIENT_ID = None
     def __init__(self, **kwargs):
         super(SoundCloudMusicClient, self).__init__(**kwargs)
-        self.client_id = None
         if self.default_search_cookies: assert ("oauth_token" in self.default_search_cookies), '"oauth_token" should be configured, refer to https://musicdl.readthedocs.io/zh/latest/Quickstart.html#soundcloud-music-download'
         if self.default_parse_cookies: assert ("oauth_token" in self.default_parse_cookies), '"oauth_token" should be configured, refer to https://musicdl.readthedocs.io/zh/latest/Quickstart.html#soundcloud-music-download'
         if self.default_download_cookies: assert ("oauth_token" in self.default_download_cookies), '"oauth_token" should be configured, refer to https://musicdl.readthedocs.io/zh/latest/Quickstart.html#soundcloud-music-download'
@@ -36,23 +36,23 @@ class SoundCloudMusicClient(BaseMusicClient):
         self._initsession()
     '''_updateclientid'''
     def _updateclientid(self, request_overrides: dict = None):
-        if self.client_id: return
+        if SoundCloudMusicClient.CLIENT_ID: return
         request_overrides = request_overrides or {}
         try: (resp := self.session.get('https://soundcloud.com/', **request_overrides)).raise_for_status()
-        except: self.client_id = '9jZvetLfDs6An08euQgJ0lYlHkKdGFzV'; return
+        except: SoundCloudMusicClient.CLIENT_ID = '9jZvetLfDs6An08euQgJ0lYlHkKdGFzV'; return
         script_urls = re.findall(r'<script[^>]+src="([^"]+)"', resp.text)
         for url in reversed(script_urls):
             try: resp = self.session.get(url, **request_overrides); m = re.search(r'client_id\s*:\s*"([0-9a-zA-Z]{32})"', resp.text) if resp.status_code == 200 else None
             except Exception: continue
-            if m: self.client_id = m.group(1); return
-        self.client_id = '9jZvetLfDs6An08euQgJ0lYlHkKdGFzV'; return
+            if m: SoundCloudMusicClient.CLIENT_ID = m.group(1); return
+        SoundCloudMusicClient.CLIENT_ID = '9jZvetLfDs6An08euQgJ0lYlHkKdGFzV'; return
     '''_constructsearchurls'''
     def _constructsearchurls(self, keyword: str, rule: dict = None, request_overrides: dict = None):
         # init
         rule, request_overrides = rule or {}, request_overrides or {}
         self._updateclientid(request_overrides=request_overrides)
         # search rules
-        default_rule = {'q': keyword, 'sc_a_id': 'ab15798461680579b387acf67441b40149e528cd', 'facet': 'genre', 'user_id': '704923-225181-486085-807554', 'client_id': self.client_id, 'limit': '20', 'offset': '0', 'linked_partitioning': '1', 'app_version': '1769771069', 'app_locale': 'en'}
+        default_rule = {'q': keyword, 'sc_a_id': 'ab15798461680579b387acf67441b40149e528cd', 'facet': 'genre', 'user_id': '704923-225181-486085-807554', 'client_id': SoundCloudMusicClient.CLIENT_ID, 'limit': '20', 'offset': '0', 'linked_partitioning': '1', 'app_version': '1769771069', 'app_locale': 'en'}
         default_rule.update(rule)
         # construct search urls based on search rules
         base_url = 'https://api-v2.soundcloud.com/search/tracks?'
@@ -77,7 +77,7 @@ class SoundCloudMusicClient(BaseMusicClient):
         protocol_rank_func = lambda t: {"progressive": 2, "hls": 1}.get((safeextractfromdict(t, ["format", "protocol"], "") or "").lower(), 0)
         sort_key_func = lambda t: (lambda c, br: (quality_rank_func(t), br, codec_rank_func(c), protocol_rank_func(t)))(guess_codec_func(t), guess_bitrate_kbps_func(t))
         # supplement incomplete tracks
-        if not safeextractfromdict(search_result, ['media', 'transcodings'], []): search_result = resp2json(self.get(f"https://api-v2.soundcloud.com/tracks/{song_id}", params={"client_id": self.client_id}, **request_overrides))
+        if not safeextractfromdict(search_result, ['media', 'transcodings'], []): search_result = resp2json(self.get(f"https://api-v2.soundcloud.com/tracks/{song_id}", params={"client_id": SoundCloudMusicClient.CLIENT_ID}, **request_overrides))
         # obtain basic song_info
         if lossless_quality_is_sufficient and song_info_flac.with_valid_download_url and (song_info_flac.ext in lossless_quality_definitions): song_info = song_info_flac
         else:
@@ -88,12 +88,12 @@ class SoundCloudMusicClient(BaseMusicClient):
                 if str(protocol).startswith(('ctr-', 'cbc-')): continue # TODO: Solve DRM issues in SoundCloud
                 ext = (('opus' if ('opus' in preset or 'opus' in mime_type) else None) or ('m4a' if ('aac' in preset or 'm4a' in mime_type) else None) or 'mp3')
                 if f"{protocol}_{preset}" in {"original_download"}:
-                    try: (resp := self.get(f'https://api-v2.soundcloud.com/tracks/{song_id}/download', params={'client_id': self.client_id}, **request_overrides)).raise_for_status()
+                    try: (resp := self.get(f'https://api-v2.soundcloud.com/tracks/{song_id}/download', params={'client_id': SoundCloudMusicClient.CLIENT_ID}, **request_overrides)).raise_for_status()
                     except Exception: continue
                     download_url = (download_result := resp2json(resp=resp)).get('redirectUri')
                     if not download_url or not str(download_url).startswith('http'): continue
                 else:
-                    try: (resp := self.get(download_url, params={'client_id': self.client_id}, **request_overrides)).raise_for_status()
+                    try: (resp := self.get(download_url, params={'client_id': SoundCloudMusicClient.CLIENT_ID}, **request_overrides)).raise_for_status()
                     except Exception: continue
                     download_url = (download_result := resp2json(resp=resp)).get('url')
                     if not download_url or not str(download_url).startswith('http'): continue
@@ -152,7 +152,7 @@ class SoundCloudMusicClient(BaseMusicClient):
         playlist_id, song_infos = urlparse(playlist_url).path.strip('/').split('/')[-1].removesuffix('.html').removesuffix('.htm'), []
         if (not (hostname := obtainhostname(url=playlist_url))) or (not hostmatchessuffix(hostname, SOUNDCLOUD_MUSIC_HOSTS)): return song_infos
         # get tracks in playlist
-        (resp := self.get("https://api-v2.soundcloud.com/resolve", params={"url": playlist_url, "client_id": self.client_id}, **request_overrides)).raise_for_status()
+        (resp := self.get("https://api-v2.soundcloud.com/resolve", params={"url": playlist_url, "client_id": SoundCloudMusicClient.CLIENT_ID}, **request_overrides)).raise_for_status()
         tracks_in_playlist = (playlist_result := resp2json(resp=resp))['tracks']; playlist_id = playlist_result['id']
         # parse track by track in playlist
         with Progress(TextColumn("{task.description}"), BarColumn(bar_width=None), MofNCompleteColumn(), TimeRemainingColumn(), refresh_per_second=10) as main_process_context:

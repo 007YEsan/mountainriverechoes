@@ -206,8 +206,7 @@ class BaseMusicClient():
                     with open(song_info.save_path, "wb") as fp:
                         for chunk in resp.iter_content(chunk_size=chunk_size):
                             if not chunk: continue
-                            fp.write(chunk)
-                            downloaded_size = downloaded_size + len(chunk)
+                            fp.write(chunk); downloaded_size = downloaded_size + len(chunk)
                             if total_size > 0: downloading_text = "%0.2fMB/%0.2fMB" % (downloaded_size / 1024 / 1024, total_size / 1024 / 1024)
                             else: progress.update(song_progress_id, total=downloaded_size); downloading_text = "%0.2fMB/%0.2fMB" % (downloaded_size / 1024 / 1024, downloaded_size / 1024 / 1024)
                             progress.advance(song_progress_id, len(chunk))
