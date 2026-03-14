@@ -23,6 +23,7 @@ import unicodedata
 from io import BytesIO
 from pathlib import Path
 from bs4 import BeautifulSoup
+from http.cookies import SimpleCookie
 from .importutils import optionalimport
 from mutagen import File as MutagenFile
 from pathvalidate import sanitize_filepath, sanitize_filename
@@ -56,7 +57,7 @@ def estimatedurationwithfilelink(filelink: str = '', headers: dict = None, reque
 def cookies2dict(cookies: str | dict = None):
     if not cookies: cookies = {}
     if isinstance(cookies, dict): return cookies
-    if isinstance(cookies, str): return dict(item.split("=", 1) for item in cookies.split("; "))
+    if isinstance(cookies, str): (c := SimpleCookie()).load(cookies); return {k: morsel.value for k, morsel in c.items()}
     raise TypeError(f'cookies type is "{type(cookies)}", expect cookies to "str" or "dict" or "None".')
 
 
@@ -64,7 +65,7 @@ def cookies2dict(cookies: str | dict = None):
 def cookies2string(cookies: str | dict = None):
     if not cookies: cookies = ""
     if isinstance(cookies, str): return cookies
-    if isinstance(cookies, dict): return "; ".join(f"{k}={v}" for k, v in cookies.items())
+    if isinstance(cookies, dict): return (lambda c: ([c.__setitem__(k, "" if v is None else str(v)) for k, v in cookies.items()], "; ".join(m.OutputString() for m in c.values()))[1])(SimpleCookie())
     raise TypeError(f'cookies type is "{type(cookies)}", expect cookies to "str" or "dict" or "None".')
 
 

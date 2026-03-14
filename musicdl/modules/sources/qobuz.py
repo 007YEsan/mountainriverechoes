@@ -28,18 +28,25 @@ class QobuzMusicClient(BaseMusicClient):
     APP_ID = None
     SECRETS = None
     MUSIC_QUALITIES = (27, 7, 6, 5)
+    get_token_func = lambda cookies, *keys: next((cookies.get(k) for k in keys if cookies.get(k)), None)
     def __init__(self, **kwargs):
         super(QobuzMusicClient, self).__init__(**kwargs)
-        if self.default_search_cookies: assert (("x-user-auth-token" in self.default_search_cookies) or ("X-User-Auth-Token" in self.default_search_cookies)), '"x-user-auth-token" should be configured, refer to https://musicdl.readthedocs.io/en/latest/Quickstart.html#qobuz-music-download'
-        if self.default_parse_cookies: assert (("x-user-auth-token" in self.default_parse_cookies) or ("X-User-Auth-Token" in self.default_parse_cookies)), '"x-user-auth-token" should be configured, refer to https://musicdl.readthedocs.io/en/latest/Quickstart.html#qobuz-music-download'
-        if self.default_download_cookies: assert (("x-user-auth-token" in self.default_download_cookies) or ("X-User-Auth-Token" in self.default_download_cookies)), '"x-user-auth-token" should be configured, refer to https://musicdl.readthedocs.io/en/latest/Quickstart.html#qobuz-music-download'
-        self.default_search_headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36"}
-        self.default_parse_headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36"}
+        if self.default_search_cookies: assert QobuzMusicClient.get_token_func(self.default_search_cookies, "user_auth_token", "X-User-Auth-Token", "x-user-auth-token"), '"x-user-auth-token" should be configured, refer to https://musicdl.readthedocs.io/en/latest/Quickstart.html#qobuz-music-download'
+        if self.default_parse_cookies: assert QobuzMusicClient.get_token_func(self.default_parse_cookies, "user_auth_token", "X-User-Auth-Token", "x-user-auth-token"), '"x-user-auth-token" should be configured, refer to https://musicdl.readthedocs.io/en/latest/Quickstart.html#qobuz-music-download'
+        if self.default_download_cookies: assert QobuzMusicClient.get_token_func(self.default_download_cookies, "user_auth_token", "X-User-Auth-Token", "x-user-auth-token"), '"x-user-auth-token" should be configured, refer to https://musicdl.readthedocs.io/en/latest/Quickstart.html#qobuz-music-download'
+        self.default_search_headers = {
+            "accept": "*/*", "accept-encoding": "gzip, deflate, br, zstd", "accept-language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7", "origin": "https://play.qobuz.com", "priority": "u=1, i", "referer": "https://play.qobuz.com/", "sec-ch-ua": '"Not:A-Brand";v="99", "Google Chrome";v="145", "Chromium";v="145"',
+            "sec-ch-ua-mobile": "?0", "sec-ch-ua-platform": '"Windows"', "sec-fetch-dest": "empty", "sec-fetch-mode": "cors", "sec-fetch-site": "same-site", "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36", 
+        }
+        self.default_parse_headers = {
+            "accept": "*/*", "accept-encoding": "gzip, deflate, br, zstd", "accept-language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7", "origin": "https://play.qobuz.com", "priority": "u=1, i", "referer": "https://play.qobuz.com/", "sec-ch-ua": '"Not:A-Brand";v="99", "Google Chrome";v="145", "Chromium";v="145"',
+            "sec-ch-ua-mobile": "?0", "sec-ch-ua-platform": '"Windows"', "sec-fetch-dest": "empty", "sec-fetch-mode": "cors", "sec-fetch-site": "same-site", "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36",
+        }
         self.default_download_headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36"}
-        if self.default_search_cookies: self.default_search_headers.update({'X-User-Auth-Token': self.default_search_cookies.get("x-user-auth-token") or self.default_search_cookies.get("X-User-Auth-Token")})
-        if self.default_parse_cookies: self.default_parse_headers.update({'X-User-Auth-Token': self.default_parse_cookies.get("x-user-auth-token") or self.default_parse_cookies.get("X-User-Auth-Token")})
-        if self.default_download_cookies: self.default_download_headers.update({'X-User-Auth-Token': self.default_download_cookies.get("x-user-auth-token") or self.default_download_cookies.get("X-User-Auth-Token")})
-        self.default_headers = self.default_search_headers
+        if self.default_search_cookies: self.default_search_headers.update({'X-User-Auth-Token': QobuzMusicClient.get_token_func(self.default_search_cookies, "user_auth_token", "X-User-Auth-Token", "x-user-auth-token")})
+        if self.default_parse_cookies: self.default_parse_headers.update({'X-User-Auth-Token': QobuzMusicClient.get_token_func(self.default_parse_cookies, "user_auth_token", "X-User-Auth-Token", "x-user-auth-token")})
+        if self.default_download_cookies: self.default_download_headers.update({'X-User-Auth-Token': QobuzMusicClient.get_token_func(self.default_download_cookies, "user_auth_token", "X-User-Auth-Token", "x-user-auth-token")})
+        self.default_headers = self.default_search_headers; self.default_search_cookies = {}; self.default_parse_cookies = {}; self.default_download_cookies = {}
         self._initsession()
     '''_setappidandsecrets'''
     def _setappidandsecrets(self, request_overrides: dict = None) -> tuple[str, list[str]]:
@@ -63,7 +70,7 @@ class QobuzMusicClient(BaseMusicClient):
     def _constructsearchurls(self, keyword: str, rule: dict = None, request_overrides: dict = None):
         # init
         rule, request_overrides = rule or {}, request_overrides or {}; self._setappidandsecrets(request_overrides=request_overrides)
-        if (not self.default_cookies or (('x-user-auth-token' not in self.default_cookies) and ('X-User-Auth-Token' not in self.default_cookies))): self.logger_handle.warning(f'{self.source}._constructsearchurls >>> cookies are not configured, so song downloads are restricted and only the preview portion of the track can be downloaded.')
+        if (not QobuzMusicClient.get_token_func(self.default_headers, "X-User-Auth-Token", "x-user-auth-token")): self.logger_handle.warning(f'{self.source}._constructsearchurls >>> cookies are not configured, so song downloads are restricted and only the preview portion of the track can be downloaded.')
         # search rules
         default_rule = {'query': keyword, 'offset': 0, 'limit': 10}
         default_rule.update(rule)
@@ -138,7 +145,7 @@ class QobuzMusicClient(BaseMusicClient):
         playlist_url = self.session.head(playlist_url, allow_redirects=True, **request_overrides).url
         playlist_id, song_infos = urlparse(playlist_url).path.strip('/').split('/')[-1].removesuffix('.html').removesuffix('.htm'), []
         if (not (hostname := obtainhostname(url=playlist_url))) or (not hostmatchessuffix(hostname, QOBUZ_MUSIC_HOSTS)): return song_infos
-        if (not self.default_cookies or (('x-user-auth-token' not in self.default_cookies) and ('X-User-Auth-Token' not in self.default_cookies))): self.logger_handle.warning(f'{self.source}.parseplaylist >>> cookies are not configured, so song downloads are restricted and only the preview portion of the track can be downloaded.')
+        if (not QobuzMusicClient.get_token_func(self.default_headers, "X-User-Auth-Token", "x-user-auth-token")): self.logger_handle.warning(f'{self.source}.parseplaylist >>> cookies are not configured, so song downloads are restricted and only the preview portion of the track can be downloaded.')
         # get tracks in playlist
         tracks_in_playlist, page, page_size, playlist_result_first = [], 1, 500, {}
         while True:
