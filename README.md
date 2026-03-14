@@ -65,9 +65,9 @@
 
 # 🎉 What's New
 
+- 2026-03-14: Released musicdl v2.10.1 — added music search and download support for Qobuz (https://play.qobuz.com/discover), along with playlist parsing and download features; expanded the number of shared NetEase Cloud Music premium accounts; fixed several known minor bugs.
 - 2026-03-13: Released musicdl v2.10.0 — added support for the Deezer Music Client (search, download, playlist); modified arguments of some API interfaces so that users can choose whether to write song metadata and save lyrics; and attempted to fix several known bugs.
 - 2026-03-11: Released musicdl v2.9.10 — meticulously refactored the core code for Qishui Music, SoundCloud, TIDAL, and Apple Music to support playlist parsing and downloading across these platforms; fixed some bugs.
-- 2026-03-10: Released musicdl v2.9.9 — refactored the code for QQ Music, Migu Music, Kugou Music, Kuwo Music, Qianqian Music, NetEase Cloud Music, YouTube Music, JOOX Music, Jamendo Music, Bilibili Music, 5SING Music, and StreetVoice to better support playlist parsing and future feature expansion; also improved the downloadable audio quality for some of the above platforms, such as Jamendo Music; fix some known bugs.
 
 
 # 🎵 Introduction
@@ -824,6 +824,33 @@ music_client.startcmdui()
 The third is configuring login cookies, with the logged-in account being a Deezer Premium subscriber. 
 In this case, you can download music in Deezer’s highest-quality FLAC lossless format.
 The invocation code is entirely identical to that used in the second scenario.
+
+#### Qobuz Music Download
+
+Qobuz is the world leader in 24-bit Hi-Res downloads, offering more than 100 million tracks for streaming in unequalled sound quality (FLAC 16 Bits / 44.1kHz).
+
+To use musicdl to download songs from Qobuz, you must have a paid Qobuz membership account. Otherwise, you will only be able to access roughly 30-second preview clips.
+Specifically, first, you need to obtain the member cookies yourself by capturing network traffic on [Qobuz’s official website](https://play.qobuz.com/discover). 
+The cookies format should be as follows:
+
+```python
+{"x-user-auth-token": "xxx", ...} OR "x-user-auth-token=xxx;..."
+```
+
+Of course, you can also directly use the script [build_cookies_for_qobuz.py](https://github.com/CharlesPikachu/musicdl/blob/master/scripts/build_cookies_for_qobuz.py) provided in musicdl to build the member cookies required by musicdl.
+
+A simple example of the download code is as follows:
+
+```python
+from musicdl import musicdl
+
+cookies = {'x-user-auth-token': 'xxx'}
+init_music_clients_cfg = {'QobuzMusicClient': {'default_search_cookies': cookies, 'search_size_per_source': 5}}
+music_client = musicdl.MusicClient(music_sources=['QobuzMusicClient'], init_music_clients_cfg=init_music_clients_cfg)
+music_client.startcmdui()
+```
+
+Notably, for non-member users, setting cookies can only improve the audio quality, but the downloadable content is still limited to a 30-second preview clip.
 
 #### SoundCloud Music Download
 
