@@ -25,9 +25,9 @@ class DeezerMusicClient(BaseMusicClient):
     def __init__(self, **kwargs):
         kwargs['maintain_session'] = True
         super(DeezerMusicClient, self).__init__(**kwargs)
-        if self.default_search_cookies: assert "arl" in self.default_search_cookies, '"arl" should be configured, refer to https://musicdl.readthedocs.io/zh/latest/Quickstart.html#deezer-music-download'
-        if self.default_parse_cookies: assert "arl" in self.default_parse_cookies, '"arl" should be configured, refer to https://musicdl.readthedocs.io/zh/latest/Quickstart.html#deezer-music-download'
-        if self.default_download_cookies: assert "arl" in self.default_download_cookies, '"arl" should be configured, refer to https://musicdl.readthedocs.io/zh/latest/Quickstart.html#deezer-music-download'
+        if self.default_search_cookies: assert "arl" in self.default_search_cookies, '"arl" should be configured, refer to https://musicdl.readthedocs.io/en/latest/Quickstart.html#deezer-music-download'
+        if self.default_parse_cookies: assert "arl" in self.default_parse_cookies, '"arl" should be configured, refer to https://musicdl.readthedocs.io/en/latest/Quickstart.html#deezer-music-download'
+        if self.default_download_cookies: assert "arl" in self.default_download_cookies, '"arl" should be configured, refer to https://musicdl.readthedocs.io/en/latest/Quickstart.html#deezer-music-download'
         self.default_search_headers = {
             'Pragma': 'no-cache', 'Origin': 'https://www.deezer.com', 'Accept-Encoding': 'gzip, deflate, br', 'Accept-Language': 'en-US,en;q=0.9', 'User-Agent': 'Mozilla/5.0 (X11; Linux i686; rv:135.0) Gecko/20100101 Firefox/135.0', 'DNT': '1',
             'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', 'Accept': '*/*', 'Cache-Control': 'no-cache', 'X-Requested-With': 'XMLHttpRequest', 'Connection': 'keep-alive', 'Referer': 'https://www.deezer.com/login', 
@@ -50,8 +50,8 @@ class DeezerMusicClient(BaseMusicClient):
         replacefile(str(output_filepath), str(song_info.save_path))
         downloaded_song_infos.append(SongInfoUtils.supplsonginfothensavelyricsthenwritetags(copy.deepcopy(song_info), logger_handle=self.logger_handle, disable_print=self.disable_print) if auto_supplement_song else copy.deepcopy(song_info))
         return downloaded_song_infos
-    '''_updateauthinfo'''
-    def _updateauthinfo(self, request_overrides: dict = None):
+    '''_setauthinfo'''
+    def _setauthinfo(self, request_overrides: dict = None):
         if self.auth_info: return
         request_overrides = request_overrides or {}
         (resp := self.post('http://www.deezer.com/ajax/gw-light.php', params={'api_version': "1.0", 'api_token': 'null', 'input': '3', 'method': 'deezer.getUserData'}, **request_overrides)).raise_for_status()
@@ -60,7 +60,7 @@ class DeezerMusicClient(BaseMusicClient):
     '''_constructsearchurls'''
     def _constructsearchurls(self, keyword: str, rule: dict = None, request_overrides: dict = None):
         # init
-        rule, request_overrides = rule or {}, request_overrides or {}; self._updateauthinfo(request_overrides=request_overrides)
+        rule, request_overrides = rule or {}, request_overrides or {}; self._setauthinfo(request_overrides=request_overrides)
         if (not self.default_cookies or 'arl' not in self.default_cookies): self.logger_handle.warning(f'{self.source}._constructsearchurls >>> cookies are not configured, so song downloads are restricted and only the preview portion of the track can be downloaded.')
         # search rules
         default_rule = {'q': keyword, 'index': 1, 'limit': 20}
@@ -79,7 +79,7 @@ class DeezerMusicClient(BaseMusicClient):
     '''_parsewithofficialapiv1'''
     def _parsewithofficialapiv1(self, search_result: dict, song_info_flac: SongInfo = None, lossless_quality_is_sufficient: bool = True, lossless_quality_definitions: set | list | tuple = {'flac'}, is_fallback_retry: bool = False, request_overrides: dict = None) -> "SongInfo":
         # init
-        song_info, request_overrides, song_info_flac = SongInfo(source=self.source), request_overrides or {}, song_info_flac or SongInfo(source=self.source); self._updateauthinfo(request_overrides=request_overrides)
+        song_info, request_overrides, song_info_flac = SongInfo(source=self.source), request_overrides or {}, song_info_flac or SongInfo(source=self.source); self._setauthinfo(request_overrides=request_overrides)
         if (not isinstance(search_result, dict)) or (not (song_id := (search_result.get('id') or search_result.get('SNG_ID')))): return song_info
         # obtain basic song_info
         if lossless_quality_is_sufficient and song_info_flac.with_valid_download_url and (song_info_flac.ext in lossless_quality_definitions): song_info = song_info_flac
@@ -157,7 +157,7 @@ class DeezerMusicClient(BaseMusicClient):
     @usesearchheaderscookies
     def _search(self, keyword: str = '', search_url: str = '', request_overrides: dict = None, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
         # init
-        request_overrides = request_overrides or {}; self._updateauthinfo(request_overrides=request_overrides)
+        request_overrides = request_overrides or {}; self._setauthinfo(request_overrides=request_overrides)
         # successful
         try:
             # --search results
@@ -182,7 +182,7 @@ class DeezerMusicClient(BaseMusicClient):
     @useparseheaderscookies
     def parseplaylist(self, playlist_url: str, request_overrides: dict = None):
         # init
-        request_overrides = request_overrides or {}; self._updateauthinfo(request_overrides=request_overrides)
+        request_overrides = request_overrides or {}; self._setauthinfo(request_overrides=request_overrides)
         playlist_url = self.session.head(playlist_url, allow_redirects=True, **request_overrides).url
         playlist_id, song_infos = urlparse(playlist_url).path.strip('/').split('/')[-1].removesuffix('.html').removesuffix('.htm'), []
         if (not (hostname := obtainhostname(url=playlist_url))) or (not hostmatchessuffix(hostname, DEEZER_MUSIC_HOSTS)): return song_infos

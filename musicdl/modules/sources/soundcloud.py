@@ -23,9 +23,9 @@ class SoundCloudMusicClient(BaseMusicClient):
     CLIENT_ID = None
     def __init__(self, **kwargs):
         super(SoundCloudMusicClient, self).__init__(**kwargs)
-        if self.default_search_cookies: assert ("oauth_token" in self.default_search_cookies), '"oauth_token" should be configured, refer to https://musicdl.readthedocs.io/zh/latest/Quickstart.html#soundcloud-music-download'
-        if self.default_parse_cookies: assert ("oauth_token" in self.default_parse_cookies), '"oauth_token" should be configured, refer to https://musicdl.readthedocs.io/zh/latest/Quickstart.html#soundcloud-music-download'
-        if self.default_download_cookies: assert ("oauth_token" in self.default_download_cookies), '"oauth_token" should be configured, refer to https://musicdl.readthedocs.io/zh/latest/Quickstart.html#soundcloud-music-download'
+        if self.default_search_cookies: assert ("oauth_token" in self.default_search_cookies), '"oauth_token" should be configured, refer to https://musicdl.readthedocs.io/en/latest/Quickstart.html#soundcloud-music-download'
+        if self.default_parse_cookies: assert ("oauth_token" in self.default_parse_cookies), '"oauth_token" should be configured, refer to https://musicdl.readthedocs.io/en/latest/Quickstart.html#soundcloud-music-download'
+        if self.default_download_cookies: assert ("oauth_token" in self.default_download_cookies), '"oauth_token" should be configured, refer to https://musicdl.readthedocs.io/en/latest/Quickstart.html#soundcloud-music-download'
         self.default_search_headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36"}
         self.default_parse_headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36"}
         self.default_download_headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36"}
@@ -34,8 +34,8 @@ class SoundCloudMusicClient(BaseMusicClient):
         if self.default_parse_cookies: self.default_parse_headers.update({'Authorization': self.default_parse_cookies["oauth_token"]})
         if self.default_download_cookies: self.default_download_headers.update({'Authorization': self.default_download_cookies["oauth_token"]})
         self._initsession()
-    '''_updateclientid'''
-    def _updateclientid(self, request_overrides: dict = None):
+    '''_setclientid'''
+    def _setclientid(self, request_overrides: dict = None):
         if SoundCloudMusicClient.CLIENT_ID: return
         request_overrides = request_overrides or {}
         try: (resp := self.session.get('https://soundcloud.com/', **request_overrides)).raise_for_status()
@@ -50,7 +50,7 @@ class SoundCloudMusicClient(BaseMusicClient):
     def _constructsearchurls(self, keyword: str, rule: dict = None, request_overrides: dict = None):
         # init
         rule, request_overrides = rule or {}, request_overrides or {}
-        self._updateclientid(request_overrides=request_overrides)
+        self._setclientid(request_overrides=request_overrides)
         # search rules
         default_rule = {'q': keyword, 'sc_a_id': 'ab15798461680579b387acf67441b40149e528cd', 'facet': 'genre', 'user_id': '704923-225181-486085-807554', 'client_id': SoundCloudMusicClient.CLIENT_ID, 'limit': '20', 'offset': '0', 'linked_partitioning': '1', 'app_version': '1769771069', 'app_locale': 'en'}
         default_rule.update(rule)
@@ -68,7 +68,7 @@ class SoundCloudMusicClient(BaseMusicClient):
     '''_parsewithofficialapiv1'''
     def _parsewithofficialapiv1(self, search_result: dict, song_info_flac: SongInfo = None, lossless_quality_is_sufficient: bool = True, lossless_quality_definitions: set | list | tuple = {'flac'}, request_overrides: dict = None) -> "SongInfo":
         # init
-        self._updateclientid(request_overrides=request_overrides); song_info, request_overrides, song_info_flac = SongInfo(source=self.source), request_overrides or {}, song_info_flac or SongInfo(source=self.source)
+        self._setclientid(request_overrides=request_overrides); song_info, request_overrides, song_info_flac = SongInfo(source=self.source), request_overrides or {}, song_info_flac or SongInfo(source=self.source)
         if (not isinstance(search_result, dict)) or (not (song_id := search_result.get('id'))): return song_info
         guess_codec_func = lambda t: ((lambda preset, mime: "opus" if ("opus" in preset or "opus" in mime) else "aac" if ("aac" in preset or "mp4a" in mime or "audio/mp4" in mime or "m4a" in mime) else "mp3" if ("mp3" in preset or "audio/mpeg" in mime) else "abr" if ("abr" in preset) else "unknown")((safeextractfromdict(t, ["preset"], "") or "").lower(), (safeextractfromdict(t, ["format", "mime_type"], "") or "").lower()))
         guess_bitrate_kbps_func = lambda t: (lambda preset: (lambda m: int(m.group(1)) if m else 128 if preset == "mp3_0_1" else 64 if preset == "opus_0_0" else 128 if preset.startswith("abr") else 0)(re.search(r"(\d+)\s*k", preset)))((safeextractfromdict(t, ["preset"], "") or "").lower())
@@ -122,7 +122,7 @@ class SoundCloudMusicClient(BaseMusicClient):
     @usesearchheaderscookies
     def _search(self, keyword: str = '', search_url: str = '', request_overrides: dict = None, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
         # init
-        request_overrides = request_overrides or {}; self._updateclientid(request_overrides=request_overrides)
+        request_overrides = request_overrides or {}; self._setclientid(request_overrides=request_overrides)
         # successful
         try:
             # --search results
@@ -147,7 +147,7 @@ class SoundCloudMusicClient(BaseMusicClient):
     @useparseheaderscookies
     def parseplaylist(self, playlist_url: str, request_overrides: dict = None):
         # init
-        request_overrides = request_overrides or {}; self._updateclientid()
+        request_overrides = request_overrides or {}; self._setclientid()
         playlist_url = self.session.head(playlist_url, allow_redirects=True, **request_overrides).url
         playlist_id, song_infos = urlparse(playlist_url).path.strip('/').split('/')[-1].removesuffix('.html').removesuffix('.htm'), []
         if (not (hostname := obtainhostname(url=playlist_url))) or (not hostmatchessuffix(hostname, SOUNDCLOUD_MUSIC_HOSTS)): return song_infos
