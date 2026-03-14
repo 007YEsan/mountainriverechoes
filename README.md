@@ -102,6 +102,7 @@ If you are a copyright or rights holder and believe that this repository infring
 |                                          | [DeezerMusicClient](https://www.deezer.com/us/)                    | [Deezer (法国音乐平台)](https://www.deezer.com/us/)                          | ✅        | ✅         | [deezer.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/deezer.py)               |
 |                                          | [JamendoMusicClient](https://www.jamendo.com/)                     | [简音乐 (欧美流行音乐)](https://www.jamendo.com/)                            | ✅        | ✅         | [jamendo.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/jamendo.py)             |
 |                                          | [JooxMusicClient](https://www.joox.com/intl)                       | [JOOX (QQ音乐海外版)](https://www.joox.com/intl)                             | ✅        | ✅         | [joox.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/joox.py)                   |
+|                                          | [QobuzMusicClient](https://play.qobuz.com/discover)                | [Qobuz (提供CD质量的流媒体平台)](https://play.qobuz.com/discover)            | ✅        | ✅         | [qobuz.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/qobuz.py)                 |
 |                                          | [SoundCloudMusicClient](https://soundcloud.com/discover)           | [SoundCloud (声云)](https://soundcloud.com/discover)                         | ✅        | ✅         | [soundcloud.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/soundcloud.py)       |
 |                                          | [TIDALMusicClient](https://tidal.com/)                             | [TIDAL (提供HiFi音质的流媒体平台)](https://tidal.com/)                       | ✅        | ✅         | [tidal.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/tidal.py)                 |
 |                                          | [YouTubeMusicClient](https://music.youtube.com/)                   | [油管音乐](https://music.youtube.com/)                                       | ✅        | ✅         | [youtube.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/youtube.py)             |
@@ -435,6 +436,7 @@ From musicdl v2.9.0 onward, support for downloading user playlists from each pla
 - [NeteaseMusicClient | 网易云音乐](https://music.163.com/)
 - [QQMusicClient | QQ音乐](https://y.qq.com/)
 - [QianqianMusicClient | 千千音乐](https://music.91q.com/)
+- [QobuzMusicClient | Qobuz (提供CD质量的流媒体平台)](https://play.qobuz.com/discover)
 - [SoundCloudMusicClient | 声云](https://soundcloud.com/discover)
 - [StreetVoiceMusicClient | 街声](https://www.streetvoice.cn/)
 - [SodaMusicClient | 汽水音乐](https://www.douyin.com/qishui/)
@@ -468,6 +470,8 @@ musicdl -p "https://music.163.com/#/playlist?id=3039971654" -m NeteaseMusicClien
 musicdl -p "https://y.qq.com/n/ryqq_v2/playlist/8740590963" -m QQMusicClient
 # Parse and Download QianQian Music Playlist
 musicdl -p "https://music.91q.com/songlist/295893" -m QianqianMusicClient
+# Parse and Download Qobuz Music Playlist
+musicdl -p "https://open.qobuz.com/playlist/22318381" -m QobuzMusicClient -i "{'QobuzMusicClient': {'default_parse_cookies': your_vip_cookies_with_str_or_dict_format}}"
 # Parse and Download StreetVoice Music Playlist
 musicdl -p "https://www.streetvoice.cn/morgan22/playlists/436444/" -m StreetVoiceMusicClient
 # Parse and Download SoundCloud Music Playlist

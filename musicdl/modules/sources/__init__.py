@@ -13,6 +13,7 @@ from .htqyy import HTQYYMusicClient
 from .tidal import TIDALMusicClient
 from .apple import AppleMusicClient
 from .kugou import KugouMusicClient
+from .qobuz import QobuzMusicClient
 from .twot58 import TwoT58MusicClient
 from .fangpi import FangpiMusicClient
 from .buguyy import BuguyyMusicClient
@@ -44,7 +45,7 @@ class MusicClientBuilder(BaseModuleBuilder):
         'NeteaseMusicClient': NeteaseMusicClient, 'QianqianMusicClient': QianqianMusicClient, 'FiveSingMusicClient': FiveSingMusicClient, 'MiguMusicClient': MiguMusicClient, 'KuwoMusicClient': KuwoMusicClient, 
         # Global Streaming / Indie
         'YouTubeMusicClient': YouTubeMusicClient, 'JooxMusicClient': JooxMusicClient, 'AppleMusicClient': AppleMusicClient, 'JamendoMusicClient': JamendoMusicClient, 'TIDALMusicClient': TIDALMusicClient,
-        'SoundCloudMusicClient': SoundCloudMusicClient, 'DeezerMusicClient': DeezerMusicClient,
+        'SoundCloudMusicClient': SoundCloudMusicClient, 'DeezerMusicClient': DeezerMusicClient, 'QobuzMusicClient': QobuzMusicClient,
         # Audio / Radio
         'XimalayaMusicClient': XimalayaMusicClient, 'LizhiMusicClient': LizhiMusicClient, 'QingtingMusicClient': QingtingMusicClient, 'LRTSMusicClient': LRTSMusicClient,
         # Aggregators / Multi-Source Gateways

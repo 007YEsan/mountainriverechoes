@@ -44,7 +44,7 @@ class SoundCloudMusicClient(BaseMusicClient):
         for url in reversed(script_urls):
             try: resp = self.session.get(url, **request_overrides); m = re.search(r'client_id\s*:\s*"([0-9a-zA-Z]{32})"', resp.text) if resp.status_code == 200 else None
             except Exception: continue
-            if m: SoundCloudMusicClient.CLIENT_ID = m.group(1); return
+            if m: SoundCloudMusicClient.CLIENT_ID = m.group(1); return SoundCloudMusicClient.CLIENT_ID
         SoundCloudMusicClient.CLIENT_ID = '9jZvetLfDs6An08euQgJ0lYlHkKdGFzV'; return
     '''_constructsearchurls'''
     def _constructsearchurls(self, keyword: str, rule: dict = None, request_overrides: dict = None):
