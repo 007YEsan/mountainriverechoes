@@ -237,7 +237,7 @@ class KugouMusicClient(BaseMusicClient):
         # post processing
         try: (resp := self.get(playlist_url, headers={'referer': 'https://www.kugou.com/songlist/'}, **request_overrides)).raise_for_status(); playlist_name = json_repair.loads(re.search(r'var\s+specialInfo\s*=\s*(\{.*?\});', resp.text, re.S).group(1))['name']
         except: playlist_name = None
-        song_infos = self._removeduplicates(song_infos=song_infos); work_dir = self._constructuniqueworkdir(keyword=playlist_name or f"playlist-{playlist_id}")
+        song_infos = self._removeduplicates(song_infos=song_infos); work_dir = self._constructuniqueworkdir(keyword=legalizestring(playlist_name or f"playlist-{playlist_id}"))
         for song_info in song_infos:
             song_info.work_dir = work_dir; episodes = song_info.episodes if isinstance(song_info.episodes, list) else []
             for eps_info in episodes: eps_info.work_dir = sanitize_filepath(os.path.join(work_dir, song_info.song_name)); touchdir(work_dir)
