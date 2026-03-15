@@ -7,6 +7,7 @@ WeChat Official Account (微信公众号):
     Charles的皮卡丘
 '''
 import re
+import base64
 import hashlib
 import binascii
 import functools
@@ -18,6 +19,8 @@ class DeezerMusicClientUtils():
     BLOWFISH_SECRET = "g4el58wc0zvf9na1"
     MUSIC_QUALITIES = ('FLAC', 'MP3_320', 'MP3_128')
     IS_ENCRYPTED_RPATTERN = re.compile("/m(?:obile|edia)/")
+    SHARED_TOKENS = ['ZjI4N2JkNzRjM2Q1NGY5YmJmOTc5OTdjNzhkZWJkMzdiMTU4NjRjZDdhM2MwZjk0MjUxNWNjOWIwNGE1MWM1N2RhYmZiOTQ4YWYyNjM0MDFhOTRkZTUxOGI3MjRlZDdmNDBmMjcyMmNlZGMwMTgxZTEwYmZmNDk5MmVjNzc4NzU3MmU1MDUzZjk0Nzc1NjFiZjhkMjcwNDc0NzRiNzMxMTcxNjUyZWQxNzg0YzlmNTdhMTUxZDMxOTk2NmVjY2Ex']
+    token_decrypt_func = lambda t: base64.b64decode(str(t).encode('utf-8')).decode('utf-8')
     '''decryptchunk'''
     @staticmethod
     def decryptchunk(key, data):

@@ -795,7 +795,7 @@ Note that the `wrapper_account_url` and `wrapper_decrypt_ip` settings must match
 musicdl now supports searching for and downloading music from the Deezer Music Client, as well as parsing playlists. Specifically, there are three possible scenarios.
 
 The first is using musicdl directly for music search, download, or playlist parsing without configuring login cookies. 
-In this case, you will most likely only be able to download song preview clips, usually around 30 seconds long.
+In this case, you will most likely only be able to download song preview clips, usually around 30 seconds long (musicdl occasionally shares some shared Deezer premium accounts. Therefore, you might sometimes be able to download lossless music directly using musicdl, even without configuring any Deezer premium cookies).
 A simple usage example is as follows:
 
 ```python
