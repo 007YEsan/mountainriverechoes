@@ -471,7 +471,7 @@ musicdl -p "https://y.qq.com/n/ryqq_v2/playlist/8740590963" -m QQMusicClient
 # Parse and Download QianQian Music Playlist
 musicdl -p "https://music.91q.com/songlist/295893" -m QianqianMusicClient
 # Parse and Download Qobuz Music Playlist
-musicdl -p "https://open.qobuz.com/playlist/22318381" -m QobuzMusicClient -i "{'QobuzMusicClient': {'default_parse_cookies': your_vip_cookies_with_str_or_dict_format}}"
+musicdl -p "https://open.qobuz.com/playlist/22318381" -m QobuzMusicClient
 # Parse and Download StreetVoice Music Playlist
 musicdl -p "https://www.streetvoice.cn/morgan22/playlists/436444/" -m StreetVoiceMusicClient
 # Parse and Download SoundCloud Music Playlist
@@ -829,8 +829,11 @@ The invocation code is entirely identical to that used in the second scenario.
 
 Qobuz is the world leader in 24-bit Hi-Res downloads, offering more than 100 million tracks for streaming in unequalled sound quality (FLAC 16 Bits / 44.1kHz).
 
-To use musicdl to download songs from Qobuz, you must have a paid Qobuz membership account. Otherwise, you will only be able to access roughly 30-second preview clips.
-Specifically, first, you need to obtain the member cookies yourself by capturing network traffic on [Qobuz’s official website](https://play.qobuz.com/discover). 
+To use musicdl to download songs from Qobuz, you must have a paid Qobuz membership account. 
+Otherwise, musicdl will automatically call some third-party APIs that use shared Qobuz member accounts to try to resolve the song you need. 
+Since the long-term reliability and stability of these third-party APIs cannot be guaranteed, if they become unavailable and you do not have a valid paid Qobuz membership account yourself, you will only be able to access roughly 30-second preview clips.
+
+Specifically, if you have a valid paid Qobuz membership account, first, you need to obtain the member cookies yourself by capturing network traffic on [Qobuz’s official website](https://play.qobuz.com/discover). 
 The cookies format should be as follows:
 
 ```python

@@ -362,6 +362,7 @@ class NeteaseMusicClient(BaseMusicClient):
                 song_info.file_size = song_info.download_url_status['probe_status']['file_size']
                 if (song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS) and (song_info.download_url_status['probe_status']['ext'] in AudioLinkTester.VALID_AUDIO_EXTS): song_info.ext = song_info.download_url_status['probe_status']['ext']
                 elif (song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS): song_info.ext = 'mp3'
+                if song_info_flac.with_valid_download_url and song_info_flac.largerthan(song_info): song_info = song_info_flac
                 if song_info.with_valid_download_url: break
         if not song_info.with_valid_download_url: song_info = song_info_flac
         if not song_info.with_valid_download_url: return song_info
@@ -387,7 +388,8 @@ class NeteaseMusicClient(BaseMusicClient):
                 # --parse with third part apis
                 song_info_flac = self._parsewiththirdpartapis(search_result=search_result, request_overrides=request_overrides)
                 # --parse with official apis
-                try: song_info = self._parsewithofficialapiv1(search_result=search_result, song_info_flac=song_info_flac, lossless_quality_is_sufficient=False, request_overrides=request_overrides)
+                lossless_quality_is_sufficient = False if (cookies := self.default_cookies or request_overrides.get('cookies')) and (cookies != DEFAULT_COOKIES) else True
+                try: song_info = self._parsewithofficialapiv1(search_result=search_result, song_info_flac=song_info_flac, lossless_quality_is_sufficient=lossless_quality_is_sufficient, request_overrides=request_overrides)
                 except Exception: song_info = SongInfo(source=self.source, raw_data={'quality': MUSIC_QUALITIES[-1]})
                 # --append to song_infos
                 if not song_info.with_valid_download_url: song_info = song_info_flac
@@ -421,7 +423,8 @@ class NeteaseMusicClient(BaseMusicClient):
                 if idx > 0: main_process_context.advance(main_progress_id, 1)
                 main_process_context.update(main_progress_id, description=f"{len(tracks_in_playlist)} songs found in playlist {playlist_id} >>> completed ({idx}/{len(tracks_in_playlist)})")
                 song_info_flac = self._parsewiththirdpartapis(search_result=track_info, request_overrides=request_overrides)
-                try: song_info = self._parsewithofficialapiv1(search_result=track_info, song_info_flac=song_info_flac, lossless_quality_is_sufficient=False, request_overrides=request_overrides)
+                lossless_quality_is_sufficient = False if (cookies := self.default_cookies or request_overrides.get('cookies')) and (cookies != DEFAULT_COOKIES) else True
+                try: song_info = self._parsewithofficialapiv1(search_result=track_info, song_info_flac=song_info_flac, lossless_quality_is_sufficient=lossless_quality_is_sufficient, request_overrides=request_overrides)
                 except Exception: song_info = song_info_flac
                 if not song_info.with_valid_download_url: song_info = song_info_flac
                 if song_info.with_valid_download_url: song_infos.append(song_info)
