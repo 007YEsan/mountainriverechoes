@@ -14,7 +14,7 @@ from pathvalidate import sanitize_filepath
 from urllib.parse import urlencode, urlparse
 from ..utils.hosts import SOUNDCLOUD_MUSIC_HOSTS
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
-from ..utils import touchdir, legalizestring, resp2json, usesearchheaderscookies, seconds2hms, safeextractfromdict, hostmatchessuffix, obtainhostname, useparseheaderscookies, SongInfo, AudioLinkTester
+from ..utils import touchdir, legalizestring, resp2json, usesearchheaderscookies, seconds2hms, safeextractfromdict, hostmatchessuffix, obtainhostname, useparseheaderscookies, SongInfo, AudioLinkTester, LyricSearchClient
 
 
 '''SoundCloudMusicClient'''
@@ -116,6 +116,10 @@ class SoundCloudMusicClient(BaseMusicClient):
                     if (song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS) and (song_info.download_url_status['probe_status']['ext'] in AudioLinkTester.VALID_AUDIO_EXTS): song_info.ext = song_info.download_url_status['probe_status']['ext']
                     elif (song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS): song_info.ext = 'mp3'
                 if song_info.with_valid_download_url: break
+        # supplement lyric results
+        lyric_result, lyric = LyricSearchClient().search(artist_name=song_info.singers, track_name=song_info.song_name, request_overrides=request_overrides)
+        song_info.raw_data['lyric'] = lyric_result if lyric_result else song_info.raw_data['lyric']
+        song_info.lyric = lyric if (lyric and (lyric not in {'NULL'})) else song_info.lyric
         # return
         return song_info
     '''_search'''

@@ -22,10 +22,17 @@ import json_repair
 import unicodedata
 from io import BytesIO
 from pathlib import Path
+from mutagen.mp3 import MP3
+from mutagen.mp4 import MP4
+from mutagen.asf import ASF
+from mutagen.flac import FLAC
+from mutagen.aiff import AIFF
+from mutagen.wave import WAVE
 from bs4 import BeautifulSoup
 from http.cookies import SimpleCookie
 from .importutils import optionalimport
 from mutagen import File as MutagenFile
+from mutagen.oggvorbis import OggVorbis
 from pathvalidate import sanitize_filepath, sanitize_filename
 
 
@@ -254,6 +261,19 @@ def searchdictbykey(obj, target_key: str):
     return results
 
 
+'''naiveguessextfromaudiobytes'''
+def naiveguessextfromaudiobytes(content: bytes):
+    if (audio := MutagenFile(BytesIO(content))) is None: return None
+    if isinstance(audio, MP3): return "mp3"
+    if isinstance(audio, FLAC): return "flac"
+    if isinstance(audio, MP4): return "m4a"
+    if isinstance(audio, OggVorbis): return "ogg"
+    if isinstance(audio, WAVE): return "wav"
+    if isinstance(audio, AIFF): return "aiff"
+    if isinstance(audio, ASF): return "wma"
+    return None
+
+
 '''AudioLinkTester'''
 class AudioLinkTester(object):
     VALID_AUDIO_EXTS = {
@@ -296,10 +316,8 @@ class AudioLinkTester(object):
         outputs = dict(file_size='NULL', ctype='NULL', ext='NULL', download_url=url, final_url='NULL')
         # HEAD probe
         try:
-            resp = self.session.head(url, allow_redirects=True, **request_overrides)
-            resp.raise_for_status()
-            resp_headers, final_url = resp.headers, resp.url
-            resp.close()
+            (resp := self.session.head(url, allow_redirects=True, **request_overrides)).raise_for_status()
+            resp_headers, final_url = resp.headers, resp.url; resp.close()
             file_size, ctype = byte2mb(resp_headers.get('content-length')), str(resp_headers.get('content-type')).removesuffix('; charset=UTF-8')
             if ctype == 'image/jpg; charset=UTF-8' or ctype == 'image/jpg': ctype = 'audio/mpeg'
             if ctype == 'text/plain' and naive_guess_ext == 'm4s': ctype = 'audio/mp4'
@@ -310,10 +328,8 @@ class AudioLinkTester(object):
         if outputs['file_size'] and outputs['file_size'] not in ('NULL',): return outputs
         # GETSTREAM probe
         try:
-            resp = self.session.get(url, allow_redirects=True, stream=True, **request_overrides)
-            resp.raise_for_status()
-            resp_headers, final_url = resp.headers, resp.url
-            resp.close()
+            (resp := self.session.get(url, allow_redirects=True, stream=True, **request_overrides)).raise_for_status()
+            resp_headers, final_url = resp.headers, resp.url; resp.close()
             file_size, ctype = byte2mb(resp_headers.get('content-length')), str(resp_headers.get('content-type')).removesuffix('; charset=UTF-8')
             if ctype == 'image/jpg; charset=UTF-8' or ctype == 'image/jpg': ctype = 'audio/mpeg'
             if ctype == 'text/plain' and naive_guess_ext == 'm4s': ctype = 'audio/mp4'
@@ -336,9 +352,7 @@ class AudioLinkTester(object):
             clen = int(clen) if clen and clen.isdigit() else None
             outputs.update(dict(status=resp.status_code, method="HEAD", final_url=str(resp.url), ctype=resp.headers.get("Content-Type"), clen=clen, range=(resp.headers.get("Accept-Ranges") or "").lower() == "bytes"))
             if outputs["ctype"] == 'text/plain' and naive_guess_ext == 'm4s': outputs["ctype"] = 'audio/mp4'
-            if 200 <= resp.status_code < 300 and ((self.isaudioct(outputs["ctype"]) or (naive_guess_ext in ('m4s',))) and (outputs["clen"] or outputs["range"])):
-                outputs.update(dict(ok=True, reason="HEAD success"))
-                return outputs
+            if 200 <= resp.status_code < 300 and ((self.isaudioct(outputs["ctype"]) or (naive_guess_ext in ('m4s',))) and (outputs["clen"] or outputs["range"])): outputs.update(dict(ok=True, reason="HEAD success")); return outputs
         except Exception as err:
             outputs["reason"] = f"HEAD error: {err}"
         # RANGEGET test

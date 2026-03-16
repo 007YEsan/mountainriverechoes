@@ -20,7 +20,7 @@ from pathvalidate import sanitize_filepath
 from ..utils.hosts import QOBUZ_MUSIC_HOSTS
 from urllib.parse import urlencode, urlparse, urljoin, parse_qs
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
-from ..utils import touchdir, legalizestring, resp2json, usesearchheaderscookies, seconds2hms, safeextractfromdict, hostmatchessuffix, obtainhostname, useparseheaderscookies, SongInfo, AudioLinkTester
+from ..utils import touchdir, legalizestring, resp2json, usesearchheaderscookies, seconds2hms, safeextractfromdict, hostmatchessuffix, obtainhostname, useparseheaderscookies, SongInfo, AudioLinkTester, LyricSearchClient
 
 
 '''QobuzMusicClient'''
@@ -167,6 +167,10 @@ class QobuzMusicClient(BaseMusicClient):
                 if song_info.with_valid_download_url: break
         if not song_info.with_valid_download_url: song_info = song_info_flac
         if not song_info.with_valid_download_url: return song_info
+        # supplement lyric results
+        lyric_result, lyric = LyricSearchClient().search(artist_name=song_info.singers, track_name=song_info.song_name, request_overrides=request_overrides)
+        song_info.raw_data['lyric'] = lyric_result if lyric_result else song_info.raw_data['lyric']
+        song_info.lyric = lyric if (lyric and (lyric not in {'NULL'})) else song_info.lyric
         # return
         return song_info
     '''_search'''

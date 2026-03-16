@@ -9,9 +9,12 @@ WeChat Official Account (微信公众号):
 import os
 import re
 import copy
+import random
 import tempfile
 import requests
 from typing import Optional
+from .misc import resp2json
+from urllib.parse import quote
 from .importutils import optionalimportfrom
 
 
@@ -64,12 +67,10 @@ class WhisperLRC:
     '''fromurl'''
     def fromurl(self, url: str, transcribe_overrides: dict = None, headers: dict = None, timeout: int = 300, cookies: dict = None, request_overrides: dict = None):
         assert self.whisper_model is not None, 'faster_whisper should be installed via "pip install "faster_whisper"'
-        transcribe_overrides, headers, cookies, request_overrides = transcribe_overrides or {}, headers or {}, cookies or {}, request_overrides or {}
-        tmp_file_path = ''
+        transcribe_overrides, headers, cookies, request_overrides, tmp_file_path = transcribe_overrides or {}, headers or {}, cookies or {}, request_overrides or {}, ''
         try:
             tmp_file_path = self.downloadtotmpdir(url, headers=headers, timeout=timeout, cookies=cookies, request_overrides=request_overrides)
-            default_transcribe_settings = {'language': None, 'vad_filter': True, 'vad_parameters': dict(min_silence_duration_ms=300), 'chunk_length': 30, 'beam_size': 5}
-            default_transcribe_settings.update(transcribe_overrides)
+            (default_transcribe_settings := {'language': None, 'vad_filter': True, 'vad_parameters': dict(min_silence_duration_ms=300), 'chunk_length': 30, 'beam_size': 5}).update(transcribe_overrides)
             segs, info = self.whisper_model.transcribe(tmp_file_path, **default_transcribe_settings)
             lrc = "\n".join(f"{self.timestamp(s.start)}{s.text.strip()}" for s in segs)
             result = {"language": info.language, "prob": info.language_probability, "duration": getattr(info, "duration", None), 'lyric': lrc}
@@ -86,3 +87,67 @@ class WhisperLRC:
         lrc = "\n".join(f"{self.timestamp(s.start)}{s.text.strip()}" for s in segs)
         result = {"language": info.language, "prob": info.language_probability, "duration": getattr(info, "duration", None), 'lyric': lrc}
         return result
+
+
+'''LyricSearchClient'''
+class LyricSearchClient():
+    '''search'''
+    @staticmethod
+    def search(track_name: str, artist_name: str, request_overrides: dict = None):
+        # lrclib get
+        try: lyric_result, lyric = LyricSearchClient.searchbylrclibapig(track_name=track_name, artist_name=artist_name, request_overrides=request_overrides)
+        except Exception: lyric_result, lyric = {}, 'NULL'
+        if lyric and lyric not in {'NULL', 'None'}: return lyric_result, lyric
+        # lrclib search
+        try: lyric_result, lyric = LyricSearchClient.searchbylrclibapis(track_name=track_name, artist_name=artist_name, request_overrides=request_overrides)
+        except Exception: lyric_result, lyric = {}, 'NULL'
+        if lyric and lyric not in {'NULL', 'None'}: return lyric_result, lyric
+        # lyrics.ovh v1
+        try: lyric_result, lyric = LyricSearchClient.searchbylyricsovhapiv1(track_name=track_name, artist_name=artist_name, request_overrides=request_overrides)
+        except Exception: lyric_result, lyric = {}, 'NULL'
+        if lyric and lyric not in {'NULL', 'None'}: return lyric_result, lyric
+        # happi.dev v1
+        try: lyric_result, lyric = LyricSearchClient.searchbyhappiapiv1(track_name=track_name, artist_name=artist_name, request_overrides=request_overrides)
+        except Exception: lyric_result, lyric = {}, 'NULL'
+        if lyric and lyric not in {'NULL', 'None'}: return lyric_result, lyric
+        # musixmatch v1.1
+        try: lyric_result, lyric = LyricSearchClient.searchbymusixmatchapi(track_name=track_name, artist_name=artist_name, request_overrides=request_overrides)
+        except Exception: lyric_result, lyric = {}, 'NULL'
+        # return null
+        return lyric_result, lyric
+    '''searchbylrclibapig'''
+    @staticmethod
+    def searchbylrclibapig(track_name: str, artist_name: str, request_overrides: dict = None):
+        request_overrides = request_overrides or {}; headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36"}
+        (resp := requests.get("https://lrclib.net/api/get", params={"artist_name": artist_name, "track_name": track_name}, headers=headers, **request_overrides)).raise_for_status()
+        lyric = cleanlrc((lyric_result := resp2json(resp=resp)).get('syncedLyrics') or lyric_result.get('plainLyrics') or 'NULL')
+        return lyric_result, lyric
+    '''searchbylrclibapis'''
+    @staticmethod
+    def searchbylrclibapis(track_name: str, artist_name: str, request_overrides: dict = None):
+        request_overrides = request_overrides or {}; headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36"}
+        (resp := requests.get("https://lrclib.net/api/search", params={"q": f"{artist_name} {track_name}"}, headers=headers, **request_overrides)).raise_for_status()
+        lyric = cleanlrc((lyric_result := resp2json(resp=resp))[0].get('syncedLyrics') or lyric_result[0].get('plainLyrics') or 'NULL')
+        return lyric_result, lyric
+    '''searchbylyricsovhapiv1'''
+    @staticmethod
+    def searchbylyricsovhapiv1(track_name: str, artist_name: str, request_overrides: dict = None):
+        request_overrides = request_overrides or {}; headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36"}
+        (resp := requests.get(f"https://api.lyrics.ovh/v1/{quote(artist_name, safe='')}/{quote(track_name, safe='')}", headers=headers, **request_overrides))
+        lyric = cleanlrc((lyric_result := resp2json(resp=resp)).get('lyrics') or 'NULL')
+        return lyric_result, lyric
+    '''searchbyhappiapiv1'''
+    @staticmethod
+    def searchbyhappiapiv1(track_name: str, artist_name: str, request_overrides: dict = None):
+        request_overrides = request_overrides or {}; headers = {'accept': 'application/json', 'x-happi-token': 'hk254-C1VegxwlJjYdYFPtdUDpg8qiVpmAXVl0aA'}
+        (resp := requests.get('https://api.happi.dev/v1/lyrics', params={'artist': artist_name, 'track': track_name}, headers=headers, **request_overrides))
+        lyric = cleanlrc((lyric_result := resp2json(resp=resp))['result'][0]['lyrics'] or 'NULL')
+        return lyric_result, lyric
+    '''searchbymusixmatchapi'''
+    @staticmethod
+    def searchbymusixmatchapi(track_name: str, artist_name: str, request_overrides: dict = None):
+        candidate_req_keys = ['3bc1042fde1ac8c1979c400d6f921320']
+        request_overrides = request_overrides or {}; headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36"}
+        (resp := requests.get(f"https://api.musixmatch.com/ws/1.1/matcher.lyrics.get?apikey={random.choice(candidate_req_keys)}&q_track={track_name}&q_artist={artist_name}", headers=headers, **request_overrides))
+        lyric = cleanlrc((lyric_result := resp2json(resp=resp))['message']['body']['lyrics']['lyrics_body'] or 'NULL')
+        return lyric_result, lyric

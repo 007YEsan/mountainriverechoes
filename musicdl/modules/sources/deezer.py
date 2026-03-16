@@ -17,7 +17,7 @@ from ..utils.hosts import DEEZER_MUSIC_HOSTS
 from urllib.parse import urlencode, urlparse
 from ..utils.deezerutils import DeezerMusicClientUtils
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
-from ..utils import replacefile, touchdir, legalizestring, resp2json, seconds2hms, usesearchheaderscookies, usedownloadheaderscookies, safeextractfromdict, extractdurationsecondsfromlrc, useparseheaderscookies, obtainhostname, hostmatchessuffix, byte2mb, cleanlrc, SongInfo, AudioLinkTester, SongInfoUtils
+from ..utils import replacefile, touchdir, legalizestring, resp2json, seconds2hms, usesearchheaderscookies, usedownloadheaderscookies, safeextractfromdict, extractdurationsecondsfromlrc, useparseheaderscookies, obtainhostname, hostmatchessuffix, byte2mb, cleanlrc, SongInfo, AudioLinkTester, SongInfoUtils, LyricSearchClient
 
 
 '''DeezerMusicClient'''
@@ -151,7 +151,7 @@ class DeezerMusicClient(BaseMusicClient):
         if not song_info.with_valid_download_url: return song_info
         # supplement lyric results
         try: (resp := self.post('https://auth.deezer.com/login/renew?jo=p&rto=c&i=c', **request_overrides)).raise_for_status(); headers = {"Content-Type": "application/json", "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36", "Origin": "https://www.deezer.com", "Referer": "https://www.deezer.com/", "Authorization": f"Bearer {resp2json(resp=resp)['jwt']}"}; payload = {"operationName": "GetLyrics", "variables": {"trackId": str(song_id)}, "query": "query GetLyrics($trackId: String!) { track(trackId: $trackId) { id lyrics { id text ...SynchronizedWordByWordLines ...SynchronizedLines licence copyright writers __typename } __typename } } fragment SynchronizedWordByWordLines on Lyrics { id synchronizedWordByWordLines { start end words { start end word __typename } __typename } __typename } fragment SynchronizedLines on Lyrics { id synchronizedLines { lrcTimestamp line lineTranslated milliseconds duration __typename } __typename }"}; (resp := requests.post("https://pipe.deezer.com/api", headers=headers, json=payload, **request_overrides)).raise_for_status(); lyric_result = resp2json(resp=resp); lyric = cleanlrc(DeezerMusicClientUtils.covert2lrclyrics(lyric_result['data']['track']['lyrics'])) or 'NULL'
-        except Exception: lyric_result, lyric = dict(), 'NULL'
+        except Exception: lyric_result, lyric = LyricSearchClient().search(artist_name=song_info.singers, track_name=song_info.song_name, request_overrides=request_overrides)
         song_info.raw_data['lyric'] = lyric_result if lyric_result else song_info.raw_data['lyric']
         song_info.lyric = lyric if (lyric and (lyric not in {'NULL'})) else song_info.lyric
         if not song_info.duration or song_info.duration == '-:-:-': song_info.duration = seconds2hms(extractdurationsecondsfromlrc(song_info.lyric))

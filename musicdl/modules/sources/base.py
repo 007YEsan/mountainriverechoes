@@ -56,25 +56,16 @@ class BaseMusicClient():
         self.disable_print = disable_print
         self.work_dir = work_dir
         self.freeproxy_settings = freeproxy_settings or {}
-        self.default_search_cookies = cookies2dict(default_search_cookies)
-        self.default_download_cookies = cookies2dict(default_download_cookies)
-        self.default_parse_cookies = cookies2dict(default_parse_cookies)
-        self.default_cookies = self.default_search_cookies
-        self.search_size_per_page = min(search_size_per_source, search_size_per_page)
-        self.strict_limit_search_size_per_page = strict_limit_search_size_per_page
         self.quark_parser_config = quark_parser_config or {}
-        self.enable_search_curl_cffi = enable_search_curl_cffi
-        self.enable_download_curl_cffi = enable_download_curl_cffi
-        self.enable_parse_curl_cffi = enable_parse_curl_cffi
-        self.enable_curl_cffi = self.enable_search_curl_cffi
+        self.default_search_cookies = cookies2dict(default_search_cookies); self.default_download_cookies = cookies2dict(default_download_cookies); self.default_parse_cookies = cookies2dict(default_parse_cookies); self.default_cookies = self.default_search_cookies
+        self.search_size_per_page = min(search_size_per_source, search_size_per_page); self.strict_limit_search_size_per_page = strict_limit_search_size_per_page
+        self.enable_search_curl_cffi = enable_search_curl_cffi; self.enable_download_curl_cffi = enable_download_curl_cffi; self.enable_parse_curl_cffi = enable_parse_curl_cffi; self.enable_curl_cffi = self.enable_search_curl_cffi
         self.cc_impersonates = self._listccimpersonates() if (enable_search_curl_cffi or enable_download_curl_cffi) else None
         # init requests.Session
-        self.default_search_headers = {'User-Agent': UserAgent().random}
-        self.default_download_headers = {'User-Agent': UserAgent().random}
-        self.default_parse_headers = {'User-Agent': UserAgent().random}
+        self.default_search_headers = {'User-Agent': UserAgent().random}; self.default_download_headers = {'User-Agent': UserAgent().random}; self.default_parse_headers = {'User-Agent': UserAgent().random}
         self.quark_default_download_headers = {
-            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36 Core/1.94.225.400 QQBrowser/12.2.5544.400',
-            'origin': 'https://pan.quark.cn', 'referer': 'https://pan.quark.cn/', 'accept-language': 'zh-CN,zh;q=0.9', 'cookie': cookies2string(self.quark_parser_config.get('cookies', '')),
+            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36 Core/1.94.225.400 QQBrowser/12.2.5544.400', 'origin': 'https://pan.quark.cn', 
+            'referer': 'https://pan.quark.cn/', 'accept-language': 'zh-CN,zh;q=0.9', 'cookie': cookies2string(self.quark_parser_config.get('cookies', '')),
         }
         self.quark_default_download_cookies = {} # placeholder, useless now
         self.default_headers = self.default_search_headers
@@ -112,8 +103,7 @@ class BaseMusicClient():
         unique_song_infos, identifiers = [], set()
         for song_info in song_infos:
             if song_info.identifier in identifiers: continue
-            identifiers.add(song_info.identifier)
-            unique_song_infos.append(song_info)
+            identifiers.add(song_info.identifier); unique_song_infos.append(song_info)
         return unique_song_infos
     '''_search'''
     @usesearchheaderscookies
@@ -152,8 +142,7 @@ class BaseMusicClient():
                     if main_progress_id is None: continue
                     main_process_context.advance(main_progress_id, 1)
                     main_process_context.update(main_progress_id, description=f"ALL sources >>> completed ({int(main_process_context.tasks[main_progress_id].completed)}/{int(main_process_context.tasks[main_progress_id].total or 0)})")
-        song_infos = list(chain.from_iterable(song_infos.values()))
-        song_infos = self._removeduplicates(song_infos=song_infos)
+        song_infos = list(chain.from_iterable(song_infos.values())); song_infos = self._removeduplicates(song_infos=song_infos)
         work_dir = self._constructuniqueworkdir(keyword=keyword)
         for song_info in song_infos:
             song_info.work_dir = work_dir; episodes = song_info.episodes if isinstance(song_info.episodes, list) else []
@@ -176,9 +165,8 @@ class BaseMusicClient():
         if song_info.protocol.upper() in {'HLS'}:
             try:
                 hls_downloader = HLSDownloader(
-                    output_dir=song_info.work_dir, proxies=request_overrides.pop('proxies', None) or self._autosetproxies(), headers=song_info.default_download_headers or request_overrides.pop('headers', {}) or self.default_headers,
-                    cookies=request_overrides.pop('cookies', {}) or self.default_cookies, logger_handle=self.logger_handle, verify_tls=request_overrides.pop('verify', True), timeout=request_overrides.pop('timeout', (10, 30)),
-                    disable_print=self.disable_print, request_overrides=request_overrides
+                    output_dir=song_info.work_dir, proxies=request_overrides.pop('proxies', {}) or self._autosetproxies(), headers=song_info.default_download_headers or request_overrides.pop('headers', {}) or self.default_headers, cookies=request_overrides.pop('cookies', {}) or self.default_cookies, 
+                    logger_handle=self.logger_handle, verify_tls=request_overrides.pop('verify', True), timeout=request_overrides.pop('timeout', (10, 30)), disable_print=self.disable_print, request_overrides=request_overrides
                 )
                 hls_downloader.download(song_info.download_url, song_info.save_path, quality='best', keep_segments=False, temp_subdir=str(song_info.identifier), progress=progress, progress_id=song_progress_id)
                 downloaded_song_infos.append(SongInfoUtils.supplsonginfothensavelyricsthenwritetags(copy.deepcopy(song_info), logger_handle=self.logger_handle, disable_print=self.disable_print) if auto_supplement_song else copy.deepcopy(song_info))

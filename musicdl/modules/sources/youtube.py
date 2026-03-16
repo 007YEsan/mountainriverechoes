@@ -13,7 +13,7 @@ from ytmusicapi import YTMusic
 from .base import BaseMusicClient
 from rich.progress import Progress
 from ..utils.youtubeutils import YouTube, REPAIDAPI_KEYS
-from ..utils import legalizestring, resp2json, usesearchheaderscookies, byte2mb, seconds2hms, usedownloadheaderscookies, touchdir, safeextractfromdict, SongInfo, SongInfoUtils, AudioLinkTester
+from ..utils import legalizestring, resp2json, usesearchheaderscookies, byte2mb, seconds2hms, usedownloadheaderscookies, touchdir, safeextractfromdict, SongInfo, SongInfoUtils, AudioLinkTester, LyricSearchClient
 
 
 '''YouTubeMusicClient'''
@@ -201,6 +201,10 @@ class YouTubeMusicClient(BaseMusicClient):
             if song_info.file_size_bytes < 100: song_info.download_url_status = {'ok': False}
         # compare and select the best
         song_info = song_info_flac if song_info_flac.with_valid_download_url and (not song_info.with_valid_download_url or song_info_flac.largerthan(song_info)) else song_info
+        # supplement lyric results
+        lyric_result, lyric = LyricSearchClient().search(artist_name=song_info.singers, track_name=song_info.song_name, request_overrides=request_overrides)
+        song_info.raw_data['lyric'] = lyric_result if lyric_result else song_info.raw_data['lyric']
+        song_info.lyric = lyric if (lyric and (lyric not in {'NULL'})) else song_info.lyric
         # return
         return song_info
     '''_search'''
