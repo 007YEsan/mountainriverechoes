@@ -34,9 +34,9 @@ from platformdirs import user_log_dir
 from cryptography.fernet import Fernet
 from datetime import datetime, timedelta
 from dataclasses import dataclass, field, asdict
-from .misc import safeextractfromdict, replacefile
 from urllib.parse import urljoin, urlparse, parse_qs
 from .importutils import optionalimport, optionalimportfrom
+from .misc import safeextractfromdict, replacefile, resp2json
 from typing import List, Optional, Any, Union, Tuple, Callable, Dict
 
 
@@ -421,16 +421,23 @@ class TidalSession(ABC):
         return SessionStorage(**{"access_token": self.access_token, "refresh_token": self.refresh_token, "expires": self.expires, "user_id": self.user_id, "country_code": self.country_code, 'client_id': getattr(self, 'client_id'), 'client_secret': getattr(self, 'client_secret')})
     '''getsubscription'''
     def getsubscription(self, request_overrides: dict = None) -> str:
-        if not self.access_token: return
         request_overrides = request_overrides or {}
+        if (self.access_token is None or datetime.now() > self.expires): return 'FREE'
         (resp := requests.get(f"https://api.tidal.com/v1/users/{self.user_id}/subscription", params={"countryCode": self.country_code}, headers=self.auth_headers, **request_overrides)).raise_for_status()
         return resp.json()["subscription"]["type"]
     '''valid'''
     def valid(self, request_overrides: dict = None):
         request_overrides = request_overrides or {}
-        if not isinstance(self, TidalSession) and (self.access_token is None or datetime.now() > self.expires): return False
+        if (self.access_token is None or datetime.now() > self.expires): return False
         resp = requests.get("https://api.tidal.com/v1/sessions", headers=self.auth_headers, **request_overrides)
         return resp.status_code == 200
+    '''isvipaccount'''
+    def isvipaccount(self, request_overrides: dict = None) -> bool:
+        request_overrides = request_overrides or {}
+        if (self.access_token is None or datetime.now() > self.expires): return False
+        (resp := requests.get(f'https://tidal.com/v1/users/{self.user_id}/subscription?countryCode={self.country_code}&locale=en_US&deviceType=BROWSER', headers=self.auth_headers, **request_overrides)).raise_for_status()
+        vip_flag = safeextractfromdict(resp2json(resp=resp), ['premiumAccess'], False) or (safeextractfromdict(resp2json(resp=resp), ['subscription', 'type'], 'FREE') not in {'FREE'})
+        return vip_flag
 
 
 '''TidalMobileSession'''
@@ -1000,7 +1007,32 @@ class TIDALMusicClientUtils:
     def getstreamurlsquidapi(song_id, quality: str, request_overrides: dict = None):
         request_overrides = request_overrides or {}
         headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"}
-        data = requests.get(f'https://triton.squid.wtf/track/?id={song_id}&quality={quality}', headers=headers, **request_overrides).json()['data']
+        data = requests.get(f'https://triton.squid.wtf/track/?id={song_id}&quality={quality}', headers=headers, timeout=10, **request_overrides).json()['data']
+        resp = aigpy.model.dictToModel(data, StreamRespond())
+        if "vnd.tidal.bt" in resp.manifestMimeType:
+            manifest = json.loads(base64.b64decode(resp.manifest).decode('utf-8'))
+            ret = StreamUrl()
+            ret.trackid, ret.soundQuality, ret.codec, ret.encryptionKey, ret.url, ret.urls = resp.trackid, resp.audioQuality, manifest['codecs'], manifest['keyId'] if 'keyId' in manifest else "", manifest['urls'][0], [manifest['urls'][0]]
+            return ret, data
+        elif "dash+xml" in resp.manifestMimeType:
+            manifest = TIDALMusicClientUtils.parsempd(base64.b64decode(resp.manifest))
+            ret = StreamUrl()
+            ret.trackid, ret.soundQuality, audio_reps = resp.trackid, resp.audioQuality, []
+            audio_reps.extend(r for p in manifest.periods for a in p.adaptation_sets if a.content_type == "audio" for r in a.representations)
+            if not audio_reps: raise ValueError('MPD manifest did not contain any audio representations.')
+            representation: Representation = next((rep for rep in audio_reps if rep.segments), audio_reps[0])
+            codec = (representation.codec or '').upper()
+            if codec.startswith('MP4A'): codec = 'AAC'
+            ret.codec, ret.encryptionKey, ret.urls = codec, "", representation.segments
+            if len(ret.urls) > 0: ret.url = ret.urls[0]
+            return ret, data
+        raise Exception("Can't get the streamUrl, type is " + resp.manifestMimeType)
+    '''getstreamurlspotisaverapi'''
+    @staticmethod
+    def getstreamurlspotisaverapi(song_id, quality: str, request_overrides: dict = None):
+        request_overrides = request_overrides or {}
+        headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"}
+        data = requests.get(f'https://hifi-one.spotisaver.net/track/?id={song_id}&quality={quality}', headers=headers, timeout=10, **request_overrides).json()['data']
         resp = aigpy.model.dictToModel(data, StreamRespond())
         if "vnd.tidal.bt" in resp.manifestMimeType:
             manifest = json.loads(base64.b64decode(resp.manifest).decode('utf-8'))
@@ -1025,8 +1057,8 @@ class TIDALMusicClientUtils:
     def getstreamurlqqdlapi(song_id, quality: str, request_overrides: dict = None):
         request_overrides = request_overrides or {}
         headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"}
-        for host in ['maus.qqdl.site', 'hund.qqdl.site', 'katze.qqdl.site', 'wolf.qqdl.site']:
-            try: data = requests.get(f'https://{host}/track/?id={song_id}&quality={quality}', headers=headers, **request_overrides).json()['data']
+        for host in ['maus.qqdl.site', 'hund.qqdl.site', 'katze.qqdl.site', 'wolf.qqdl.site', 'vogel.qqdl.site']:
+            try: data = requests.get(f'https://{host}/track/?id={song_id}&quality={quality}', headers=headers, timeout=10, **request_overrides).json()['data']
             except Exception: continue
         resp = aigpy.model.dictToModel(data, StreamRespond())
         if "vnd.tidal.bt" in resp.manifestMimeType:
@@ -1049,8 +1081,9 @@ class TIDALMusicClientUtils:
         raise Exception("Can't get the streamUrl, type is " + resp.manifestMimeType)
     '''getstreamurl'''
     @staticmethod
-    def getstreamurl(song_id, quality: str, request_overrides: dict = None):
-        for parser in [TIDALMusicClientUtils.getstreamurlqqdlapi, TIDALMusicClientUtils.getstreamurlsquidapi, TIDALMusicClientUtils.getstreamurlofficialapi]:
+    def getstreamurl(song_id, quality: str, apply_thirdpart_apis: bool = True, request_overrides: dict = None):
+        candidate_parsers = [TIDALMusicClientUtils.getstreamurlspotisaverapi, TIDALMusicClientUtils.getstreamurlqqdlapi, TIDALMusicClientUtils.getstreamurlsquidapi] if apply_thirdpart_apis else []
+        for parser in [*candidate_parsers, TIDALMusicClientUtils.getstreamurlofficialapi]:
             try: stream_url, stream_resp = parser(song_id=song_id, quality=quality, request_overrides=request_overrides); assert stream_url.urls; break
             except Exception: continue
         return stream_url, stream_resp

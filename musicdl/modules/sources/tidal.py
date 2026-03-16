@@ -104,7 +104,7 @@ class TIDALMusicClient(BaseMusicClient):
         if lossless_quality_is_sufficient and song_info_flac.with_valid_download_url and (song_info_flac.ext in lossless_quality_definitions): song_info = song_info_flac
         else:
             for quality in TIDALMusicClientUtils.MUSIC_QUALITIES:
-                try: download_url, stream_resp = TIDALMusicClientUtils.getstreamurl(song_id, quality=quality[1], request_overrides=request_overrides)
+                try: download_url, stream_resp = TIDALMusicClientUtils.getstreamurl(song_id, quality=quality[1], apply_thirdpart_apis=(not self.tidal_tv_session.isvipaccount(request_overrides=request_overrides)), request_overrides=request_overrides)
                 except Exception: continue
                 song_info = SongInfo(
                     raw_data={'search': search_result, 'download': stream_resp, 'lyric': {}, 'quality': quality}, source=self.source, song_name=legalizestring(search_result.title), singers=legalizestring(', '.join([str(singer.name) for singer in (search_result.artists or []) if isinstance(singer, Artist)])),
