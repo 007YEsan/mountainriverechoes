@@ -11,14 +11,15 @@ import copy
 import click
 import json_repair
 from threading import Lock
+from collections.abc import Iterable
 from concurrent.futures import ThreadPoolExecutor
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
 if __name__ == '__main__':
     from __init__ import __version__
-    from modules import BuildMusicClient, LoggerHandle, MusicClientBuilder, smarttrunctable, colorize, printfullline, cursorpickintable
+    from modules import BuildMusicClient, LoggerHandle, MusicClientBuilder, SongInfo, BaseMusicClient, smarttrunctable, colorize, printfullline, cursorpickintable
 else:
     from .__init__ import __version__
-    from .modules import BuildMusicClient, LoggerHandle, MusicClientBuilder, smarttrunctable, colorize, printfullline, cursorpickintable
+    from .modules import BuildMusicClient, LoggerHandle, MusicClientBuilder, SongInfo, BaseMusicClient, smarttrunctable, colorize, printfullline, cursorpickintable
 
 
 '''settings'''
@@ -43,11 +44,10 @@ DEFAULT_MUSIC_SOURCES = ['MiguMusicClient', 'NeteaseMusicClient', 'QQMusicClient
 class MusicClient():
     LOSSLESS_QUALITY_DEFINITIONS = {'flac', 'wav', 'alac', 'ape', 'wv', 'tta', 'dsf', 'dff'}
     def __init__(self, music_sources: list = [], init_music_clients_cfg: dict = {}, clients_threadings: dict = {}, requests_overrides: dict = {}, search_rules: dict = {}):
-        # assert
-        assert isinstance(music_sources, list) and isinstance(init_music_clients_cfg, dict) and isinstance(clients_threadings, dict) and \
-               isinstance(requests_overrides, dict) and isinstance(search_rules, dict)
-        music_sources, init_music_clients_cfg, clients_threadings, requests_overrides, search_rules = \
-            copy.deepcopy(music_sources), copy.deepcopy(init_music_clients_cfg), copy.deepcopy(clients_threadings), copy.deepcopy(requests_overrides), copy.deepcopy(search_rules)
+        # prepare and assert
+        if isinstance(music_sources, str): music_source = [music_sources]
+        assert isinstance(music_sources, Iterable) and isinstance(init_music_clients_cfg, dict) and isinstance(clients_threadings, dict) and isinstance(requests_overrides, dict) and isinstance(search_rules, dict)
+        music_sources, init_music_clients_cfg, clients_threadings, requests_overrides, search_rules = copy.deepcopy(music_sources), copy.deepcopy(init_music_clients_cfg), copy.deepcopy(clients_threadings), copy.deepcopy(requests_overrides), copy.deepcopy(search_rules)
         # set attributes
         self.work_dirs = {}
         self.search_rules = search_rules
@@ -56,14 +56,12 @@ class MusicClient():
         self.music_sources = music_sources if music_sources else DEFAULT_MUSIC_SOURCES
         self.music_sources = list(set(self.music_sources))
         # init
-        self.logger_handle, self.music_clients = LoggerHandle(), dict()
+        self.logger_handle = LoggerHandle(); self.music_clients: dict[str, BaseMusicClient] = dict()
         for music_source in self.music_sources:
             if music_source not in MusicClientBuilder.REGISTERED_MODULES.keys(): continue
             init_music_client_cfg = {
-                'search_size_per_source': 5, 'auto_set_proxies': False, 'random_update_ua': False, 'max_retries': 3, 'maintain_session': False, 'logger_handle': self.logger_handle, 
-                'disable_print': True, 'work_dir': 'musicdl_outputs', 'default_search_cookies': {}, 'default_download_cookies': {}, 'default_parse_cookies': {}, 'type': music_source,
-                'search_size_per_page': 10, 'strict_limit_search_size_per_page': True, 'quark_parser_config': {}, 'freeproxy_settings': None, 'enable_download_curl_cffi': False,
-                'enable_parse_curl_cffi': False, 'enable_search_curl_cffi': False,
+                'search_size_per_source': 5, 'auto_set_proxies': False, 'random_update_ua': False, 'max_retries': 3, 'maintain_session': False, 'logger_handle': self.logger_handle, 'disable_print': True, 'work_dir': 'musicdl_outputs', 'default_search_cookies': {}, 'default_download_cookies': {}, 
+                'default_parse_cookies': {}, 'type': music_source, 'search_size_per_page': 10, 'strict_limit_search_size_per_page': True, 'quark_parser_config': {}, 'freeproxy_settings': None, 'enable_download_curl_cffi': False, 'enable_parse_curl_cffi': False, 'enable_search_curl_cffi': False,
             }
             if music_source in {'GDStudioMusicClient', 'XimalayaMusicClient', 'LizhiMusicClient', 'QingtingMusicClient', 'LRTSMusicClient'}: init_music_client_cfg['search_size_per_source'] = 3
             init_music_client_cfg.update(init_music_clients_cfg.get(music_source, {}))
@@ -72,19 +70,18 @@ class MusicClient():
             if music_source not in self.clients_threadings: self.clients_threadings[music_source] = 5 if music_source not in {'GDStudioMusicClient'} else 10
             if music_source not in self.requests_overrides: self.requests_overrides[music_source] = {}
             if music_source not in self.search_rules: self.search_rules[music_source] = {}
+        assert self.music_clients, f'Invalid "music_sources", elements in "music_sources" should be in ({", ".join(MusicClientBuilder.REGISTERED_MODULES.keys())})'
     '''printbasicinfo'''
     def printbasicinfo(self):
         printfullline(ch='-')
         print(BASIC_INFO % (__version__, ', '.join([f'"{v} for {k}"' for k, v in self.work_dirs.items()])))
         printfullline(ch='-')
     '''printandselectsearchresults'''
-    def printandselectsearchresults(self, search_results: dict):
+    def printandselectsearchresults(self, search_results: dict) -> list[SongInfo]:
         print_titles, print_items, song_infos, row_ids, song_info_pointer = ['ID', 'Singers', 'Songname', 'Filesize', 'Duration', 'Album', 'Source'], [], {}, [], 0
         for _, per_search_results in search_results.items():
             for search_result in per_search_results:
-                song_info_pointer += 1
-                song_infos[str(song_info_pointer)] = search_result
-                row_ids.append(str(song_info_pointer))
+                song_info_pointer += 1; song_infos[str(song_info_pointer)] = search_result; row_ids.append(str(song_info_pointer))
                 print_items.append([
                     colorize(str(song_info_pointer), 'number'), colorize(str(search_result['singers'])[:12] + '...' if len(str(search_result['singers'])) > 15 else str(search_result['singers']), 'singer'), str(search_result['song_name']), 
                     str(search_result['file_size']) if search_result['ext'] not in MusicClient.LOSSLESS_QUALITY_DEFINITIONS else colorize(str(search_result['file_size']), 'flac'), str(search_result['duration']), str(search_result['album']), 
@@ -139,8 +136,8 @@ class MusicClient():
     def parseplaylist(self, playlist_url):
         song_infos = []
         for source in list(self.music_clients.keys()):
-            try: song_infos = self.music_clients[source].parseplaylist(playlist_url); assert song_infos and len(song_infos) > 0
-            except: continue
+            try: song_infos = self.music_clients[source].parseplaylist(playlist_url); assert song_infos and len(song_infos) > 0; break
+            except Exception: continue
         return (song_infos or [])
     '''processinputs'''
     def processinputs(self, input_tip='', prefix: str = '\n'):
@@ -183,13 +180,11 @@ class MusicClient():
 )
 def MusicClientCMD(keyword: str, playlist_url: str, music_sources: str, init_music_clients_cfg: str, requests_overrides: str, clients_threadings: str, search_rules: str):
     # parse playlist url
-    assert keyword is None or playlist_url is None, '"playlist_url" and "keyword" could be set simultaneously'
+    assert keyword is None or playlist_url is None, '"playlist_url" and "keyword" could not be set simultaneously'
     # load json string
     safe_load_func = lambda s: (json_repair.loads(s) or {}) if s else {}
-    init_music_clients_cfg = safe_load_func(init_music_clients_cfg)
-    requests_overrides = safe_load_func(requests_overrides)
-    clients_threadings = safe_load_func(clients_threadings)
-    search_rules = safe_load_func(search_rules)
+    init_music_clients_cfg = safe_load_func(init_music_clients_cfg); requests_overrides = safe_load_func(requests_overrides)
+    clients_threadings = safe_load_func(clients_threadings); search_rules = safe_load_func(search_rules)
     # instance music client
     music_sources = music_sources.replace(' ', '').split(',')
     music_client = MusicClient(music_sources=music_sources, init_music_clients_cfg=init_music_clients_cfg, clients_threadings=clients_threadings, requests_overrides=requests_overrides, search_rules=search_rules)
