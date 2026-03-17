@@ -19,6 +19,7 @@ from .fangpi import FangpiMusicClient
 from .buguyy import BuguyyMusicClient
 from .deezer import DeezerMusicClient
 from ..utils import BaseModuleBuilder
+from .spotify import SpotifyMusicClient
 from .netease import NeteaseMusicClient
 from .youtube import YouTubeMusicClient
 from .gequbao import GequbaoMusicClient
@@ -44,8 +45,8 @@ class MusicClientBuilder(BaseModuleBuilder):
         'QQMusicClient': QQMusicClient, 'BilibiliMusicClient': BilibiliMusicClient, 'KugouMusicClient': KugouMusicClient, 'StreetVoiceMusicClient': StreetVoiceMusicClient, 'SodaMusicClient': SodaMusicClient, 
         'NeteaseMusicClient': NeteaseMusicClient, 'QianqianMusicClient': QianqianMusicClient, 'FiveSingMusicClient': FiveSingMusicClient, 'MiguMusicClient': MiguMusicClient, 'KuwoMusicClient': KuwoMusicClient, 
         # Global Streaming / Indie
-        'YouTubeMusicClient': YouTubeMusicClient, 'JooxMusicClient': JooxMusicClient, 'AppleMusicClient': AppleMusicClient, 'JamendoMusicClient': JamendoMusicClient, 'TIDALMusicClient': TIDALMusicClient,
-        'SoundCloudMusicClient': SoundCloudMusicClient, 'DeezerMusicClient': DeezerMusicClient, 'QobuzMusicClient': QobuzMusicClient,
+        'YouTubeMusicClient': YouTubeMusicClient, 'JooxMusicClient': JooxMusicClient, 'AppleMusicClient': AppleMusicClient, 'JamendoMusicClient': JamendoMusicClient, 'SoundCloudMusicClient': SoundCloudMusicClient, 
+        'DeezerMusicClient': DeezerMusicClient, 'QobuzMusicClient': QobuzMusicClient, 'SpotifyMusicClient': SpotifyMusicClient, 'TIDALMusicClient': TIDALMusicClient,
         # Audio / Radio
         'XimalayaMusicClient': XimalayaMusicClient, 'LizhiMusicClient': LizhiMusicClient, 'QingtingMusicClient': QingtingMusicClient, 'LRTSMusicClient': LRTSMusicClient,
         # Aggregators / Multi-Source Gateways
