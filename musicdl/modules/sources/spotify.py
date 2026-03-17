@@ -8,15 +8,12 @@ WeChat Official Account (微信公众号):
 '''
 import os
 import copy
-import time
-import base64
-import json_repair
 from bs4 import BeautifulSoup
 from .base import BaseMusicClient
 from pathvalidate import sanitize_filepath
+from urllib.parse import urlparse, parse_qs
 from ..utils.hosts import SPOTIFY_MUSIC_HOSTS
-from urllib.parse import urlencode, urlparse, parse_qs
-from ..utils.spotifyutils import SpotifyMusicClientPlaylistUtils
+from ..utils.spotifyutils import SpotifyMusicClientPlaylistUtils, SpotifyMusicClientSearchUtils
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
 from ..utils import byte2mb, touchdir, legalizestring, resp2json, seconds2hms, usesearchheaderscookies, safeextractfromdict, naiveguessextfromaudiobytes, useparseheaderscookies, obtainhostname, hostmatchessuffix, extractdurationsecondsfromlrc, SongInfo, AudioLinkTester, LyricSearchClient
 
@@ -24,12 +21,6 @@ from ..utils import byte2mb, touchdir, legalizestring, resp2json, seconds2hms, u
 '''SpotifyMusicClient'''
 class SpotifyMusicClient(BaseMusicClient):
     source = 'SpotifyMusicClient'
-    CANDIDATED_CLIENT_ID_SECRETS = [
-        {'client_id': '5f573c9620494bae87890c0f08a60293', 'client_secret': '212476d9b0f3472eaa762d90b19b0ba8'}, {'client_id': 'ad996353310b4ced82f5be1309b11b14', 'client_secret': '2e5851cff3bc45f495cd7cfa40be1b48'},
-        {'client_id': '11238807f52543e4892bd1f06766aa34', 'client_secret': '1b59a0d0aeb644f083f5eb2884c97eda'}, {'client_id': '2a73de1333ac42db8c53900c9607907c', 'client_secret': '4c8a1683f277481f917c75ebf5993bf2'},
-        {'client_id': 'fcb2ecd28fba41e8ad40f986532ffd96', 'client_secret': 'b07fb0c02a0e4ef7b60529e39e3d6c09'}, {'client_id': '6a3e8ace6fcb458fa723085e6a2f1766', 'client_secret': '312e2ae6504c4d44a0f0c622b5e7b4ca'}, 
-    ]
-    CLIENT_ID = '6a3e8ace6fcb458fa723085e6a2f1766'; CLIENT_SECRET = '312e2ae6504c4d44a0f0c622b5e7b4ca'; CLIENT_AUTH_TOKEN = None; CLIENT_AUTH_TOKEN_EXPIRY = None
     def __init__(self, **kwargs):
         super(SpotifyMusicClient, self).__init__(**kwargs)
         self.default_search_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36", "Accept": "application/json", "Accept-Language": "en-US,en;q=0.9", "Referer": "https://open.spotify.com/", "Origin": "https://open.spotify.com/"}
@@ -37,30 +28,14 @@ class SpotifyMusicClient(BaseMusicClient):
         self.default_download_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36"}
         self.default_headers = self.default_search_headers
         self._initsession()
-    '''_setauthinfo'''
-    def _setauthinfo(self, request_overrides: dict = None):
-        if SpotifyMusicClient.CLIENT_AUTH_TOKEN and ((SpotifyMusicClient.CLIENT_AUTH_TOKEN_EXPIRY is None) or (SpotifyMusicClient.CLIENT_AUTH_TOKEN_EXPIRY > time.time())): self.default_headers.update({"Authorization": f"Bearer {SpotifyMusicClient.CLIENT_AUTH_TOKEN}"}); return
-        request_overrides, auth = request_overrides or {}, base64.b64encode(f"{SpotifyMusicClient.CLIENT_ID}:{SpotifyMusicClient.CLIENT_SECRET}".encode()).decode()
-        headers, data = {"Authorization": f"Basic {auth}"}, {"grant_type": "client_credentials"}
-        (resp := self.post('https://accounts.spotify.com/api/token', headers=headers, data=data, **request_overrides)).raise_for_status()
-        SpotifyMusicClient.CLIENT_AUTH_TOKEN, SpotifyMusicClient.CLIENT_AUTH_TOKEN_EXPIRY = resp2json(resp=resp)['access_token'], time.time() + resp2json(resp=resp)['expires_in'] - 60
-        self.default_headers.update({"Authorization": f"Bearer {SpotifyMusicClient.CLIENT_AUTH_TOKEN}"})
-        return SpotifyMusicClient.CLIENT_AUTH_TOKEN
     '''_constructsearchurls'''
     def _constructsearchurls(self, keyword: str, rule: dict = None, request_overrides: dict = None):
         # init
-        rule, request_overrides = rule or {}, request_overrides or {}; self._setauthinfo(request_overrides=request_overrides)
-        # search rules, type could be track, artist, album
-        default_rule = {'q': keyword, 'type': 'track', 'offset': 0, 'limit': 20}
-        default_rule.update(rule)
+        rule, request_overrides = rule or {}, request_overrides or {}
         # construct search urls based on search rules
-        base_url = 'https://api.spotify.com/v1/search?'
         search_urls, page_size, count = [], self.search_size_per_page, 0
         while self.search_size_per_source > count:
-            page_rule = copy.deepcopy(default_rule)
-            page_rule['limit'] = page_size
-            page_rule['offset'] = count
-            search_urls.append(base_url + urlencode(page_rule))
+            search_urls.append({'api': SpotifyMusicClientSearchUtils.searchbykeyword, 'inputs': {'session': copy.deepcopy(self.session), 'query': keyword, 'limit': page_size, 'offset': count, 'rule': copy.deepcopy(rule), 'request_overrides': request_overrides}})
             count += page_size
         # return
         return search_urls
@@ -121,7 +96,7 @@ class SpotifyMusicClient(BaseMusicClient):
         (resp := self.post(f'https://api.spotidownloader.com/download', headers=headers, json={"id": song_id}, **request_overrides)).raise_for_status()
         download_result.update(resp2json(resp=resp))
         download_urls: list[str] = [u for u in [download_result.get('linkFlac'), download_result.get('link')] if u and str(u).startswith('http')]
-        try: duration_in_secs = float(safeextractfromdict(search_result, ['duration_ms'], 0)) / 1000
+        try: duration_in_secs = float(safeextractfromdict(search_result, ['item', 'data', 'duration', 'totalMilliseconds'], 0) or safeextractfromdict(search_result, ['itemV2', 'data', 'trackDuration', 'totalMilliseconds'], 0)) / 1000
         except Exception: duration_in_secs = 0
         for download_url in download_urls:
             song_info = SongInfo(
@@ -159,9 +134,9 @@ class SpotifyMusicClient(BaseMusicClient):
         try: ext = parse_qs(urlparse(download_url).query, keep_blank_values=True).get('format')[0]
         except Exception: ext = 'mp3'
         song_info = SongInfo(
-            raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(download_result.get('name')), singers=legalizestring(', '.join([singer.get('name') for singer in (download_result.get('artists', []) or []) if isinstance(singer, dict) and singer.get('name')])), 
-            album=legalizestring(safeextractfromdict(search_result, ['album', 'name'], None)), ext=ext, file_size_bytes=None, file_size=None, identifier=song_id, duration_s=duration_in_secs, duration=seconds2hms(duration_in_secs), lyric='NULL', cover_url=safeextractfromdict(download_result, ['album', 'images', 0, 'url'], None), 
-            download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides), default_download_headers=headers,
+            raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(download_result.get('name', '')), singers=legalizestring(', '.join([singer.get('name') for singer in (download_result.get('artists', []) or []) if isinstance(singer, dict) and singer.get('name')])), 
+            album=legalizestring(safeextractfromdict(search_result, ['itemV2', 'data', 'albumOfTrack', 'name'], None) or safeextractfromdict(search_result, ['item', 'data', 'albumOfTrack', 'name'], None)), ext=ext, file_size=None, identifier=song_id, duration_s=duration_in_secs, duration=seconds2hms(duration_in_secs), lyric='NULL', 
+            cover_url=safeextractfromdict(download_result, ['album', 'images', 0, 'url'], None), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides), default_download_headers=headers,
         )
         song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
         song_info.file_size = song_info.download_url_status['probe_status']['file_size']
@@ -178,7 +153,7 @@ class SpotifyMusicClient(BaseMusicClient):
     '''_parsewithofficialapiv1'''
     def _parsewithofficialapiv1(self, search_result: dict, song_info_flac: SongInfo = None, lossless_quality_is_sufficient: bool = True, lossless_quality_definitions: set | list | tuple = {'flac'}, request_overrides: dict = None) -> "SongInfo":
         # init
-        song_info, request_overrides, song_info_flac = SongInfo(source=self.source), request_overrides or {}, song_info_flac or SongInfo(source=self.source); self._setauthinfo(request_overrides=request_overrides)
+        song_info, request_overrides, song_info_flac = SongInfo(source=self.source), request_overrides or {}, song_info_flac or SongInfo(source=self.source)
         if (not isinstance(search_result, dict)) or (not (song_id := search_result.get('id'))): return song_info
         # obtain basic song_info
         if lossless_quality_is_sufficient and song_info_flac.with_valid_download_url and (song_info_flac.ext in lossless_quality_definitions): song_info = song_info_flac
@@ -195,14 +170,15 @@ class SpotifyMusicClient(BaseMusicClient):
         return song_info
     '''_search'''
     @usesearchheaderscookies
-    def _search(self, keyword: str = '', search_url: str = '', request_overrides: dict = None, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
+    def _search(self, keyword: str = '', search_url: dict = '', request_overrides: dict = None, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
         # init
-        request_overrides = request_overrides or {}; self._setauthinfo(request_overrides=request_overrides)
+        request_overrides, search_api, search_api_inputs = request_overrides or {}, search_url['api'], search_url['inputs']
         # successful
         try:
             # --search results
-            (resp := self.get(search_url, **request_overrides)).raise_for_status()
-            for search_result in resp2json(resp=resp)['tracks']['items']:
+            for search_result in safeextractfromdict((search_resp := search_api(**search_api_inputs)), ['data', 'searchV2', 'tracksV2', 'items'], []) or safeextractfromdict(search_resp, ['data', 'searchV2', 'tracks', 'items'], []):
+                search_result['id'] = safeextractfromdict(search_result, ['item', 'data', 'id'], None)
+                if not search_result['id']: search_result['id'] = str(safeextractfromdict(search_result, ['item', 'data', 'uri'], '')).removeprefix('spotify:track:')
                 # --parse with third part apis
                 song_info_flac = self._parsewiththirdpartapis(search_result=search_result, request_overrides=request_overrides)
                 # --parse with official apis
