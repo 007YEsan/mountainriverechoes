@@ -14,8 +14,9 @@ import json_repair
 from bs4 import BeautifulSoup
 from .base import BaseMusicClient
 from pathvalidate import sanitize_filepath
-from ..utils.hosts import JOOX_MUSIC_HOSTS
+from ..utils.hosts import SPOTIFY_MUSIC_HOSTS
 from urllib.parse import urlencode, urlparse, parse_qs
+from ..utils.spotifyutils import SpotifyMusicClientPlaylistUtils
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
 from ..utils import byte2mb, touchdir, legalizestring, resp2json, seconds2hms, usesearchheaderscookies, safeextractfromdict, naiveguessextfromaudiobytes, useparseheaderscookies, obtainhostname, hostmatchessuffix, extractdurationsecondsfromlrc, SongInfo, AudioLinkTester, LyricSearchClient
 
@@ -29,19 +30,12 @@ class SpotifyMusicClient(BaseMusicClient):
         {'client_id': 'fcb2ecd28fba41e8ad40f986532ffd96', 'client_secret': 'b07fb0c02a0e4ef7b60529e39e3d6c09'}, {'client_id': '6a3e8ace6fcb458fa723085e6a2f1766', 'client_secret': '312e2ae6504c4d44a0f0c622b5e7b4ca'}, 
     ]
     CLIENT_ID = '6a3e8ace6fcb458fa723085e6a2f1766'; CLIENT_SECRET = '312e2ae6504c4d44a0f0c622b5e7b4ca'; CLIENT_AUTH_TOKEN = None; CLIENT_AUTH_TOKEN_EXPIRY = None
-    verify_cookies_func = lambda cookies: ("client_id" in cookies and "client_secret" in cookies) or ("access_token" in cookies)
     def __init__(self, **kwargs):
         super(SpotifyMusicClient, self).__init__(**kwargs)
-        if self.default_search_cookies: assert SpotifyMusicClient.verify_cookies_func(self.default_search_cookies), '("client_id" and "client_secret") or ("access_token") should be configured, refer to https://musicdl.readthedocs.io/en/latest/Quickstart.html#spotify-music-download'
-        if self.default_parse_cookies: assert SpotifyMusicClient.verify_cookies_func(self.default_parse_cookies), '("client_id" and "client_secret") or ("access_token") should be configured, refer to https://musicdl.readthedocs.io/en/latest/Quickstart.html#spotify-music-download'
-        if self.default_download_cookies: assert SpotifyMusicClient.verify_cookies_func(self.default_download_cookies), '("client_id" and "client_secret") or ("access_token") should be configured, refer to https://musicdl.readthedocs.io/en/latest/Quickstart.html#spotify-music-download'
-        if self.default_search_cookies or self.default_parse_cookies or self.default_download_cookies: SpotifyMusicClient.CLIENT_ID = self.default_search_cookies.get('client_id') or self.default_parse_cookies.get('client_id') or self.default_download_cookies.get('client_id')
-        if self.default_search_cookies or self.default_parse_cookies or self.default_download_cookies: SpotifyMusicClient.CLIENT_SECRET = self.default_search_cookies.get('client_secret') or self.default_parse_cookies.get('client_secret') or self.default_download_cookies.get('client_secret')
-        if self.default_search_cookies or self.default_parse_cookies or self.default_download_cookies: SpotifyMusicClient.CLIENT_AUTH_TOKEN = self.default_search_cookies.get('access_token') or self.default_parse_cookies.get('access_token') or self.default_download_cookies.get('access_token')
         self.default_search_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36", "Accept": "application/json", "Accept-Language": "en-US,en;q=0.9", "Referer": "https://open.spotify.com/", "Origin": "https://open.spotify.com/"}
         self.default_parse_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36", "Accept": "application/json", "Accept-Language": "en-US,en;q=0.9", "Referer": "https://open.spotify.com/", "Origin": "https://open.spotify.com/"}
         self.default_download_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36"}
-        self.default_headers = self.default_search_headers; self.default_cookies; self.default_search_cookies = {}; self.default_download_cookies = {}; self.default_parse_cookies = {}
+        self.default_headers = self.default_search_headers
         self._initsession()
     '''_setauthinfo'''
     def _setauthinfo(self, request_overrides: dict = None):
@@ -212,7 +206,7 @@ class SpotifyMusicClient(BaseMusicClient):
                 # --parse with third part apis
                 song_info_flac = self._parsewiththirdpartapis(search_result=search_result, request_overrides=request_overrides)
                 # --parse with official apis
-                lossless_quality_is_sufficient = True
+                lossless_quality_is_sufficient = False if self.default_cookies or request_overrides.get('cookies') else True
                 try: song_info = self._parsewithofficialapiv1(search_result=search_result, song_info_flac=song_info_flac, lossless_quality_is_sufficient=lossless_quality_is_sufficient, request_overrides=request_overrides)
                 except Exception: song_info = SongInfo(source=self.source)
                 # --append to song_infos
@@ -227,4 +221,37 @@ class SpotifyMusicClient(BaseMusicClient):
         except Exception as err:
             progress.update(progress_id, description=f"{self.source}.search >>> {search_url} (Error: {err})")
         # return
+        return song_infos
+    '''parseplaylist'''
+    @useparseheaderscookies
+    def parseplaylist(self, playlist_url: str, request_overrides: dict = None):
+        # init
+        request_overrides = request_overrides or {}
+        playlist_url = self.session.head(playlist_url, allow_redirects=True, **request_overrides).url
+        playlist_id, song_infos = urlparse(playlist_url).path.strip('/').split('/')[-1].removesuffix('.html').removesuffix('.htm'), []
+        if (not (hostname := obtainhostname(url=playlist_url))) or (not hostmatchessuffix(hostname, SPOTIFY_MUSIC_HOSTS)): return song_infos
+        # get tracks in playlist
+        playlist_result_first, tracks_in_playlist = SpotifyMusicClientPlaylistUtils.parse(copy.deepcopy(self.session), playlist_id=playlist_id, request_overrides=request_overrides)
+        tracks_in_playlist = list({d["id"]: d for d in tracks_in_playlist}.values())
+        # parse track by track in playlist
+        with Progress(TextColumn("{task.description}"), BarColumn(bar_width=None), MofNCompleteColumn(), TimeRemainingColumn(), refresh_per_second=10) as main_process_context:
+            main_progress_id = main_process_context.add_task(f"{len(tracks_in_playlist)} songs found in playlist {playlist_id} >>> completed (0/{len(tracks_in_playlist)})", total=len(tracks_in_playlist))
+            for idx, track_info in enumerate(tracks_in_playlist):
+                if idx > 0: main_process_context.advance(main_progress_id, 1)
+                main_process_context.update(main_progress_id, description=f"{len(tracks_in_playlist)} songs found in playlist {playlist_id} >>> completed ({idx}/{len(tracks_in_playlist)})")
+                song_info_flac = self._parsewiththirdpartapis(search_result=track_info, request_overrides=request_overrides)
+                lossless_quality_is_sufficient = False if self.default_cookies or request_overrides.get('cookies') else True
+                try: song_info = self._parsewithofficialapiv1(search_result=track_info, song_info_flac=song_info_flac, lossless_quality_is_sufficient=lossless_quality_is_sufficient, request_overrides=request_overrides)
+                except Exception: song_info = song_info_flac
+                if not song_info.with_valid_download_url: song_info = song_info_flac
+                if song_info.with_valid_download_url: song_infos.append(song_info)
+            main_process_context.advance(main_progress_id, 1)
+            main_process_context.update(main_progress_id, description=f"{len(tracks_in_playlist)} songs found in playlist {playlist_id} >>> completed ({idx+1}/{len(tracks_in_playlist)})")
+        # post processing
+        playlist_name = safeextractfromdict(playlist_result_first, ['data', 'playlistV2', 'name'], None)
+        song_infos = self._removeduplicates(song_infos=song_infos); work_dir = self._constructuniqueworkdir(keyword=legalizestring(playlist_name or f"playlist-{playlist_id}"))
+        for song_info in song_infos:
+            song_info.work_dir = work_dir; episodes = song_info.episodes if isinstance(song_info.episodes, list) else []
+            for eps_info in episodes: eps_info.work_dir = sanitize_filepath(os.path.join(work_dir, song_info.song_name)); touchdir(work_dir)
+        # return results
         return song_infos
