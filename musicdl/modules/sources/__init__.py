@@ -1,49 +1,39 @@
 '''initialize'''
 from .qq import QQMusicClient
-from .mitu import MituMusicClient
 from .joox import JooxMusicClient
 from .base import BaseMusicClient
 from .kuwo import KuwoMusicClient
 from .migu import MiguMusicClient
-from .kkws import KKWSMusicClient
 from .soda import SodaMusicClient
-from .jcpoo import JCPOOMusicClient
-from .flmp3 import FLMP3MusicClient
-from .htqyy import HTQYYMusicClient
 from .tidal import TIDALMusicClient
 from .apple import AppleMusicClient
 from .kugou import KugouMusicClient
 from .qobuz import QobuzMusicClient
-from .twot58 import TwoT58MusicClient
-from .fangpi import FangpiMusicClient
-from .buguyy import BuguyyMusicClient
 from .deezer import DeezerMusicClient
 from ..utils import BaseModuleBuilder
 from .spotify import SpotifyMusicClient
 from .netease import NeteaseMusicClient
 from .youtube import YouTubeMusicClient
-from .gequbao import GequbaoMusicClient
 from .jamendo import JamendoMusicClient
-from .gequhai import GequhaiMusicClient
-from .livepoo import LivePOOMusicClient
-from .zhuolin import ZhuolinMusicClient
-from .fivesong import FiveSongMusicClient
 from .fivesing import FiveSingMusicClient
 from .qianqian import QianqianMusicClient
 from .bilibili import BilibiliMusicClient
-from .yinyuedao import YinyuedaoMusicClient
 from .soundcloud import SoundCloudMusicClient
 from .streetvoice import StreetVoiceMusicClient
 from ..audiobooks import XimalayaMusicClient, LizhiMusicClient, QingtingMusicClient, LRTSMusicClient
 from ..common import GDStudioMusicClient, TuneHubMusicClient, MP3JuiceMusicClient, MyFreeMP3MusicClient, JBSouMusicClient
+from ..thirdpartysites import (
+    MituMusicClient, BuguyyMusicClient, YinyuedaoMusicClient, FiveSongMusicClient, FangpiMusicClient, TwoT58MusicClient, ZhuolinMusicClient, HTQYYMusicClient, FLMP3MusicClient,
+    GequbaoMusicClient, JCPOOMusicClient, KKWSMusicClient, GequhaiMusicClient, LivePOOMusicClient
+)
 
 
 '''MusicClientBuilder'''
 class MusicClientBuilder(BaseModuleBuilder):
     REGISTERED_MODULES = {
         # Platforms in Greater China
-        'QQMusicClient': QQMusicClient, 'BilibiliMusicClient': BilibiliMusicClient, 'KugouMusicClient': KugouMusicClient, 'StreetVoiceMusicClient': StreetVoiceMusicClient, 'SodaMusicClient': SodaMusicClient, 
-        'NeteaseMusicClient': NeteaseMusicClient, 'QianqianMusicClient': QianqianMusicClient, 'FiveSingMusicClient': FiveSingMusicClient, 'MiguMusicClient': MiguMusicClient, 'KuwoMusicClient': KuwoMusicClient, 
+        'QQMusicClient': QQMusicClient, 'KugouMusicClient': KugouMusicClient, 'StreetVoiceMusicClient': StreetVoiceMusicClient, 'SodaMusicClient': SodaMusicClient, 'FiveSingMusicClient': FiveSingMusicClient, 
+        'NeteaseMusicClient': NeteaseMusicClient, 'QianqianMusicClient': QianqianMusicClient, 'MiguMusicClient': MiguMusicClient, 'KuwoMusicClient': KuwoMusicClient, 'BilibiliMusicClient': BilibiliMusicClient, 
         # Global Streaming / Indie
         'YouTubeMusicClient': YouTubeMusicClient, 'JooxMusicClient': JooxMusicClient, 'AppleMusicClient': AppleMusicClient, 'JamendoMusicClient': JamendoMusicClient, 'SoundCloudMusicClient': SoundCloudMusicClient, 
         'DeezerMusicClient': DeezerMusicClient, 'QobuzMusicClient': QobuzMusicClient, 'SpotifyMusicClient': SpotifyMusicClient, 'TIDALMusicClient': TIDALMusicClient,
