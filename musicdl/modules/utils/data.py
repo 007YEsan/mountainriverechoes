@@ -50,11 +50,12 @@ class SongInfo:
     @property
     def with_valid_download_url(self) -> bool:
         if self.episodes: return all([eps.with_valid_download_url for eps in self.episodes])
-        if isinstance(self.download_url, str): is_valid_format = self.download_url and self.download_url.startswith('http')
-        else: is_valid_format = self.download_url
+        if isinstance(self.download_url, str): is_valid_download_url_format = self.download_url and self.download_url.startswith('http')
+        else: is_valid_download_url_format = bool(self.download_url)
+        with_downloaded_contents = bool(self.downloaded_contents)
         is_downloadable = isinstance(self.download_url_status, dict) and self.download_url_status.get('ok')
         if not is_downloadable and (safeextractfromdict(self.download_url_status, ['probe_status', 'ext'], None) in AudioLinkTester.VALID_AUDIO_EXTS): is_downloadable = True
-        return bool(is_valid_format and is_downloadable)
+        return bool((is_valid_download_url_format or with_downloaded_contents) and is_downloadable)
     # save info
     work_dir: Optional[str] = './'
     _save_path: Optional[str] = None
