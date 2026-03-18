@@ -131,10 +131,30 @@ class QobuzMusicClient(BaseMusicClient):
             if song_info.with_valid_download_url: break
         # return
         return song_info
+    '''_parsewithafkarxyzapi'''
+    def _parsewithafkarxyzapi(self, search_result: dict, request_overrides: dict = None):
+        # init
+        request_overrides, song_id = request_overrides or {}, str(search_result['id'])
+        headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36",}
+        # parse
+        (resp := requests.get(f"https://qbz.afkarxyz.fun/api/track/{song_id}", headers=headers, timeout=10, **request_overrides)).raise_for_status()
+        download_url: str = safeextractfromdict((download_result := resp2json(resp=resp)), ['url'], '')
+        if not download_url or not str(download_url).startswith('http'): return SongInfo(source=self.source, raw_data={'quality': QobuzMusicClient.MUSIC_QUALITIES[-1]})
+        quality = parse_qs(urlparse(download_url).query, keep_blank_values=True).get('fmt'); quality = quality[0] if isinstance(quality, list) else QobuzMusicClient.MUSIC_QUALITIES[-1]
+        song_info = SongInfo(
+            raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'quality': quality}, source=self.source, song_name=legalizestring(search_result.get('title')), singers=legalizestring(safeextractfromdict(search_result, ['performer', 'name'], None)), album=legalizestring(safeextractfromdict(search_result, ['album', 'title'], None)), ext='mp3' if quality in {5} else 'flac', 
+            file_size_bytes=None, file_size=None, identifier=song_id, duration_s=search_result.get('duration'), duration=seconds2hms(search_result.get('duration')), lyric=None, cover_url=legalizestring(safeextractfromdict(search_result, ['album', 'image', 'large'], None)), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+        )
+        song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
+        song_info.file_size = song_info.download_url_status['probe_status']['file_size']; song_info.ext = song_info.download_url_status['probe_status']['ext']
+        if (song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS) and (song_info.download_url_status['probe_status']['ext'] in AudioLinkTester.VALID_AUDIO_EXTS): song_info.ext = song_info.download_url_status['probe_status']['ext']
+        elif (song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS): song_info.ext = 'mp3' if quality in {5} else 'flac'
+        # return
+        return song_info
     '''_parsewiththirdpartapis'''
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         if QobuzMusicClient.get_token_func(self.default_headers, "X-User-Auth-Token", "x-user-auth-token"): return SongInfo(source=self.source, raw_data={'quality': QobuzMusicClient.MUSIC_QUALITIES[-1]})
-        for imp_func in [self._parsewithdabmusicapi, self._parsewithdabyeetsuapi]:
+        for imp_func in [self._parsewithdabmusicapi, self._parsewithdabyeetsuapi, self._parsewithafkarxyzapi]:
             try: song_info_flac = imp_func(search_result, request_overrides); assert song_info_flac.with_valid_download_url; break
             except: song_info_flac = SongInfo(source=self.source, raw_data={'quality': QobuzMusicClient.MUSIC_QUALITIES[-1]})
         return song_info_flac
