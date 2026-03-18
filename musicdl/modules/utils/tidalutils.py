@@ -1032,7 +1032,9 @@ class TIDALMusicClientUtils:
     def getstreamurlspotisaverapi(song_id, quality: str, request_overrides: dict = None):
         request_overrides = request_overrides or {}
         headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"}
-        data = requests.get(f'https://hifi-one.spotisaver.net/track/?id={song_id}&quality={quality}', headers=headers, timeout=10, **request_overrides).json()['data']
+        for host in ['hifi-one.spotisaver.net', 'hifi-two.spotisaver.net']:
+            try: data = requests.get(f'https://{host}/track/?id={song_id}&quality={quality}', headers=headers, timeout=10, **request_overrides).json()['data']
+            except Exception: continue
         resp = aigpy.model.dictToModel(data, StreamRespond())
         if "vnd.tidal.bt" in resp.manifestMimeType:
             manifest = json.loads(base64.b64decode(resp.manifest).decode('utf-8'))
@@ -1082,7 +1084,7 @@ class TIDALMusicClientUtils:
     '''getstreamurl'''
     @staticmethod
     def getstreamurl(song_id, quality: str, apply_thirdpart_apis: bool = True, request_overrides: dict = None):
-        candidate_parsers = [TIDALMusicClientUtils.getstreamurlspotisaverapi, TIDALMusicClientUtils.getstreamurlqqdlapi, TIDALMusicClientUtils.getstreamurlsquidapi] if apply_thirdpart_apis else []
+        candidate_parsers = [TIDALMusicClientUtils.getstreamurlspotisaverapi, TIDALMusicClientUtils.getstreamurlsquidapi, TIDALMusicClientUtils.getstreamurlqqdlapi] if apply_thirdpart_apis else []
         for parser in [*candidate_parsers, TIDALMusicClientUtils.getstreamurlofficialapi]:
             try: stream_url, stream_resp = parser(song_id=song_id, quality=quality, request_overrides=request_overrides); assert stream_url.urls; break
             except Exception: continue
