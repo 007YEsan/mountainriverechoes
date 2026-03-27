@@ -94,8 +94,7 @@ class BaseMusicClient():
     '''_constructuniqueworkdir'''
     def _constructuniqueworkdir(self, keyword: str, sort_by_search_kwd_and_time: bool = True):
         time_stamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-        work_dir = sanitize_filepath(os.path.join(self.work_dir, self.source, f'{time_stamp} {keyword}') if sort_by_search_kwd_and_time else os.path.join(self.work_dir, self.source))
-        touchdir(work_dir)
+        touchdir((work_dir := sanitize_filepath(os.path.join(self.work_dir, self.source, f'{time_stamp} {keyword}') if sort_by_search_kwd_and_time else os.path.join(self.work_dir, self.source))))
         return work_dir
     '''_removeduplicates'''
     def _removeduplicates(self, song_infos: list[SongInfo] = None) -> list[SongInfo]:
@@ -126,7 +125,7 @@ class BaseMusicClient():
             if main_progress_id is not None:
                 cur_total = main_process_context.tasks[main_progress_id].total or 0
                 main_process_context.update(main_progress_id, total=cur_total + len(search_urls))
-                main_process_context.update(main_progress_id, description=f"ALL sources >>> completed ({int(main_process_context.tasks[main_progress_id].completed)}/{cur_total + len(search_urls)})")
+                main_process_context.update(main_progress_id, description=f"Search from sources >>> completed ({int(main_process_context.tasks[main_progress_id].completed)}/{cur_total + len(search_urls)})")
         song_infos, submitted_tasks = {}, []
         with ThreadPoolExecutor(max_workers=num_threadings) as pool:
             for search_url_idx, search_url in enumerate(search_urls):
@@ -140,7 +139,7 @@ class BaseMusicClient():
                     main_process_context.update(progress_id, description=f"{self.source}.search >>> completed ({num_searched_urls}/{len(search_urls)})")
                     if main_progress_id is None: continue
                     main_process_context.advance(main_progress_id, 1)
-                    main_process_context.update(main_progress_id, description=f"ALL sources >>> completed ({int(main_process_context.tasks[main_progress_id].completed)}/{int(main_process_context.tasks[main_progress_id].total or 0)})")
+                    main_process_context.update(main_progress_id, description=f"Search from sources >>> completed ({int(main_process_context.tasks[main_progress_id].completed)}/{int(main_process_context.tasks[main_progress_id].total or 0)})")
         song_infos = list(chain.from_iterable(song_infos.values())); song_infos = self._removeduplicates(song_infos=song_infos)
         work_dir = self._constructuniqueworkdir(keyword=keyword)
         for song_info in song_infos:
