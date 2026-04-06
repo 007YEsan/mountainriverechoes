@@ -16,7 +16,7 @@ from ..utils.hosts import DEEZER_MUSIC_HOSTS
 from urllib.parse import urlencode, urlparse
 from ..utils.deezerutils import DeezerMusicClientUtils
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
-from ..utils import replacefile, touchdir, legalizestring, resp2json, seconds2hms, usesearchheaderscookies, usedownloadheaderscookies, safeextractfromdict, extractdurationsecondsfromlrc, useparseheaderscookies, obtainhostname, hostmatchessuffix, byte2mb, cleanlrc, SongInfo, AudioLinkTester, SongInfoUtils, LyricSearchClient
+from ..utils import legalizestring, resp2json, usesearchheaderscookies, usedownloadheaderscookies, safeextractfromdict, extractdurationsecondsfromlrc, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo, AudioLinkTester, SongInfoUtils, LyricSearchClient, IOUtils
 
 
 '''DeezerMusicClient'''
@@ -47,7 +47,7 @@ class DeezerMusicClient(BaseMusicClient):
         output_filepath = (output_filepath := Path(song_info.save_path)).parent / f'{output_filepath.stem}.decrypt'
         blowfish_key = DeezerMusicClientUtils.generateblowfishkey(str(song_info.raw_data.get('id')))
         DeezerMusicClientUtils.decryptdownloadedaudiofile(src_path=str(song_info.save_path), dst_path=str(output_filepath), blowfish_key=blowfish_key)
-        replacefile(str(output_filepath), str(song_info.save_path))
+        IOUtils.replacefile(str(output_filepath), str(song_info.save_path))
         downloaded_song_infos.append(SongInfoUtils.supplsonginfothensavelyricsthenwritetags(copy.deepcopy(song_info), logger_handle=self.logger_handle, disable_print=self.disable_print) if auto_supplement_song else copy.deepcopy(song_info))
         return downloaded_song_infos
     '''_setauthinfo'''
@@ -107,7 +107,7 @@ class DeezerMusicClient(BaseMusicClient):
                     except Exception: duration_in_secs = 0
                     song_info = SongInfo(
                         raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'id': song_id}, source=self.source, song_name=legalizestring(safeextractfromdict(download_result, ['results', 'SNG_TITLE'], None) or download_result.get('title')), singers=legalizestring(safeextractfromdict(download_result, ['results', 'ART_NAME'], None) or safeextractfromdict(download_result, ['artist', 'name'], None)), 
-                        album=legalizestring(safeextractfromdict(download_result, ['results', 'ALB_TITLE'], None) or safeextractfromdict(download_result, ['album', 'title'], None)), ext=str(candidate_result['url']).split('?')[0].split('.')[-1], file_size_bytes=int(file_size_bytes), file_size=byte2mb(file_size_bytes), identifier=str(song_id), duration_s=duration_in_secs, duration=seconds2hms(duration_in_secs), lyric=None, 
+                        album=legalizestring(safeextractfromdict(download_result, ['results', 'ALB_TITLE'], None) or safeextractfromdict(download_result, ['album', 'title'], None)), ext=str(candidate_result['url']).split('?')[0].split('.')[-1], file_size_bytes=int(file_size_bytes), file_size=SongInfoUtils.byte2mb(file_size_bytes), identifier=str(song_id), duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, 
                         cover_url=DeezerMusicClientUtils.getcoverurl(safeextractfromdict(download_result, ['results', 'ALB_PICTURE'], None)) or safeextractfromdict(download_result, ['album', 'cover_xl'], None), download_url=candidate_result['url'], download_url_status=self.audio_link_tester.test(candidate_result['url'], request_overrides),
                     )
                     song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
@@ -125,7 +125,7 @@ class DeezerMusicClient(BaseMusicClient):
                 except Exception: duration_in_secs = 0
                 song_info = SongInfo(
                     raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'id': song_id}, source=self.source, song_name=legalizestring(safeextractfromdict(download_result, ['results', 'SNG_TITLE'], None) or download_result.get('title')), singers=legalizestring(safeextractfromdict(download_result, ['results', 'ART_NAME'], None) or safeextractfromdict(download_result, ['artist', 'name'], None)), album=legalizestring(safeextractfromdict(download_result, ['results', 'ALB_TITLE'], None) or safeextractfromdict(download_result, ['album', 'title'], None)), 
-                    ext='mp3', file_size_bytes=None, file_size=None, identifier=str(song_id), duration_s=duration_in_secs, duration=seconds2hms(duration_in_secs), lyric=None, cover_url=DeezerMusicClientUtils.getcoverurl(safeextractfromdict(download_result, ['results', 'ALB_PICTURE'], None)) or safeextractfromdict(download_result, ['album', 'cover_xl'], None), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+                    ext='mp3', file_size_bytes=None, file_size=None, identifier=str(song_id), duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, cover_url=DeezerMusicClientUtils.getcoverurl(safeextractfromdict(download_result, ['results', 'ALB_PICTURE'], None)) or safeextractfromdict(download_result, ['album', 'cover_xl'], None), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
                 )
                 song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
                 song_info.file_size = song_info.download_url_status['probe_status']['file_size']; song_info.ext = song_info.download_url_status['probe_status']['ext']
@@ -138,7 +138,7 @@ class DeezerMusicClient(BaseMusicClient):
                 except Exception: duration_in_secs = 0
                 song_info = SongInfo(
                     raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'id': song_id}, source=self.source, song_name=legalizestring(safeextractfromdict(download_result, ['results', 'SNG_TITLE'], None) or download_result.get('title')), singers=legalizestring(safeextractfromdict(download_result, ['results', 'ART_NAME'], None) or safeextractfromdict(download_result, ['artist', 'name'], None)), album=legalizestring(safeextractfromdict(download_result, ['results', 'ALB_TITLE'], None) or safeextractfromdict(download_result, ['album', 'title'], None)), 
-                    ext=str(download_url).split('?')[0].split('.')[-1], file_size_bytes=None, file_size=None, identifier=str(song_id), duration_s=duration_in_secs, duration=seconds2hms(duration_in_secs), lyric=None, cover_url=DeezerMusicClientUtils.getcoverurl(safeextractfromdict(download_result, ['results', 'ALB_PICTURE'], None)) or safeextractfromdict(download_result, ['album', 'cover_xl'], None), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+                    ext=str(download_url).split('?')[0].split('.')[-1], file_size_bytes=None, file_size=None, identifier=str(song_id), duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, cover_url=DeezerMusicClientUtils.getcoverurl(safeextractfromdict(download_result, ['results', 'ALB_PICTURE'], None)) or safeextractfromdict(download_result, ['album', 'cover_xl'], None), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
                 )
                 song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
                 song_info.file_size = song_info.download_url_status['probe_status']['file_size']
@@ -150,7 +150,7 @@ class DeezerMusicClient(BaseMusicClient):
         except Exception: lyric_result, lyric = LyricSearchClient().search(artist_name=song_info.singers, track_name=song_info.song_name, request_overrides=request_overrides)
         song_info.raw_data['lyric'] = lyric_result if lyric_result else song_info.raw_data['lyric']
         song_info.lyric = lyric if (lyric and (lyric not in {'NULL'})) else song_info.lyric
-        if not song_info.duration or song_info.duration == '-:-:-': song_info.duration = seconds2hms(extractdurationsecondsfromlrc(song_info.lyric))
+        if not song_info.duration or song_info.duration == '-:-:-': song_info.duration = SongInfoUtils.seconds2hms(extractdurationsecondsfromlrc(song_info.lyric))
         # return
         return song_info
     '''_search'''
@@ -214,6 +214,6 @@ class DeezerMusicClient(BaseMusicClient):
         song_infos = self._removeduplicates(song_infos=song_infos); work_dir = self._constructuniqueworkdir(keyword=legalizestring(playlist_name or f"playlist-{playlist_id}"))
         for song_info in song_infos:
             song_info.work_dir = work_dir; episodes = song_info.episodes if isinstance(song_info.episodes, list) else []
-            for eps_info in episodes: eps_info.work_dir = sanitize_filepath(os.path.join(work_dir, song_info.song_name)); touchdir(work_dir)
+            for eps_info in episodes: eps_info.work_dir = sanitize_filepath(os.path.join(work_dir, song_info.song_name)); IOUtils.touchdir(work_dir)
         # return results
         return song_infos

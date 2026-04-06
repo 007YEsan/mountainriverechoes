@@ -16,7 +16,7 @@ from pathvalidate import sanitize_filepath
 from ..utils.hosts import STREETVOICE_MUSIC_HOSTS
 from urllib.parse import urlencode, urljoin, urlparse, urlsplit, urlunsplit
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
-from ..utils import touchdir, legalizestring, resp2json, usesearchheaderscookies, seconds2hms, safeextractfromdict, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo, AudioLinkTester
+from ..utils import legalizestring, resp2json, usesearchheaderscookies, safeextractfromdict, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo, AudioLinkTester, IOUtils, SongInfoUtils
 
 
 '''StreetVoiceMusicClient'''
@@ -66,7 +66,7 @@ class StreetVoiceMusicClient(BaseMusicClient):
             song_info = SongInfo(
                 raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(download_result.get('name')), singers=legalizestring(safeextractfromdict(download_result, ['user', 'profile', 'nickname'], None)), 
                 album=legalizestring(safeextractfromdict(download_result, ['album', 'name'], None)), ext=download_url.removesuffix('.m3u8').split('?')[0].split('.')[-1], file_size_bytes=None, file_size='HLS', identifier=song_id, duration_s=download_result.get('length'), 
-                duration=seconds2hms(download_result.get('length')), lyric=cleanlrc(safeextractfromdict(download_result, ['lyrics'], 'NULL')), cover_url=download_result.get('image'), download_url=download_url, download_url_status=download_url_status, protocol='HLS'
+                duration=SongInfoUtils.seconds2hms(download_result.get('length')), lyric=cleanlrc(safeextractfromdict(download_result, ['lyrics'], 'NULL')), cover_url=download_result.get('image'), download_url=download_url, download_url_status=download_url_status, protocol='HLS'
             )
             if (song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS): song_info.ext = 'mp3'
         # return
@@ -163,7 +163,7 @@ class StreetVoiceMusicClient(BaseMusicClient):
         song_infos = self._removeduplicates(song_infos=song_infos); work_dir = self._constructuniqueworkdir(keyword=legalizestring(playlist_name or f"playlist-{playlist_id}"))
         for song_info in song_infos:
             song_info.work_dir = work_dir; episodes = song_info.episodes if isinstance(song_info.episodes, list) else []
-            for eps_info in episodes: eps_info.work_dir = sanitize_filepath(os.path.join(work_dir, song_info.song_name)); touchdir(work_dir)
+            for eps_info in episodes: eps_info.work_dir = sanitize_filepath(os.path.join(work_dir, song_info.song_name)); IOUtils.touchdir(work_dir)
         # return results
         return song_infos
             

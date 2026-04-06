@@ -20,7 +20,7 @@ from pathvalidate import sanitize_filepath
 from ..utils.hosts import QOBUZ_MUSIC_HOSTS
 from urllib.parse import urlencode, urlparse, urljoin, parse_qs
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
-from ..utils import touchdir, legalizestring, resp2json, usesearchheaderscookies, seconds2hms, safeextractfromdict, hostmatchessuffix, obtainhostname, useparseheaderscookies, SongInfo, AudioLinkTester, LyricSearchClient
+from ..utils import legalizestring, resp2json, usesearchheaderscookies, safeextractfromdict, hostmatchessuffix, obtainhostname, useparseheaderscookies, SongInfo, AudioLinkTester, LyricSearchClient, IOUtils, SongInfoUtils
 
 
 '''QobuzMusicClient'''
@@ -99,7 +99,7 @@ class QobuzMusicClient(BaseMusicClient):
             quality = parse_qs(urlparse(download_url).query, keep_blank_values=True).get('fmt') or quality; quality = quality[0] if isinstance(quality, list) else quality
             song_info = SongInfo(
                 raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'quality': quality}, source=self.source, song_name=legalizestring(search_result.get('title')), singers=legalizestring(safeextractfromdict(search_result, ['performer', 'name'], None)), album=legalizestring(safeextractfromdict(search_result, ['album', 'title'], None)), ext='mp3' if quality in {5} else 'flac', 
-                file_size_bytes=None, file_size=None, identifier=song_id, duration_s=search_result.get('duration'), duration=seconds2hms(search_result.get('duration')), lyric=None, cover_url=legalizestring(safeextractfromdict(search_result, ['album', 'image', 'large'], None)), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+                file_size_bytes=None, file_size=None, identifier=song_id, duration_s=search_result.get('duration'), duration=SongInfoUtils.seconds2hms(search_result.get('duration')), lyric=None, cover_url=legalizestring(safeextractfromdict(search_result, ['album', 'image', 'large'], None)), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
             )
             song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
             song_info.file_size = song_info.download_url_status['probe_status']['file_size']; song_info.ext = song_info.download_url_status['probe_status']['ext']
@@ -122,7 +122,7 @@ class QobuzMusicClient(BaseMusicClient):
             quality = parse_qs(urlparse(download_url).query, keep_blank_values=True).get('fmt') or quality; quality = quality[0] if isinstance(quality, list) else quality
             song_info = SongInfo(
                 raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'quality': quality}, source=self.source, song_name=legalizestring(search_result.get('title')), singers=legalizestring(safeextractfromdict(search_result, ['performer', 'name'], None)), album=legalizestring(safeextractfromdict(search_result, ['album', 'title'], None)), ext='mp3' if quality in {5} else 'flac', 
-                file_size_bytes=None, file_size=None, identifier=song_id, duration_s=search_result.get('duration'), duration=seconds2hms(search_result.get('duration')), lyric=None, cover_url=legalizestring(safeextractfromdict(search_result, ['album', 'image', 'large'], None)), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+                file_size_bytes=None, file_size=None, identifier=song_id, duration_s=search_result.get('duration'), duration=SongInfoUtils.seconds2hms(search_result.get('duration')), lyric=None, cover_url=legalizestring(safeextractfromdict(search_result, ['album', 'image', 'large'], None)), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
             )
             song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
             song_info.file_size = song_info.download_url_status['probe_status']['file_size']; song_info.ext = song_info.download_url_status['probe_status']['ext']
@@ -143,7 +143,7 @@ class QobuzMusicClient(BaseMusicClient):
         quality = parse_qs(urlparse(download_url).query, keep_blank_values=True).get('fmt'); quality = quality[0] if isinstance(quality, list) else QobuzMusicClient.MUSIC_QUALITIES[-1]
         song_info = SongInfo(
             raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'quality': quality}, source=self.source, song_name=legalizestring(search_result.get('title')), singers=legalizestring(safeextractfromdict(search_result, ['performer', 'name'], None)), album=legalizestring(safeextractfromdict(search_result, ['album', 'title'], None)), ext='mp3' if quality in {5} else 'flac', 
-            file_size_bytes=None, file_size=None, identifier=song_id, duration_s=search_result.get('duration'), duration=seconds2hms(search_result.get('duration')), lyric=None, cover_url=legalizestring(safeextractfromdict(search_result, ['album', 'image', 'large'], None)), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+            file_size_bytes=None, file_size=None, identifier=song_id, duration_s=search_result.get('duration'), duration=SongInfoUtils.seconds2hms(search_result.get('duration')), lyric=None, cover_url=legalizestring(safeextractfromdict(search_result, ['album', 'image', 'large'], None)), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
         )
         song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
         song_info.file_size = song_info.download_url_status['probe_status']['file_size']; song_info.ext = song_info.download_url_status['probe_status']['ext']
@@ -177,7 +177,7 @@ class QobuzMusicClient(BaseMusicClient):
                 if not download_url or not str(download_url).startswith('http'): continue
                 song_info = SongInfo(
                     raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'quality': quality}, source=self.source, song_name=legalizestring(search_result.get('title')), singers=legalizestring(safeextractfromdict(search_result, ['performer', 'name'], None)), album=legalizestring(safeextractfromdict(search_result, ['album', 'title'], None)), ext='mp3' if quality in {5} else 'flac', 
-                    file_size_bytes=None, file_size=None, identifier=song_id, duration_s=download_result.get('duration'), duration=seconds2hms(download_result.get('duration')), lyric=None, cover_url=legalizestring(safeextractfromdict(search_result, ['album', 'image', 'large'], None)), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+                    file_size_bytes=None, file_size=None, identifier=song_id, duration_s=download_result.get('duration'), duration=SongInfoUtils.seconds2hms(download_result.get('duration')), lyric=None, cover_url=legalizestring(safeextractfromdict(search_result, ['album', 'image', 'large'], None)), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
                 )
                 song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
                 song_info.file_size = song_info.download_url_status['probe_status']['file_size']; song_info.ext = song_info.download_url_status['probe_status']['ext']
@@ -259,6 +259,6 @@ class QobuzMusicClient(BaseMusicClient):
         song_infos = self._removeduplicates(song_infos=song_infos); work_dir = self._constructuniqueworkdir(keyword=legalizestring(playlist_name or f"playlist-{playlist_id}"))
         for song_info in song_infos:
             song_info.work_dir = work_dir; episodes = song_info.episodes if isinstance(song_info.episodes, list) else []
-            for eps_info in episodes: eps_info.work_dir = sanitize_filepath(os.path.join(work_dir, song_info.song_name)); touchdir(work_dir)
+            for eps_info in episodes: eps_info.work_dir = sanitize_filepath(os.path.join(work_dir, song_info.song_name)); IOUtils.touchdir(work_dir)
         # return results
         return song_infos

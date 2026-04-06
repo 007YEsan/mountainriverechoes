@@ -35,8 +35,8 @@ from cryptography.fernet import Fernet
 from datetime import datetime, timedelta
 from dataclasses import dataclass, field, asdict
 from urllib.parse import urljoin, urlparse, parse_qs
+from .misc import safeextractfromdict, resp2json, IOUtils
 from .importutils import optionalimport, optionalimportfrom
-from .misc import safeextractfromdict, replacefile, resp2json
 from typing import List, Optional, Any, Union, Tuple, Callable, Dict
 
 
@@ -666,7 +666,7 @@ class TIDALMusicClientUtils:
     '''decryptdownloadedaudio'''
     @staticmethod
     def decryptdownloadedaudio(stream: StreamUrl, src_path: str, desc_path: str) -> str:
-        if aigpy.string.isNull(stream.encryptionKey): replacefile(src_path, desc_path); return desc_path
+        if aigpy.string.isNull(stream.encryptionKey): IOUtils.replacefile(src_path, desc_path); return desc_path
         key, nonce = TIDALMusicClientUtils.decryptsecuritytoken(stream.encryptionKey)
         TIDALMusicClientUtils.decryptfile(src_path, desc_path, key, nonce)
         try: os.remove(src_path)

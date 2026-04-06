@@ -17,7 +17,7 @@ from pathvalidate import sanitize_filepath
 from urllib.parse import urlencode, urlparse
 from ..utils.hosts import QIANQIAN_MUSIC_HOSTS
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
-from ..utils import touchdir, byte2mb, resp2json, seconds2hms, legalizestring, safeextractfromdict, usesearchheaderscookies, cookies2string, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo, AudioLinkTester
+from ..utils import resp2json, legalizestring, safeextractfromdict, usesearchheaderscookies, cookies2string, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo, AudioLinkTester, IOUtils, SongInfoUtils
 
 
 '''QianqianMusicClient'''
@@ -89,7 +89,7 @@ class QianqianMusicClient(BaseMusicClient):
                 file_size_bytes, duration_in_secs = safeextractfromdict(download_result, ['data', 'size'], 0), safeextractfromdict(download_result, ['data', 'duration'], 0)
                 song_info = SongInfo(
                     raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('title')), singers=legalizestring(', '.join([singer.get('name') for singer in (search_result.get('artist', []) or []) if isinstance(singer, dict) and singer.get('name')])),
-                    album=legalizestring(search_result.get('albumTitle', None)), ext=download_url.split('?')[0].split('.')[-1], file_size_bytes=file_size_bytes, file_size=byte2mb(file_size_bytes), identifier=song_id, duration_s=duration_in_secs, duration=seconds2hms(duration_in_secs), lyric=None, cover_url=search_result.get('pic'), 
+                    album=legalizestring(search_result.get('albumTitle', None)), ext=download_url.split('?')[0].split('.')[-1], file_size_bytes=file_size_bytes, file_size=SongInfoUtils.byte2mb(file_size_bytes), identifier=song_id, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, cover_url=search_result.get('pic'), 
                     download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
                 )
                 song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
@@ -166,6 +166,6 @@ class QianqianMusicClient(BaseMusicClient):
         song_infos = self._removeduplicates(song_infos=song_infos); work_dir = self._constructuniqueworkdir(keyword=legalizestring(playlist_name or f"playlist-{playlist_id}"))
         for song_info in song_infos:
             song_info.work_dir = work_dir; episodes = song_info.episodes if isinstance(song_info.episodes, list) else []
-            for eps_info in episodes: eps_info.work_dir = sanitize_filepath(os.path.join(work_dir, song_info.song_name)); touchdir(work_dir)
+            for eps_info in episodes: eps_info.work_dir = sanitize_filepath(os.path.join(work_dir, song_info.song_name)); IOUtils.touchdir(work_dir)
         # return results
         return song_infos

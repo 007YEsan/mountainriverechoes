@@ -13,7 +13,7 @@ from ytmusicapi import YTMusic
 from .base import BaseMusicClient
 from rich.progress import Progress
 from ..utils.youtubeutils import YouTube, REPAIDAPI_KEYS
-from ..utils import legalizestring, resp2json, usesearchheaderscookies, byte2mb, seconds2hms, usedownloadheaderscookies, touchdir, safeextractfromdict, SongInfo, SongInfoUtils, AudioLinkTester, LyricSearchClient
+from ..utils import legalizestring, resp2json, usesearchheaderscookies, usedownloadheaderscookies, safeextractfromdict, SongInfo, SongInfoUtils, AudioLinkTester, LyricSearchClient, IOUtils
 
 
 '''YouTubeMusicClient'''
@@ -31,7 +31,7 @@ class YouTubeMusicClient(BaseMusicClient):
         if isinstance(song_info.download_url, str): return super()._download(song_info=song_info, request_overrides=request_overrides, downloaded_song_infos=downloaded_song_infos, progress=progress, song_progress_id=song_progress_id, auto_supplement_song=auto_supplement_song)
         request_overrides = request_overrides or {}
         try:
-            touchdir(song_info.work_dir)
+            IOUtils.touchdir(song_info.work_dir)
             total_size, chunk_size, downloaded_size = int(song_info.download_url.filesize), song_info.get('chunk_size', 1024 * 1024), 0
             progress.update(song_progress_id, total=total_size)
             with open(song_info.save_path, "wb") as fp:
@@ -82,7 +82,7 @@ class YouTubeMusicClient(BaseMusicClient):
             except Exception: continue
             song_info = SongInfo(
                 raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('title')), singers=legalizestring(search_result.get('author') or (', '.join([singer.get('name') for singer in (search_result.get('artists') or []) if isinstance(singer, dict) and singer.get('name')]))), album=legalizestring(search_result.get('album')), 
-                ext='mp3', file_size_bytes=resp.content.__sizeof__(), file_size=byte2mb(resp.content.__sizeof__()), identifier=song_id, duration_s=search_result.get('duration_seconds', 0) or 0, duration=transform_search_duration_func(search_result.get('duration', '0:00') or '0:00'), lyric='NULL', cover_url=search_result.get('thumbnail') or safeextractfromdict(search_result, ['thumbnails', -1, 'url'], None), 
+                ext='mp3', file_size_bytes=resp.content.__sizeof__(), file_size=SongInfoUtils.byte2mb(resp.content.__sizeof__()), identifier=song_id, duration_s=search_result.get('duration_seconds', 0) or 0, duration=transform_search_duration_func(search_result.get('duration', '0:00') or '0:00'), lyric='NULL', cover_url=search_result.get('thumbnail') or safeextractfromdict(search_result, ['thumbnails', -1, 'url'], None), 
                 download_url=download_url, download_url_status={'ok': True}, downloaded_contents=resp.content, default_download_headers={"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"},
             )
             if song_info.file_size_bytes < 100: song_info.download_url_status = {'ok': False}
@@ -107,7 +107,7 @@ class YouTubeMusicClient(BaseMusicClient):
             except Exception: continue
             song_info = SongInfo(
                 raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('title')), singers=legalizestring(search_result.get('author') or (', '.join([singer.get('name') for singer in (search_result.get('artists') or []) if isinstance(singer, dict) and singer.get('name')]))), album=legalizestring(search_result.get('album')), 
-                ext='mp3', file_size_bytes=resp.content.__sizeof__(), file_size=byte2mb(resp.content.__sizeof__()), identifier=song_id, duration_s=search_result.get('duration_seconds', 0) or 0, duration=transform_search_duration_func(search_result.get('duration', '0:00') or '0:00'), lyric='NULL', cover_url=search_result.get('thumbnail') or safeextractfromdict(search_result, ['thumbnails', -1, 'url'], None), 
+                ext='mp3', file_size_bytes=resp.content.__sizeof__(), file_size=SongInfoUtils.byte2mb(resp.content.__sizeof__()), identifier=song_id, duration_s=search_result.get('duration_seconds', 0) or 0, duration=transform_search_duration_func(search_result.get('duration', '0:00') or '0:00'), lyric='NULL', cover_url=search_result.get('thumbnail') or safeextractfromdict(search_result, ['thumbnails', -1, 'url'], None), 
                 download_url=download_url, download_url_status={'ok': True}, downloaded_contents=resp.content, default_download_headers={"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"},
             )
             if song_info.file_size_bytes < 100: song_info.download_url_status = {'ok': False}
@@ -130,7 +130,7 @@ class YouTubeMusicClient(BaseMusicClient):
             if not download_url or not str(download_url).startswith('http'): continue
             song_info = SongInfo(
                 raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('title')), singers=legalizestring(search_result.get('author') or (', '.join([singer.get('name') for singer in (search_result.get('artists') or []) if isinstance(singer, dict) and singer.get('name')]))), 
-                album=legalizestring(search_result.get('album')), ext=media.get('extension', 'm4a') or 'm4a', file_size_bytes=int(float(media.get('contentLength', 0) or 0)), file_size=byte2mb(int(float(media.get('contentLength', 0) or 0))), identifier=song_id, duration_s=download_result.get('duration'), duration=seconds2hms(download_result.get('duration')), 
+                album=legalizestring(search_result.get('album')), ext=media.get('extension', 'm4a') or 'm4a', file_size_bytes=int(float(media.get('contentLength', 0) or 0)), file_size=SongInfoUtils.byte2mb(int(float(media.get('contentLength', 0) or 0))), identifier=song_id, duration_s=download_result.get('duration'), duration=SongInfoUtils.seconds2hms(download_result.get('duration')), 
                 lyric='NULL', cover_url=search_result.get('thumbnail') or safeextractfromdict(search_result, ['thumbnails', -1, 'url'], None), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
             )
             song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
@@ -158,7 +158,7 @@ class YouTubeMusicClient(BaseMusicClient):
             if not (download_url := media.get('url')) or not str(download_url).startswith('http'): continue
             song_info = SongInfo(
                 raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('title')), singers=legalizestring(search_result.get('author') or (', '.join([singer.get('name') for singer in (search_result.get('artists') or []) if isinstance(singer, dict) and singer.get('name')]))), 
-                album=legalizestring(search_result.get('album')), ext=media.get('ext', 'm4a') or 'm4a', file_size_bytes=int(float(media.get('filesize', 0) or 0)), file_size=byte2mb(int(float(media.get('filesize', 0) or 0))), identifier=song_id, duration_s=download_result.get('duration', 0) or 0, duration=seconds2hms(download_result.get('duration', 0) or 0),
+                album=legalizestring(search_result.get('album')), ext=media.get('ext', 'm4a') or 'm4a', file_size_bytes=int(float(media.get('filesize', 0) or 0)), file_size=SongInfoUtils.byte2mb(int(float(media.get('filesize', 0) or 0))), identifier=song_id, duration_s=download_result.get('duration', 0) or 0, duration=SongInfoUtils.seconds2hms(download_result.get('duration', 0) or 0),
                 lyric='NULL', cover_url=search_result.get('thumbnail') or safeextractfromdict(search_result, ['thumbnails', -1, 'url'], None), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
             )
             song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
@@ -196,7 +196,7 @@ class YouTubeMusicClient(BaseMusicClient):
             duration_in_secs = (float(download_url.durationMs) / 1000) or search_result.get('duration_seconds', 0) or 0
             song_info = SongInfo(
                 raw_data={'search': search_result, 'download': cli.vid_info, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('title')), singers=legalizestring(search_result.get('author') or (', '.join([singer.get('name') for singer in (search_result.get('artists') or []) if isinstance(singer, dict) and singer.get('name')]))), album=legalizestring(search_result.get('album')), 
-                ext='mp3', file_size_bytes=download_url.filesize, file_size=byte2mb(download_url.filesize), identifier=song_id, duration_s=duration_in_secs, duration=seconds2hms(duration_in_secs), lyric='NULL', cover_url=search_result.get('thumbnail') or safeextractfromdict(search_result, ['thumbnails', -1, 'url'], None), download_url=download_url, download_url_status={'ok': True}, 
+                ext='mp3', file_size_bytes=download_url.filesize, file_size=SongInfoUtils.byte2mb(download_url.filesize), identifier=song_id, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric='NULL', cover_url=search_result.get('thumbnail') or safeextractfromdict(search_result, ['thumbnails', -1, 'url'], None), download_url=download_url, download_url_status={'ok': True}, 
             )
             if song_info.file_size_bytes < 100: song_info.download_url_status = {'ok': False}
         # compare and select the best

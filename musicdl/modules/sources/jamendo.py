@@ -16,7 +16,7 @@ from pathvalidate import sanitize_filepath
 from ..utils.hosts import JAMENDO_MUSIC_HOSTS
 from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode, parse_qs
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
-from ..utils import touchdir, legalizestring, resp2json, usesearchheaderscookies, seconds2hms, safeextractfromdict, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo, AudioLinkTester, LyricSearchClient
+from ..utils import legalizestring, resp2json, usesearchheaderscookies, safeextractfromdict, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo, AudioLinkTester, LyricSearchClient, IOUtils, SongInfoUtils
 
 
 '''JamendoMusicClient'''
@@ -79,7 +79,7 @@ class JamendoMusicClient(BaseMusicClient):
             for download_url in ([f"https://prod-1.storage.jamendo.com/download/track/{song_id}/flac/"] + candidate_urls):
                 song_info = SongInfo(
                     raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('name') or download_result.get('name')), singers=legalizestring(safeextractfromdict(search_result, ['artist', 'name'], None) or safeextractfromdict(download_result, ['artist', 'name'], None)), album=legalizestring(safeextractfromdict(search_result, ['album', 'name'], None) or safeextractfromdict(download_result, ['album', 'name'], None)), 
-                    ext=('mp3' if (f := (parse_qs(urlsplit(str(download_url)).query).get('format', [None])[0] or re.search(r'/download/track/\d+/([^/]+)/', urlsplit(str(download_url)).path).group(1))).startswith('mp3') else f), file_size_bytes=None, file_size=None, identifier=song_id, duration_s=search_result.get('duration') or download_result.get('duration', 0), duration=seconds2hms(search_result.get('duration') or download_result.get('duration')), lyric=download_result.get('lyrics') or 'NULL',
+                    ext=('mp3' if (f := (parse_qs(urlsplit(str(download_url)).query).get('format', [None])[0] or re.search(r'/download/track/\d+/([^/]+)/', urlsplit(str(download_url)).path).group(1))).startswith('mp3') else f), file_size_bytes=None, file_size=None, identifier=song_id, duration_s=search_result.get('duration') or download_result.get('duration', 0), duration=SongInfoUtils.seconds2hms(search_result.get('duration') or download_result.get('duration')), lyric=download_result.get('lyrics') or 'NULL',
                     cover_url=f"https://usercontent.jamendo.com?type=album&id={album_id}&width=300&trackid={song_id}", download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
                 )
                 if song_info.lyric and song_info.lyric not in {'NULL'}: song_info.lyric = cleanlrc(song_info.lyric.replace('<br />', '\n'))
@@ -150,6 +150,6 @@ class JamendoMusicClient(BaseMusicClient):
         song_infos = self._removeduplicates(song_infos=song_infos); work_dir = self._constructuniqueworkdir(keyword=legalizestring(playlist_name or f"playlist-{playlist_id}"))
         for song_info in song_infos:
             song_info.work_dir = work_dir; episodes = song_info.episodes if isinstance(song_info.episodes, list) else []
-            for eps_info in episodes: eps_info.work_dir = sanitize_filepath(os.path.join(work_dir, song_info.song_name)); touchdir(work_dir)
+            for eps_info in episodes: eps_info.work_dir = sanitize_filepath(os.path.join(work_dir, song_info.song_name)); IOUtils.touchdir(work_dir)
         # return results
         return song_infos

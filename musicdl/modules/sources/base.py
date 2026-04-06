@@ -22,7 +22,7 @@ from fake_useragent import UserAgent
 from pathvalidate import sanitize_filepath
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn, DownloadColumn, TransferSpeedColumn, TimeRemainingColumn, MofNCompleteColumn, ProgressColumn, Task
-from ..utils import LoggerHandle, AudioLinkTester, SongInfo, SongInfoUtils, HLSDownloader, touchdir, usedownloadheaderscookies, usesearchheaderscookies, useparseheaderscookies, cookies2dict, cookies2string, shortenpathsinsonginfos, optionalimport, optionalimportfrom
+from ..utils import LoggerHandle, AudioLinkTester, SongInfo, SongInfoUtils, HLSDownloader, IOUtils, usedownloadheaderscookies, usesearchheaderscookies, useparseheaderscookies, cookies2dict, cookies2string, optionalimport, optionalimportfrom
 
 
 '''AudioAwareColumn'''
@@ -44,7 +44,7 @@ class BaseMusicClient():
     def __init__(self, search_size_per_source: int = 5, auto_set_proxies: bool = False, random_update_ua: bool = False, enable_search_curl_cffi: bool = False, enable_parse_curl_cffi: bool = False, enable_download_curl_cffi: bool = False, maintain_session: bool = False, logger_handle: LoggerHandle = None, disable_print: bool = False, work_dir: str = 'musicdl_outputs', 
                  max_retries: int = 3, freeproxy_settings: dict = None, default_search_cookies: dict | str = None, default_download_cookies: dict | str = None, default_parse_cookies: dict | str = None, strict_limit_search_size_per_page: bool = True, search_size_per_page: int = 10, quark_parser_config: dict = None):
         # set up work dir
-        touchdir(work_dir)
+        IOUtils.touchdir(work_dir)
         # set attributes
         self.search_size_per_source = search_size_per_source
         self.auto_set_proxies = auto_set_proxies
@@ -94,7 +94,7 @@ class BaseMusicClient():
     '''_constructuniqueworkdir'''
     def _constructuniqueworkdir(self, keyword: str, sort_by_search_kwd_and_time: bool = True):
         time_stamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-        touchdir((work_dir := sanitize_filepath(os.path.join(self.work_dir, self.source, f'{time_stamp} {keyword}') if sort_by_search_kwd_and_time else os.path.join(self.work_dir, self.source))))
+        IOUtils.touchdir((work_dir := sanitize_filepath(os.path.join(self.work_dir, self.source, f'{time_stamp} {keyword}') if sort_by_search_kwd_and_time else os.path.join(self.work_dir, self.source))))
         return work_dir
     '''_removeduplicates'''
     def _removeduplicates(self, song_infos: list[SongInfo] = None) -> list[SongInfo]:
@@ -144,12 +144,12 @@ class BaseMusicClient():
         work_dir = self._constructuniqueworkdir(keyword=keyword)
         for song_info in song_infos:
             song_info.work_dir = work_dir; episodes = song_info.episodes if isinstance(song_info.episodes, list) else []
-            for eps_info in episodes: eps_info.work_dir = sanitize_filepath(os.path.join(work_dir, song_info.song_name)); touchdir(work_dir)
+            for eps_info in episodes: eps_info.work_dir = sanitize_filepath(os.path.join(work_dir, song_info.song_name)); IOUtils.touchdir(work_dir)
         # logging
         if len(song_infos) > 0:
             work_dir_to_song_info, work_dir = defaultdict(list), ', '.join(list(set([str(s.work_dir) for s in song_infos])))
             for s in song_infos: s.work_dir = str(s.work_dir); work_dir_to_song_info[s.work_dir].append(s.todict())
-            for w, items in work_dir_to_song_info.items(): touchdir(w); self._savetopkl(items, os.path.join(w, "search_results.pkl"))
+            for w, items in work_dir_to_song_info.items(): IOUtils.touchdir(w); self._savetopkl(items, os.path.join(w, "search_results.pkl"))
         else:
             work_dir = self.work_dir
         self.logger_handle.info(f'Finished searching music files using {self.source}. Search results have been saved to {work_dir}, valid items: {len(song_infos)}.', disable_print=self.disable_print)
@@ -172,7 +172,7 @@ class BaseMusicClient():
                 progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name[:10] + '...' if len(song_info.song_name) > 13 else song_info.song_name[:13]} (Error: {err})")
         elif song_info.protocol.upper() in {'HTTP'} and song_info.downloaded_contents:
             try:
-                touchdir(song_info.work_dir)
+                IOUtils.touchdir(song_info.work_dir)
                 total_size = song_info.downloaded_contents.__sizeof__()
                 progress.update(song_progress_id, total=total_size)
                 with open(song_info.save_path, "wb") as fp: fp.write(song_info.downloaded_contents)
@@ -183,7 +183,7 @@ class BaseMusicClient():
                 progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name[:10] + '...' if len(song_info.song_name) > 13 else song_info.song_name[:13]} (Error: {err})")
         elif song_info.protocol.upper() in {'HTTP'}:
             try:
-                touchdir(song_info.work_dir)
+                IOUtils.touchdir(song_info.work_dir)
                 if song_info.default_download_headers: request_overrides['headers'] = song_info.default_download_headers
                 with self.get(song_info.download_url, stream=True, **request_overrides) as resp:
                     resp.raise_for_status()
@@ -206,7 +206,7 @@ class BaseMusicClient():
     @usedownloadheaderscookies
     def download(self, song_infos: list[SongInfo], num_threadings: int = 5, request_overrides: dict = None, auto_supplement_song: bool = True):
         # init
-        request_overrides = request_overrides or {}; shortenpathsinsonginfos(song_infos=song_infos)
+        request_overrides = request_overrides or {}
         # logging
         self.logger_handle.info(f'Start to download music files using {self.source}.', disable_print=self.disable_print)
         # multi threadings for downloading music files
@@ -227,7 +227,7 @@ class BaseMusicClient():
         if len(downloaded_song_infos) > 0:
             work_dir_to_song_info, work_dir = defaultdict(list), ', '.join(list(set([str(s.work_dir) for s in downloaded_song_infos])))
             for s in downloaded_song_infos: s.work_dir = str(s.work_dir); work_dir_to_song_info[s.work_dir].append(s.todict())
-            for w, items in work_dir_to_song_info.items(): touchdir(w); self._savetopkl(items, os.path.join(w, "download_results.pkl"))
+            for w, items in work_dir_to_song_info.items(): IOUtils.touchdir(w); self._savetopkl(items, os.path.join(w, "download_results.pkl"))
         else:
             work_dir = self.work_dir
         self.logger_handle.info(f'Finished downloading music files using {self.source}. Download results have been saved to {work_dir}, valid downloads: {len(downloaded_song_infos)}.', disable_print=self.disable_print)

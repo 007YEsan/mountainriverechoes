@@ -20,7 +20,7 @@ from ..utils.hosts import KUWO_MUSIC_HOSTS
 from ..utils.kuwoutils import KuwoMusicClientUtils
 from urllib.parse import urlencode, urlparse, parse_qs
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
-from ..utils import touchdir, optionalimport, legalizestring, resp2json, seconds2hms, usesearchheaderscookies, safeextractfromdict, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo, AudioLinkTester
+from ..utils import optionalimport, legalizestring, resp2json, usesearchheaderscookies, safeextractfromdict, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo, AudioLinkTester, IOUtils, SongInfoUtils
 warnings.filterwarnings('ignore')
 
 
@@ -69,7 +69,7 @@ class KuwoMusicClient(BaseMusicClient):
             song_info = SongInfo(
                 raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(download_result, ['data', 'name'], None)), singers=legalizestring(safeextractfromdict(download_result, ['data', 'artist'], None)), 
                 album=legalizestring(safeextractfromdict(download_result, ['data', 'album'], None)), ext=download_url.split('?')[0].split('.')[-1], file_size_bytes=None, file_size=str(safeextractfromdict(download_result, ['data', 'size'], "") or "0.00").removesuffix('MB').strip() + ' MB', 
-                identifier=str(song_id), duration_s=safeextractfromdict(download_result, ['data', 'duration'], 0), duration=seconds2hms(safeextractfromdict(download_result, ['data', 'duration'], 0)), lyric=cleanlrc(safeextractfromdict(download_result, ['data', 'lyric'], 'NULL')) or 'NULL',
+                identifier=str(song_id), duration_s=safeextractfromdict(download_result, ['data', 'duration'], 0), duration=SongInfoUtils.seconds2hms(safeextractfromdict(download_result, ['data', 'duration'], 0)), lyric=cleanlrc(safeextractfromdict(download_result, ['data', 'lyric'], 'NULL')) or 'NULL',
                 cover_url=safeextractfromdict(download_result, ['data', 'pic'], ""), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
             )
             song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
@@ -93,7 +93,7 @@ class KuwoMusicClient(BaseMusicClient):
             ext = download_url.split('?')[0].split('.')[-1]; duration_in_secs = search_result.get('DURATION') or search_result.get('duration')
             song_info = SongInfo(
                 raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('SONGNAME') or search_result.get('name')), singers=legalizestring(search_result.get('ARTIST') or search_result.get('artist')), album=legalizestring(search_result.get('ALBUM') or search_result.get('album')), 
-                ext=ext, file_size_bytes=None, file_size=None, identifier=song_id, duration_s=duration_in_secs, duration=seconds2hms(duration_in_secs), lyric='NULL', cover_url=search_result.get('hts_MVPIC') or search_result.get('albumpic'), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+                ext=ext, file_size_bytes=None, file_size=None, identifier=song_id, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric='NULL', cover_url=search_result.get('hts_MVPIC') or search_result.get('albumpic'), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
             )
             song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
             song_info.file_size = song_info.download_url_status['probe_status']['file_size']
@@ -125,7 +125,7 @@ class KuwoMusicClient(BaseMusicClient):
                 download_url = download_url.group(0); ext = download_url.split('?')[0].split('.')[-1]; duration_in_secs = search_result.get('DURATION') or search_result.get('duration')
                 song_info = SongInfo(
                     raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('SONGNAME') or search_result.get('name')), singers=legalizestring(search_result.get('ARTIST') or search_result.get('artist')), album=legalizestring(search_result.get('ALBUM') or search_result.get('album')), 
-                    ext=ext, file_size_bytes=None, file_size=None, identifier=song_id, duration_s=duration_in_secs, duration=seconds2hms(duration_in_secs), lyric='NULL', cover_url=search_result.get('hts_MVPIC') or search_result.get('albumpic'), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+                    ext=ext, file_size_bytes=None, file_size=None, identifier=song_id, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric='NULL', cover_url=search_result.get('hts_MVPIC') or search_result.get('albumpic'), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
                 )
                 song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
                 song_info.file_size = song_info.download_url_status['probe_status']['file_size']
@@ -210,6 +210,6 @@ class KuwoMusicClient(BaseMusicClient):
         song_infos = self._removeduplicates(song_infos=song_infos); work_dir = self._constructuniqueworkdir(keyword=legalizestring(playlist_name or f"playlist-{playlist_id}"))
         for song_info in song_infos:
             song_info.work_dir = work_dir; episodes = song_info.episodes if isinstance(song_info.episodes, list) else []
-            for eps_info in episodes: eps_info.work_dir = sanitize_filepath(os.path.join(work_dir, song_info.song_name)); touchdir(work_dir)
+            for eps_info in episodes: eps_info.work_dir = sanitize_filepath(os.path.join(work_dir, song_info.song_name)); IOUtils.touchdir(work_dir)
         # return results
         return song_infos

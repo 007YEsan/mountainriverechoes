@@ -19,7 +19,7 @@ from pathvalidate import sanitize_filepath
 from urllib.parse import urlparse, parse_qs
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
 from ..utils.qqutils import QQMusicClientUtils, SearchType, Credential, ThirdPartVKeysAPISongFileType, SongFileType, EncryptedSongFileType
-from ..utils import touchdir, resp2json, seconds2hms, legalizestring, safeextractfromdict, usesearchheaderscookies, extractdurationsecondsfromlrc, useparseheaderscookies, obtainhostname, hostmatchessuffix, optionalimport, cleanlrc, SongInfo, AudioLinkTester
+from ..utils import resp2json, legalizestring, safeextractfromdict, usesearchheaderscookies, extractdurationsecondsfromlrc, useparseheaderscookies, obtainhostname, hostmatchessuffix, optionalimport, cleanlrc, SongInfo, AudioLinkTester, IOUtils, SongInfoUtils
 
 
 '''QQMusicClient'''
@@ -70,7 +70,7 @@ class QQMusicClient(BaseMusicClient):
             duration_in_secs = safeextractfromdict(download_result, ['data', 'interval'], 0)
             song_info = SongInfo(
                 raw_data={'search': search_result, 'download': download_result, 'lyric': lyric_result}, source=self.source, song_name=legalizestring(safeextractfromdict(download_result, ['data', 'song'], None)), singers=legalizestring(str(safeextractfromdict(download_result, ['data', 'singer'], '') or '').replace('/', ', ')), album=legalizestring(safeextractfromdict(download_result, ['data', 'album'], None)), ext=download_url.split('?')[0].split('.')[-1], 
-                file_size_bytes=None, file_size=str(safeextractfromdict(download_result, ['data', 'size'], '0.00')).removesuffix('MB').strip() + ' MB', identifier=song_id, duration_s=to_seconds_func(duration_in_secs), duration=seconds2hms(to_seconds_func(duration_in_secs)), lyric=cleanlrc(safeextractfromdict(lyric_result, ['data', 'lrc'], 'NULL')) or 'NULL', cover_url=safeextractfromdict(download_result, ['data', 'cover'], None), download_url=download_url, 
+                file_size_bytes=None, file_size=str(safeextractfromdict(download_result, ['data', 'size'], '0.00')).removesuffix('MB').strip() + ' MB', identifier=song_id, duration_s=to_seconds_func(duration_in_secs), duration=SongInfoUtils.seconds2hms(to_seconds_func(duration_in_secs)), lyric=cleanlrc(safeextractfromdict(lyric_result, ['data', 'lrc'], 'NULL')) or 'NULL', cover_url=safeextractfromdict(download_result, ['data', 'cover'], None), download_url=download_url, 
                 download_url_status=self.audio_link_tester.test(download_url, request_overrides),
             )
             song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
@@ -94,7 +94,7 @@ class QQMusicClient(BaseMusicClient):
             except Exception: lyric_result = {}
             song_info = SongInfo(
                 raw_data={'search': search_result, 'download': download_result, 'lyric': lyric_result}, source=self.source, song_name=legalizestring(search_result.get('title', None) or search_result.get('songname', None)), singers=legalizestring(', '.join([singer.get('name', '') for singer in (search_result.get('singer', []) or []) if isinstance(singer, dict) and singer.get('name', None)])),
-                album=legalizestring(safeextractfromdict(search_result, ['album', 'title'], None) or search_result.get('albumname')), ext=download_url.split('?')[0].split('.')[-1], file_size_bytes=None, file_size=None, identifier=song_id, duration_s=search_result.get('interval', 0), duration=seconds2hms(search_result.get('interval', 0)), lyric=cleanlrc(lyric_result.get('content') or 'NULL'),
+                album=legalizestring(safeextractfromdict(search_result, ['album', 'title'], None) or search_result.get('albumname')), ext=download_url.split('?')[0].split('.')[-1], file_size_bytes=None, file_size=None, identifier=song_id, duration_s=search_result.get('interval', 0), duration=SongInfoUtils.seconds2hms(search_result.get('interval', 0)), lyric=cleanlrc(lyric_result.get('content') or 'NULL'),
                 cover_url=None, download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
             )
             song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
@@ -157,7 +157,7 @@ class QQMusicClient(BaseMusicClient):
         lyric = cleanlrc(safeextractfromdict(download_result, ['data', 'lrc'], 'NULL')) or 'NULL'
         song_info = SongInfo(
             raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(download_result, ['data', 'title'], None)), singers=legalizestring(str(safeextractfromdict(download_result, ['data', 'author'], '')).replace('/', ', ')), 
-            album=legalizestring(safeextractfromdict(download_result, ['data', 'album'], None)), ext=download_url.split('?')[0].split('.')[-1], file_size_bytes=None, file_size=None, identifier=song_id, duration_s=extractdurationsecondsfromlrc(lyric), duration=seconds2hms(extractdurationsecondsfromlrc(lyric)), 
+            album=legalizestring(safeextractfromdict(download_result, ['data', 'album'], None)), ext=download_url.split('?')[0].split('.')[-1], file_size_bytes=None, file_size=None, identifier=song_id, duration_s=extractdurationsecondsfromlrc(lyric), duration=SongInfoUtils.seconds2hms(extractdurationsecondsfromlrc(lyric)), 
             lyric=lyric, cover_url=safeextractfromdict(download_result, ['data', 'cover'], None), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
         )
         song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
@@ -193,7 +193,7 @@ class QQMusicClient(BaseMusicClient):
                     download_url = QQMusicClientUtils.music_domain + download_url
                     song_info = SongInfo(
                         raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'ekey': ekey}, source=self.source, song_name=legalizestring(search_result.get('title') or search_result.get('songname')), singers=legalizestring(', '.join([singer.get('name') for singer in (search_result.get('singer', []) or []) if isinstance(singer, dict) and singer.get('name')])), 
-                        album=legalizestring(safeextractfromdict(search_result, ['album', 'title'], None) or search_result.get('albumname', None)), ext=download_url.split('?')[0].split('.')[-1], file_size_bytes=None, file_size=None, identifier=str(song_id), duration_s=search_result.get('interval', 0), duration=seconds2hms(search_result.get('interval', 0)), lyric=None, cover_url=None, 
+                        album=legalizestring(safeextractfromdict(search_result, ['album', 'title'], None) or search_result.get('albumname', None)), ext=download_url.split('?')[0].split('.')[-1], file_size_bytes=None, file_size=None, identifier=str(song_id), duration_s=search_result.get('interval', 0), duration=SongInfoUtils.seconds2hms(search_result.get('interval', 0)), lyric=None, cover_url=None, 
                         download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
                     )
                     song_info.cover_url = f"https://y.gtimg.cn/music/photo_new/T002R800x800M000{safeextractfromdict(search_result, ['album', 'mid'], '') or search_result.get('albummid')}.jpg"
@@ -217,7 +217,7 @@ class QQMusicClient(BaseMusicClient):
                     download_url = QQMusicClientUtils.music_domain + download_url
                     song_info = SongInfo(
                         raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('title') or search_result.get('songname')), singers=legalizestring(', '.join([singer.get('name') for singer in (search_result.get('singer', []) or []) if isinstance(singer, dict) and singer.get('name')])), 
-                        album=legalizestring(safeextractfromdict(search_result, ['album', 'title'], None) or search_result.get('albumname', None)), ext=download_url.split('?')[0].split('.')[-1], file_size_bytes=None, file_size=None, identifier=str(song_id), duration_s=search_result.get('interval', 0), duration=seconds2hms(search_result.get('interval', 0)), lyric=None, 
+                        album=legalizestring(safeextractfromdict(search_result, ['album', 'title'], None) or search_result.get('albumname', None)), ext=download_url.split('?')[0].split('.')[-1], file_size_bytes=None, file_size=None, identifier=str(song_id), duration_s=search_result.get('interval', 0), duration=SongInfoUtils.seconds2hms(search_result.get('interval', 0)), lyric=None, 
                         cover_url=None, download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
                     )
                     song_info.cover_url = f"https://y.gtimg.cn/music/photo_new/T002R800x800M000{safeextractfromdict(search_result, ['album', 'mid'], '') or search_result.get('albummid')}.jpg"
@@ -298,6 +298,6 @@ class QQMusicClient(BaseMusicClient):
         song_infos = self._removeduplicates(song_infos=song_infos); work_dir = self._constructuniqueworkdir(keyword=legalizestring(playlist_name or f"playlist-{playlist_id}"))
         for song_info in song_infos:
             song_info.work_dir = work_dir; episodes = song_info.episodes if isinstance(song_info.episodes, list) else []
-            for eps_info in episodes: eps_info.work_dir = sanitize_filepath(os.path.join(work_dir, song_info.song_name)); touchdir(work_dir)
+            for eps_info in episodes: eps_info.work_dir = sanitize_filepath(os.path.join(work_dir, song_info.song_name)); IOUtils.touchdir(work_dir)
         # return results
         return song_infos

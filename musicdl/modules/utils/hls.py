@@ -19,7 +19,7 @@ import requests
 import threading
 import concurrent.futures as cf
 from pathlib import Path
-from .misc import touchdir
+from .misc import IOUtils
 from .logger import LoggerHandle
 from urllib.parse import urljoin
 from dataclasses import dataclass
@@ -49,7 +49,7 @@ class HLSDownloader:
                  verify_tls: bool = True, concurrency: int = 16, max_retries: int = 8, backoff_base: float = 0.6, backoff_cap: float = 10.0, chunk_size: int = 1024 * 256, strict_key_length: bool = False, disable_print: bool = False, request_overrides: dict = None):
         # work dir
         self.output_dir = output_dir
-        touchdir(self.output_dir)
+        IOUtils.touchdir(self.output_dir)
         # logger
         self.logger_handle = logger_handle
         self.disable_print = disable_print
@@ -81,12 +81,12 @@ class HLSDownloader:
             playlist = master_or_media
         jobs, global_init_map = self._buildjobs(playlist)
         temp_folder, global_init_path = os.path.join(self.output_dir, temp_subdir or f".hls_tmp_{self._safenamefromurl(m3u8_url)}"), None
-        touchdir(temp_folder)
+        IOUtils.touchdir(temp_folder)
         if global_init_map:
             global_init_path = os.path.join(temp_folder, "_global_init.bin")
             if not self._fileok(global_init_path): self._atomicwrite(global_init_path, self._fetchbytes(global_init_map["uri"], global_init_map.get("byterange")))
         seg_paths = self._downloadallsegments(jobs, temp_folder, progress=progress, progress_id=progress_id)
-        touchdir(os.path.dirname(os.path.abspath(output_path)) or ".")
+        IOUtils.touchdir(os.path.dirname(os.path.abspath(output_path)) or ".")
         self._mergefiles(global_init_path, seg_paths, output_path)
         if not keep_segments: shutil.rmtree(temp_folder, ignore_errors=True)
         return output_path
@@ -365,7 +365,7 @@ class HLSDownloader:
         return os.path.exists(path) and os.path.getsize(path) > 0
     '''_atomicwrite'''
     def _atomicwrite(self, path: str, data: bytes) -> None:
-        touchdir(os.path.dirname(os.path.abspath(path)) or ".")
+        IOUtils.touchdir(os.path.dirname(os.path.abspath(path)) or ".")
         pid, tid = os.getpid(), threading.get_ident()
         tmp, last = f"{path}.tmp.{pid}.{tid}.{time.time_ns()}", None
         with open(tmp, "wb") as fp:

@@ -12,7 +12,7 @@ from bs4 import BeautifulSoup
 from rich.progress import Progress
 from ..sources import BaseMusicClient
 from urllib.parse import urljoin, urlparse
-from ..utils import legalizestring, usesearchheaderscookies, extractdurationsecondsfromlrc, seconds2hms, cleanlrc, SongInfo, RandomIPGenerator, AudioLinkTester
+from ..utils import legalizestring, usesearchheaderscookies, extractdurationsecondsfromlrc, cleanlrc, SongInfo, RandomIPGenerator, AudioLinkTester, SongInfoUtils
 
 
 '''TwoT58MusicClient'''
@@ -83,7 +83,7 @@ class TwoT58MusicClient(BaseMusicClient):
                 try:
                     (resp := self.get(f"https://www.2t58.com/plug/down.php?ac=music&lk=lrc&id={search_result['id']}", **request_overrides)).raise_for_status()
                     song_info.lyric = cleanlrc(resp.text.replace('[00:00.00]欢迎来访爱听音乐网 www.2t58.com\r\n', ''))
-                    song_info.duration_s = extractdurationsecondsfromlrc(song_info.lyric); song_info.duration = seconds2hms(song_info.duration_s)
+                    song_info.duration_s = extractdurationsecondsfromlrc(song_info.lyric); song_info.duration = SongInfoUtils.seconds2hms(song_info.duration_s)
                 except:
                     song_info.lyric, song_info.duration = 'NULL', '-:-:-'
                 # --cover results

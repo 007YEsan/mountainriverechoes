@@ -17,7 +17,7 @@ from ..utils.hosts import SODA_MUSIC_HOSTS
 from urllib.parse import urlencode, urlparse, parse_qs
 from ..utils.sodautils import AudioDecryptor, SodaTimedLyricsParser
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
-from ..utils import touchdir, legalizestring, byte2mb, resp2json, usesearchheaderscookies, safeextractfromdict, seconds2hms, usedownloadheaderscookies, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo, AudioLinkTester, SongInfoUtils
+from ..utils import legalizestring, resp2json, usesearchheaderscookies, safeextractfromdict, usedownloadheaderscookies, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo, AudioLinkTester, SongInfoUtils, IOUtils
 
 
 '''SodaMusicClient'''
@@ -78,8 +78,8 @@ class SodaMusicClient(BaseMusicClient):
             for audio_sorted in audios_sorted:
                 download_url = audio_sorted.get('MainPlayUrl') or audio_sorted.get('BackupPlayUrl'); play_auth = safeextractfromdict(audio_sorted, ['PlayAuth'], '')
                 song_info = SongInfo(
-                    raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'play_auth': play_auth}, source=self.source, song_name=legalizestring(safeextractfromdict(search_result, ['entity', 'track', 'name'], None)), singers=legalizestring(', '.join([singer.get('name') for singer in (safeextractfromdict(search_result, ['entity', 'track', 'artists'], []) or []) if isinstance(singer, dict) and singer.get('name')])), album=legalizestring(safeextractfromdict(search_result, ['entity', 'track', 'album', 'name'], None)), ext=audio_sorted.get('Format', 'm4a'), file_size_bytes=audio_sorted.get('Size', 0), file_size=byte2mb(audio_sorted.get('Size', 0)), 
-                    identifier=str(song_id), duration_s=audio_sorted.get('Duration'), duration=seconds2hms(audio_sorted.get('Duration')), lyric=cleanlrc(SodaTimedLyricsParser.tolrclinelevel(SodaTimedLyricsParser.parsetimedlyrics(safeextractfromdict(download_result, ['lyric', 'content'], '')))) or 'NULL', cover_url=str(safeextractfromdict(search_result, ['entity', 'track', 'album', 'url_cover', 'urls', 0], '')) + str(safeextractfromdict(search_result, ['entity', 'track', 'album', 'url_cover', 'uri'], '')) + '~c5_375x375.jpg', download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+                    raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'play_auth': play_auth}, source=self.source, song_name=legalizestring(safeextractfromdict(search_result, ['entity', 'track', 'name'], None)), singers=legalizestring(', '.join([singer.get('name') for singer in (safeextractfromdict(search_result, ['entity', 'track', 'artists'], []) or []) if isinstance(singer, dict) and singer.get('name')])), album=legalizestring(safeextractfromdict(search_result, ['entity', 'track', 'album', 'name'], None)), ext=audio_sorted.get('Format', 'm4a'), file_size_bytes=audio_sorted.get('Size', 0), file_size=SongInfoUtils.byte2mb(audio_sorted.get('Size', 0)), 
+                    identifier=str(song_id), duration_s=audio_sorted.get('Duration'), duration=SongInfoUtils.seconds2hms(audio_sorted.get('Duration')), lyric=cleanlrc(SodaTimedLyricsParser.tolrclinelevel(SodaTimedLyricsParser.parsetimedlyrics(safeextractfromdict(download_result, ['lyric', 'content'], '')))) or 'NULL', cover_url=str(safeextractfromdict(search_result, ['entity', 'track', 'album', 'url_cover', 'urls', 0], '')) + str(safeextractfromdict(search_result, ['entity', 'track', 'album', 'url_cover', 'uri'], '')) + '~c5_375x375.jpg', download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
                 )
                 song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
                 song_info.file_size = song_info.download_url_status['probe_status']['file_size']; song_info.ext = song_info.download_url_status['probe_status']['ext']
@@ -166,6 +166,6 @@ class SodaMusicClient(BaseMusicClient):
         song_infos = self._removeduplicates(song_infos=song_infos); work_dir = self._constructuniqueworkdir(keyword=legalizestring(playlist_name or f"playlist-{playlist_id}"))
         for song_info in song_infos:
             song_info.work_dir = work_dir; episodes = song_info.episodes if isinstance(song_info.episodes, list) else []
-            for eps_info in episodes: eps_info.work_dir = sanitize_filepath(os.path.join(work_dir, song_info.song_name)); touchdir(work_dir)
+            for eps_info in episodes: eps_info.work_dir = sanitize_filepath(os.path.join(work_dir, song_info.song_name)); IOUtils.touchdir(work_dir)
         # return results
         return song_infos

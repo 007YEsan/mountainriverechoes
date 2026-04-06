@@ -11,7 +11,7 @@ import copy
 from urllib.parse import urlparse
 from rich.progress import Progress
 from ..sources import BaseMusicClient
-from ..utils import legalizestring, resp2json, usesearchheaderscookies, seconds2hms, extractdurationsecondsfromlrc, searchdictbykey, cleanlrc, SongInfo, QuarkParser, AudioLinkTester
+from ..utils import legalizestring, resp2json, usesearchheaderscookies, extractdurationsecondsfromlrc, searchdictbykey, cleanlrc, SongInfo, QuarkParser, AudioLinkTester, SongInfoUtils
 
 
 '''MyFreeMP3MusicClient'''
@@ -60,7 +60,7 @@ class MyFreeMP3MusicClient(BaseMusicClient):
         duration_in_secs = extractdurationsecondsfromlrc(lyric)
         song_info = SongInfo(
             raw_data={'search': search_result, 'download': {}, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('title')), singers=legalizestring(search_result.get('author')), 
-            album='NULL', ext=download_url.split('?')[0].split('.')[-1], file_size='NULL', identifier=search_result['id'], duration_s=duration_in_secs, duration=seconds2hms(duration_in_secs), lyric=lyric, 
+            album='NULL', ext=download_url.split('?')[0].split('.')[-1], file_size='NULL', identifier=search_result['id'], duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=lyric, 
             cover_url=search_result.get('pic'), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides), root_source='netease',
         )
         if not song_info.with_valid_download_url: return SongInfo(source=self.source)
@@ -83,7 +83,7 @@ class MyFreeMP3MusicClient(BaseMusicClient):
         lyric: str = cleanlrc((search_result.get('lrc', '') or '').removeprefix('data:text/plain,'))
         song_info = SongInfo(
             raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(song_name), singers=legalizestring(singers), album='NULL', ext='mp3', 
-            file_size=None, identifier=search_result['id'], duration_s=duration_in_secs, duration=seconds2hms(duration_in_secs), lyric=lyric, cover_url=search_result.get('pic'), download_url=download_url, 
+            file_size=None, identifier=search_result['id'], duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=lyric, cover_url=search_result.get('pic'), download_url=download_url, 
             download_url_status=self.quark_audio_link_tester.test(download_url, request_overrides), root_source='quark', default_download_headers=self.quark_default_download_headers,
         )
         if not song_info.with_valid_download_url: return SongInfo(source=self.source)

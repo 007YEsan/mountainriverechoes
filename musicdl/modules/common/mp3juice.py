@@ -16,7 +16,7 @@ from itertools import zip_longest
 from urllib.parse import urlencode
 from rich.progress import Progress
 from ..sources import BaseMusicClient
-from ..utils import legalizestring, usesearchheaderscookies, resp2json, byte2mb, SongInfo
+from ..utils import legalizestring, usesearchheaderscookies, resp2json, SongInfo, SongInfoUtils
 
 
 '''MP3JuiceMusicClient'''
@@ -107,7 +107,7 @@ class MP3JuiceMusicClient(BaseMusicClient):
                 # ----you have to download the music contents immediately, otherwise the links will fail.
                 song_info.downloaded_contents = self.get(download_url, **request_overrides).content
                 song_info.file_size_bytes = song_info.downloaded_contents.__sizeof__()
-                song_info.file_size = byte2mb(song_info.file_size_bytes)
+                song_info.file_size = SongInfoUtils.byte2mb(song_info.file_size_bytes)
                 # --append to song_infos
                 song_infos.append(song_info)
             # --update progress

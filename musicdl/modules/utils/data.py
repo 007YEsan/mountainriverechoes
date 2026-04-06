@@ -8,6 +8,9 @@ WeChat Official Account (微信公众号):
 '''
 from __future__ import annotations
 import os
+import uuid
+import hashlib
+from pathlib import Path
 from .misc import sanitize_filepath
 from typing import Any, Dict, Optional
 from dataclasses import dataclass, field, fields
@@ -63,13 +66,13 @@ class SongInfo:
     _save_path: Optional[str] = None
     @property
     def save_path(self) -> str:
-        if self._save_path is not None: return self._save_path
+        if self._save_path is not None: return self.legalizepathlength(self._save_path)
         sp, same_name_file_idx = os.path.join(self.work_dir, f"{self.song_name} - {self.identifier}.{self.ext.removeprefix('.')}"), 1
         while os.path.exists(sp):
             sp = os.path.join(self.work_dir, f"{self.song_name} - {self.identifier} ({same_name_file_idx}).{self.ext.removeprefix('.')}")
             same_name_file_idx += 1
         self._save_path = sanitize_filepath(sp)
-        return self._save_path
+        return self.legalizepathlength(self._save_path)
     # identifier
     identifier: Optional[str] = None
     '''fieldnames'''
@@ -120,3 +123,14 @@ class SongInfo:
         if not isinstance(file_size_b, (int, float)): file_size_b = 0.0
         # compare
         return bool(file_size_a > file_size_b)
+    '''legalizepathlength'''
+    def legalizepathlength(self, save_path: str | Path, max_path: int = 240, keep_ext: bool = True, with_hash_suffix: bool = False):
+        if (not (raw_path := str((save_path or "")).strip())) or (raw_path in {'NULL', 'null', 'None', 'none'}): return None
+        (output_dir := (src_path := Path(raw_path)).parent.resolve()).mkdir(parents=True, exist_ok=True)
+        ext, stem, digest = src_path.suffix if keep_ext else "", src_path.stem, hashlib.md5(str(src_path).encode("utf-8")).hexdigest()
+        for hash_len in (4, 6, 8, 10, 12):
+            hash_suffix = f"-{digest[:hash_len]}" if with_hash_suffix else ""
+            max_stem_len = max(1, max_path - (len(str(output_dir)) + 1 + len(hash_suffix) + len(ext)))
+            safe_stem = stem[:max_stem_len].rstrip(" .") or str(uuid.uuid4())[:hash_len]
+            if not os.path.exists((out_path := str(output_dir / f"{safe_stem}{hash_suffix}{ext}"))): break
+        return out_path

@@ -8,8 +8,9 @@ WeChat Official Account (微信公众号):
 '''
 import time
 import requests
+from .misc import resp2json
+from .cookies import cookies2dict
 from urllib.parse import urlparse
-from .misc import resp2json, cookies2dict
 
 
 '''QuarkParser'''

@@ -13,7 +13,7 @@ import requests
 from rich.progress import Progress
 from ..sources import BaseMusicClient
 from urllib.parse import urlparse, parse_qs
-from ..utils import legalizestring, resp2json, usesearchheaderscookies, seconds2hms, extractdurationsecondsfromlrc, safeextractfromdict, cleanlrc, SongInfo, AudioLinkTester
+from ..utils import legalizestring, resp2json, usesearchheaderscookies, extractdurationsecondsfromlrc, safeextractfromdict, cleanlrc, SongInfo, AudioLinkTester, SongInfoUtils
 
 
 '''TuneHubMusicClient'''
@@ -114,7 +114,7 @@ class TuneHubMusicClient(BaseMusicClient):
                         song_info = SongInfo(
                             raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('name')), singers=legalizestring(search_result.get('artist')), 
                             album=legalizestring(search_result.get('album', None)), ext=download_url.split('?')[0].split('.')[-1], file_size_bytes=None, file_size=None, identifier=search_result['id'], duration_s=duration_in_secs,
-                            duration=seconds2hms(duration_in_secs), lyric=safeextractfromdict(download_result, ['data', 'data', 0, 'lyrics'], None), cover_url=safeextractfromdict(download_result, ['data', 'data', 0, 'cover'], None),
+                            duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=safeextractfromdict(download_result, ['data', 'data', 0, 'lyrics'], None), cover_url=safeextractfromdict(download_result, ['data', 'data', 0, 'cover'], None),
                             download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides), root_source=search_result['source'],
                         )
                         if str(song_info.lyric).startswith('http'): search_result['lrc'] = song_info.lyric; song_info.lyric = None
@@ -126,7 +126,7 @@ class TuneHubMusicClient(BaseMusicClient):
                         if song_info.with_valid_download_url: break
                 if not song_info.with_valid_download_url: continue
                 # --lyric results
-                try: (resp := self.get(search_result['lrc'], **request_overrides)).raise_for_status(); lyric, lyric_result = cleanlrc(resp.text), {'lyric': resp.text}; song_info.duration_s = extractdurationsecondsfromlrc(lyric); song_info.duration = seconds2hms(song_info.duration_s)
+                try: (resp := self.get(search_result['lrc'], **request_overrides)).raise_for_status(); lyric, lyric_result = cleanlrc(resp.text), {'lyric': resp.text}; song_info.duration_s = extractdurationsecondsfromlrc(lyric); song_info.duration = SongInfoUtils.seconds2hms(song_info.duration_s)
                 except Exception: lyric_result, lyric = dict(), 'NULL'
                 song_info.raw_data['lyric'] = lyric_result if lyric_result else song_info.raw_data['lyric']
                 song_info.lyric = lyric if (lyric and (lyric not in {'NULL'})) else song_info.lyric

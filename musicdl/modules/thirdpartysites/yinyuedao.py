@@ -13,7 +13,7 @@ from bs4 import BeautifulSoup
 from rich.progress import Progress
 from ..sources import BaseMusicClient
 from urllib.parse import urljoin, urlparse
-from ..utils import legalizestring, usesearchheaderscookies, safeextractfromdict, seconds2hms, searchdictbykey, resp2json, cleanlrc, SongInfo, QuarkParser, AudioLinkTester
+from ..utils import legalizestring, usesearchheaderscookies, safeextractfromdict, searchdictbykey, resp2json, cleanlrc, SongInfo, QuarkParser, AudioLinkTester, SongInfoUtils
 
 
 '''YinyuedaoMusicClient'''
@@ -79,7 +79,7 @@ class YinyuedaoMusicClient(BaseMusicClient):
             duration_in_secs = duration[0] if duration else 0
             song_info = SongInfo(
                 raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('title')), singers=legalizestring(search_result.get('singer')), album='NULL',
-                ext=str(quark_download_url.get('format', 'mp3')).lower(), file_size=None, identifier=search_result['id'], duration_s=duration_in_secs, duration=seconds2hms(duration_in_secs), lyric=cleanlrc(download_result.get('lyrics')),
+                ext=str(quark_download_url.get('format', 'mp3')).lower(), file_size=None, identifier=search_result['id'], duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=cleanlrc(download_result.get('lyrics')),
                 cover_url=download_result.get("cover"), download_url=download_url, download_url_status=self.quark_audio_link_tester.test(download_url, request_overrides), default_download_headers=self.quark_default_download_headers,
             )
             if song_info.ext in {'mgg'}: continue
@@ -88,7 +88,7 @@ class YinyuedaoMusicClient(BaseMusicClient):
             if (song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS) and (song_info.download_url_status['probe_status']['ext'] in AudioLinkTester.VALID_AUDIO_EXTS): song_info.ext = song_info.download_url_status['probe_status']['ext']
             elif (song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS): song_info.ext = 'mp3'
             if song_info.with_valid_download_url: break
-        if (not song_info.duration or song_info.duration == '-:-:-') and (re.search(r"\[\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)\s*\]", str(song_info.lyric))): song_info.duration_s = extract_duration_func(song_info.lyric.split('\n')[-1]); song_info.duration = seconds2hms(song_info.duration_s)
+        if (not song_info.duration or song_info.duration == '-:-:-') and (re.search(r"\[\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)\s*\]", str(song_info.lyric))): song_info.duration_s = extract_duration_func(song_info.lyric.split('\n')[-1]); song_info.duration = SongInfoUtils.seconds2hms(song_info.duration_s)
         # return
         return song_info
     '''_parsesearchresultfromweb'''
@@ -112,7 +112,7 @@ class YinyuedaoMusicClient(BaseMusicClient):
         song_info.file_size = song_info.download_url_status['probe_status']['file_size']
         if (song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS) and (song_info.download_url_status['probe_status']['ext'] in AudioLinkTester.VALID_AUDIO_EXTS): song_info.ext = song_info.download_url_status['probe_status']['ext']
         elif (song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS): song_info.ext = 'mp3'
-        if (not song_info.duration or song_info.duration == '-:-:-') and (re.search(r"\[\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)\s*\]", str(song_info.lyric))): song_info.duration_s = extract_duration_func(song_info.lyric.split('\n')[-1]); song_info.duration = seconds2hms(song_info.duration_s)
+        if (not song_info.duration or song_info.duration == '-:-:-') and (re.search(r"\[\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)\s*\]", str(song_info.lyric))): song_info.duration_s = extract_duration_func(song_info.lyric.split('\n')[-1]); song_info.duration = SongInfoUtils.seconds2hms(song_info.duration_s)
         # return
         return song_info
     '''_search'''

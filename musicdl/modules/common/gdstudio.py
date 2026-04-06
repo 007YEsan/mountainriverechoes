@@ -14,7 +14,7 @@ import json_repair
 from urllib.parse import quote
 from rich.progress import Progress
 from ..sources import BaseMusicClient
-from ..utils import legalizestring, resp2json, usesearchheaderscookies, byte2mb, estimatedurationwithfilesizebr, estimatedurationwithfilelink, seconds2hms, safeextractfromdict, cleanlrc, SongInfo, AudioLinkTester
+from ..utils import legalizestring, resp2json, usesearchheaderscookies, safeextractfromdict, cleanlrc, SongInfo, AudioLinkTester, SongInfoUtils
 
 
 '''GDStudioMusicClient'''
@@ -103,11 +103,11 @@ class GDStudioMusicClient(BaseMusicClient):
                     if not str(download_url).startswith('http'): download_url = f'https://music.gdstudio.xyz/' + download_url
                     if search_result['source'] in {'bilibili'}: download_url = f'https://music-proxy.gdstudio.org/{download_url}'
                     download_url_status = self.audio_link_tester.test(download_url, request_overrides); download_url = download_url_status['final_url']
-                    duration_in_secs = estimatedurationwithfilesizebr(download_result.get('size', 0), download_result.get('br', br), return_seconds=True)
+                    duration_in_secs = SongInfoUtils.estimatedurationwithfilesizebr(download_result.get('size', 0), download_result.get('br', br), return_seconds=True)
                     song_info = SongInfo(
                         raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(search_result, ['name'], None)), singers=legalizestring(', '.join(safeextractfromdict(search_result, ['artist'], []) or [])), 
-                        album=legalizestring(safeextractfromdict(search_result, ['album'], None)), ext=download_url.split('?')[0].split('.')[-1], file_size_bytes=download_result.get('size'), file_size=byte2mb(download_result.get('size', 0)), identifier=song_id, duration_s=duration_in_secs,
-                        duration=seconds2hms(duration_in_secs), lyric=None, cover_url=None, download_url=download_url, download_url_status=download_url_status, root_source=search_result['source'],
+                        album=legalizestring(safeextractfromdict(search_result, ['album'], None)), ext=download_url.split('?')[0].split('.')[-1], file_size_bytes=download_result.get('size'), file_size=SongInfoUtils.byte2mb(download_result.get('size', 0)), identifier=song_id, duration_s=duration_in_secs,
+                        duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, cover_url=None, download_url=download_url, download_url_status=download_url_status, root_source=search_result['source'],
                     )
                     if search_result['source'] in {'bilibili'}: song_info.download_url_status['ok'] = True if song_info.download_url_status['clen'] > 0 else False # use proxy url, general test method will fail
                     if song_info.with_valid_download_url: break
@@ -128,10 +128,10 @@ class GDStudioMusicClient(BaseMusicClient):
                     lyric_result, lyric = dict(), 'NULL'
                 if not lyric or lyric == 'NULL':
                     try:
-                        params = {'artist_name': song_info.singers, 'track_name': song_info.song_name, 'album_name': song_info.album, 'duration': estimatedurationwithfilelink(song_info.download_url, headers=self.default_download_headers, request_overrides=request_overrides)}
+                        params = {'artist_name': song_info.singers, 'track_name': song_info.song_name, 'album_name': song_info.album, 'duration': SongInfoUtils.estimatedurationwithfilelink(song_info.download_url, headers=self.default_download_headers, request_overrides=request_overrides)}
                         (resp := self.get(f'https://lrclib.net/api/get?', params=params, **request_overrides)).raise_for_status()
                         lyric_result = resp2json(resp=resp); lyric = cleanlrc(lyric_result.get('syncedLyrics') or "") or 'NULL'
-                        song_info.duration_s, song_info.duration = params['duration'], seconds2hms(params['duration'])
+                        song_info.duration_s, song_info.duration = params['duration'], SongInfoUtils.seconds2hms(params['duration'])
                     except:
                         lyric_result, lyric = dict(), 'NULL'
                 song_info.raw_data['lyric'] = lyric_result if lyric_result else song_info.raw_data['lyric']

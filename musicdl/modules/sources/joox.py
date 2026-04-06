@@ -16,7 +16,7 @@ from pathvalidate import sanitize_filepath
 from ..utils.hosts import JOOX_MUSIC_HOSTS
 from urllib.parse import urlencode, urlparse, parse_qs
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
-from ..utils import touchdir, legalizestring, resp2json, seconds2hms, usesearchheaderscookies, safeextractfromdict, extractdurationsecondsfromlrc, cookies2string, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo, AudioLinkTester, LyricSearchClient
+from ..utils import legalizestring, resp2json, usesearchheaderscookies, safeextractfromdict, extractdurationsecondsfromlrc, cookies2string, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo, AudioLinkTester, LyricSearchClient, IOUtils, SongInfoUtils
 
 
 '''JooxMusicClient'''
@@ -67,7 +67,7 @@ class JooxMusicClient(BaseMusicClient):
             for candidate_result in candidate_results:
                 song_info = SongInfo(
                     raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('name')), singers=legalizestring(', '.join([singer.get('name') for singer in (search_result.get('artist_list', []) or []) if isinstance(singer, dict) and singer.get('name')])),
-                    album=legalizestring(search_result.get('album_name')), ext=str(candidate_result['url']).split('?')[0].split('.')[-1], file_size=None, identifier=song_id, duration_s=download_result.get('minterval') or 0, duration=seconds2hms(download_result.get('minterval') or 0), lyric=None, cover_url=download_result.get('imgSrc'), 
+                    album=legalizestring(search_result.get('album_name')), ext=str(candidate_result['url']).split('?')[0].split('.')[-1], file_size=None, identifier=song_id, duration_s=download_result.get('minterval') or 0, duration=SongInfoUtils.seconds2hms(download_result.get('minterval') or 0), lyric=None, cover_url=download_result.get('imgSrc'), 
                     download_url=candidate_result['url'], download_url_status=self.audio_link_tester.test(candidate_result['url'], request_overrides),
                 )
                 song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
@@ -82,7 +82,7 @@ class JooxMusicClient(BaseMusicClient):
         except Exception: lyric_result, lyric = LyricSearchClient().search(artist_name=song_info.singers, track_name=song_info.song_name, request_overrides=request_overrides)
         song_info.raw_data['lyric'] = lyric_result if lyric_result else song_info.raw_data['lyric']
         song_info.lyric = lyric if (lyric and (lyric not in {'NULL'})) else song_info.lyric
-        if not song_info.duration or song_info.duration == '-:-:-': song_info.duration = seconds2hms(extractdurationsecondsfromlrc(song_info.lyric))
+        if not song_info.duration or song_info.duration == '-:-:-': song_info.duration = SongInfoUtils.seconds2hms(extractdurationsecondsfromlrc(song_info.lyric))
         # return
         return song_info
     '''_search'''
@@ -142,6 +142,6 @@ class JooxMusicClient(BaseMusicClient):
         song_infos = self._removeduplicates(song_infos=song_infos); work_dir = self._constructuniqueworkdir(keyword=legalizestring(playlist_name or f"playlist-{playlist_id}"))
         for song_info in song_infos:
             song_info.work_dir = work_dir; episodes = song_info.episodes if isinstance(song_info.episodes, list) else []
-            for eps_info in episodes: eps_info.work_dir = sanitize_filepath(os.path.join(work_dir, song_info.song_name)); touchdir(work_dir)
+            for eps_info in episodes: eps_info.work_dir = sanitize_filepath(os.path.join(work_dir, song_info.song_name)); IOUtils.touchdir(work_dir)
         # return results
         return song_infos

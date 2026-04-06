@@ -11,7 +11,7 @@ import copy
 from urllib.parse import urlencode
 from rich.progress import Progress
 from ..sources import BaseMusicClient
-from ..utils import legalizestring, usesearchheaderscookies, resp2json, safeextractfromdict, seconds2hms, searchdictbykey, extractdurationsecondsfromlrc, cleanlrc, SongInfo, QuarkParser, AudioLinkTester
+from ..utils import legalizestring, usesearchheaderscookies, resp2json, safeextractfromdict, searchdictbykey, extractdurationsecondsfromlrc, cleanlrc, SongInfo, QuarkParser, AudioLinkTester, SongInfoUtils
 
 
 '''MituMusicClient'''
@@ -59,7 +59,7 @@ class MituMusicClient(BaseMusicClient):
             duration_in_secs = duration[0] if duration else 0
             song_info = SongInfo(
                 raw_data={'search': search_result, 'download': download_result, 'lyric': lyric_result}, source=self.source, song_name=legalizestring(search_result.get('name', None)), singers=legalizestring(search_result.get('artist')), album='NULL', 
-                ext='mp3', file_size=None, identifier=search_result['rid'], duration_s=duration_in_secs, duration=seconds2hms(duration_in_secs), lyric=cleanlrc(safeextractfromdict(lyric_result, ['data', 'lrc'], '')), cover_url=search_result.get('pic'),
+                ext='mp3', file_size=None, identifier=search_result['rid'], duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=cleanlrc(safeextractfromdict(lyric_result, ['data', 'lrc'], '')), cover_url=search_result.get('pic'),
                 download_url=download_url, download_url_status=self.quark_audio_link_tester.test(download_url, request_overrides), default_download_headers=self.quark_default_download_headers,
             )
             song_info.download_url_status['probe_status'] = self.quark_audio_link_tester.probe(song_info.download_url, request_overrides)
@@ -68,7 +68,7 @@ class MituMusicClient(BaseMusicClient):
             elif (song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS): song_info.ext = 'mp3'
             if song_info.with_valid_download_url: break
         if not song_info.lyric or '歌词获取失败' in song_info.lyric: song_info.lyric = 'NULL'
-        if not song_info.duration or song_info.duration == '-:-:-': song_info.duration = seconds2hms(extractdurationsecondsfromlrc(song_info.lyric))
+        if not song_info.duration or song_info.duration == '-:-:-': song_info.duration = SongInfoUtils.seconds2hms(extractdurationsecondsfromlrc(song_info.lyric))
         # return
         return song_info
     '''_parsesearchresultfromweb'''
@@ -89,7 +89,7 @@ class MituMusicClient(BaseMusicClient):
         if (song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS) and (song_info.download_url_status['probe_status']['ext'] in AudioLinkTester.VALID_AUDIO_EXTS): song_info.ext = song_info.download_url_status['probe_status']['ext']
         elif (song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS): song_info.ext = 'mp3'
         if not song_info.lyric or '歌词获取失败' in song_info.lyric: song_info.lyric = 'NULL'
-        if not song_info.duration or song_info.duration == '-:-:-': song_info.duration = seconds2hms(extractdurationsecondsfromlrc(song_info.lyric))
+        if not song_info.duration or song_info.duration == '-:-:-': song_info.duration = SongInfoUtils.seconds2hms(extractdurationsecondsfromlrc(song_info.lyric))
         # return
         return song_info
     '''_search'''

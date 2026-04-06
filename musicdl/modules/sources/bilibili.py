@@ -10,7 +10,7 @@ import copy
 from .base import BaseMusicClient
 from urllib.parse import urlencode
 from rich.progress import Progress
-from ..utils import legalizestring, resp2json, usesearchheaderscookies, seconds2hms, safeextractfromdict, SongInfo, AudioLinkTester
+from ..utils import legalizestring, resp2json, usesearchheaderscookies, safeextractfromdict, SongInfo, AudioLinkTester, SongInfoUtils
 
 
 '''BilibiliMusicClient'''
@@ -81,7 +81,7 @@ class BilibiliMusicClient(BaseMusicClient):
                 if isinstance(download_url, list): download_url = download_url[0]
                 eps_info = SongInfo(
                     raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(episode_name if episode_name == root_title else f'{root_title}-{episode_name}'), singers=legalizestring(search_result.get('author')), 
-                    album=legalizestring(str(song_bvid)), ext='m4a', file_size=None, identifier=cid, duration_s=safeextractfromdict(download_result, ['data', 'dash', 'duration'], 0), duration=seconds2hms(safeextractfromdict(download_result, ['data', 'dash', 'duration'], 0)),
+                    album=legalizestring(str(song_bvid)), ext='m4a', file_size=None, identifier=cid, duration_s=safeextractfromdict(download_result, ['data', 'dash', 'duration'], 0), duration=SongInfoUtils.seconds2hms(safeextractfromdict(download_result, ['data', 'dash', 'duration'], 0)),
                     lyric=None, cover_url=search_result.get('pic'), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
                 )
                 if eps_info.cover_url and (not eps_info.cover_url.startswith('http')): eps_info.cover_url = f'https:{eps_info.cover_url}'

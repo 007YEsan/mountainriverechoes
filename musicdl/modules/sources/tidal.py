@@ -18,7 +18,7 @@ from ..utils.hosts import TIDAL_MUSIC_HOSTS
 from urllib.parse import urlencode, urlparse
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
 from ..utils.tidalutils import TIDALMusicClientUtils, SearchResult, SessionStorage, Track, TidalTvSession, StreamUrl, Artist
-from ..utils import legalizestring, resp2json, seconds2hms, touchdir, replacefile, usesearchheaderscookies, usedownloadheaderscookies, safeextractfromdict, useparseheaderscookies, hostmatchessuffix, obtainhostname, cleanlrc, SongInfo, SongInfoUtils
+from ..utils import legalizestring, resp2json, usesearchheaderscookies, usedownloadheaderscookies, safeextractfromdict, useparseheaderscookies, hostmatchessuffix, obtainhostname, cleanlrc, SongInfo, SongInfoUtils, IOUtils
 
 
 '''TIDALMusicClient'''
@@ -42,7 +42,7 @@ class TIDALMusicClient(BaseMusicClient):
         if isinstance(song_info.download_url, str): return super()._download(song_info=song_info, request_overrides=request_overrides, downloaded_song_infos=downloaded_song_infos, progress=progress, song_progress_id=song_progress_id, auto_supplement_song=auto_supplement_song)
         request_overrides = request_overrides or {}
         try:
-            touchdir(song_info.work_dir); stream_url: StreamUrl = song_info.download_url; stream_resp: dict = song_info.raw_data['download']
+            IOUtils.touchdir(song_info.work_dir); stream_url: StreamUrl = song_info.download_url; stream_resp: dict = song_info.raw_data['download']
             download_ext, final_ext = TIDALMusicClientUtils.guessstreamextension(stream=stream_url), f'.{song_info.ext}'
             remux_required = TIDALMusicClientUtils.shouldremuxflac(download_ext, final_ext, stream_url)
             assert TIDALMusicClientUtils.flacremuxavailable(), f'FLAC stream for {stream_url.url} requires remuxing but no backend is available.'
@@ -65,7 +65,7 @@ class TIDALMusicClient(BaseMusicClient):
                     processed_path, backend_used = TIDALMusicClientUtils.remuxflacstream(decrypted_path, remux_target)
                     if processed_path != decrypted_path and os.path.exists(decrypted_path): os.remove(decrypted_path)
                     else: final_ext = download_ext; processed_path = decrypted_path
-                replacefile(processed_path, song_info.save_path)
+                IOUtils.replacefile(processed_path, song_info.save_path)
             progress.update(song_progress_id, total=os.path.getsize(song_info.save_path), kind='download'); progress.advance(song_progress_id, os.path.getsize(song_info.save_path))
             progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name[:10] + '...' if len(song_info.song_name) > 13 else song_info.song_name[:13]} (Success)")
             downloaded_song_infos.append(SongInfoUtils.supplsonginfothensavelyricsthenwritetags(copy.deepcopy(song_info), logger_handle=self.logger_handle, disable_print=self.disable_print) if auto_supplement_song else copy.deepcopy(song_info))
@@ -108,7 +108,7 @@ class TIDALMusicClient(BaseMusicClient):
                 except Exception: continue
                 song_info = SongInfo(
                     raw_data={'search': search_result, 'download': stream_resp, 'lyric': {}, 'quality': quality}, source=self.source, song_name=legalizestring(search_result.title), singers=legalizestring(', '.join([str(singer.name) for singer in (search_result.artists or []) if isinstance(singer, Artist)])),
-                    album=legalizestring(search_result.album.title), ext=TIDALMusicClientUtils.getexpectedextension(download_url).removeprefix('.'), file_size_bytes='HLS', file_size='HLS', identifier=search_result.id, duration_s=search_result.duration, duration=seconds2hms(search_result.duration), lyric=None, 
+                    album=legalizestring(search_result.album.title), ext=TIDALMusicClientUtils.getexpectedextension(download_url).removeprefix('.'), file_size_bytes='HLS', file_size='HLS', identifier=search_result.id, duration_s=search_result.duration, duration=SongInfoUtils.seconds2hms(search_result.duration), lyric=None, 
                     cover_url=TIDALMusicClientUtils.getcoverurl(search_result.album.cover), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url.urls[0], request_overrides),
                 )
                 if song_info.with_valid_download_url: break
@@ -191,6 +191,6 @@ class TIDALMusicClient(BaseMusicClient):
         song_infos = self._removeduplicates(song_infos=song_infos); work_dir = self._constructuniqueworkdir(keyword=legalizestring(playlist_name or f"playlist-{playlist_id}"))
         for song_info in song_infos:
             song_info.work_dir = work_dir; episodes = song_info.episodes if isinstance(song_info.episodes, list) else []
-            for eps_info in episodes: eps_info.work_dir = sanitize_filepath(os.path.join(work_dir, song_info.song_name)); touchdir(work_dir)
+            for eps_info in episodes: eps_info.work_dir = sanitize_filepath(os.path.join(work_dir, song_info.song_name)); IOUtils.touchdir(work_dir)
         # return results
         return song_infos

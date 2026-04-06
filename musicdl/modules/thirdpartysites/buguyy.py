@@ -12,7 +12,7 @@ import copy
 from urllib.parse import urlencode
 from rich.progress import Progress
 from ..sources import BaseMusicClient
-from ..utils import legalizestring, usesearchheaderscookies, resp2json, safeextractfromdict, searchdictbykey, seconds2hms, cleanlrc, SongInfo, QuarkParser, AudioLinkTester
+from ..utils import legalizestring, usesearchheaderscookies, resp2json, safeextractfromdict, searchdictbykey, cleanlrc, SongInfo, QuarkParser, AudioLinkTester, SongInfoUtils
 
 
 '''BuguyyMusicClient'''
@@ -59,7 +59,7 @@ class BuguyyMusicClient(BaseMusicClient):
             duration_in_secs = duration[0] if duration else 0
             song_info = SongInfo(
                 raw_data={'search': search_result, 'download': download_result, 'lyric': lyric_result}, source=self.source, song_name=legalizestring(search_result.get('title')), singers=legalizestring(search_result.get('singer')), album=legalizestring(safeextractfromdict(lyric_result, ['data', 'album'], None)), 
-                ext="wav", file_size_bytes=None, file_size=None, identifier=search_result["id"], duration_s=duration_in_secs, duration=seconds2hms(duration_in_secs), lyric=cleanlrc(safeextractfromdict(lyric_result, ['data', 'lrc'], '')) or "NULL", cover_url=safeextractfromdict(search_result, ["picurl"], None),
+                ext="wav", file_size_bytes=None, file_size=None, identifier=search_result["id"], duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=cleanlrc(safeextractfromdict(lyric_result, ['data', 'lrc'], '')) or "NULL", cover_url=safeextractfromdict(search_result, ["picurl"], None),
                 download_url=download_url, download_url_status=self.quark_audio_link_tester.test(download_url, request_overrides), default_download_headers=self.quark_default_download_headers
             )
             song_info.download_url_status['probe_status'] = self.quark_audio_link_tester.probe(song_info.download_url, request_overrides)

@@ -14,7 +14,7 @@ from rich.progress import Progress
 from typing import Any, Dict, List
 from ..sources import BaseMusicClient
 from urllib.parse import urlencode, urlparse, parse_qs
-from ..utils import legalizestring, resp2json, seconds2hms, usesearchheaderscookies, safeextractfromdict, byte2mb, SongInfo
+from ..utils import legalizestring, resp2json, usesearchheaderscookies, safeextractfromdict, SongInfo, SongInfoUtils
 
 
 '''QingtingMusicClient'''
@@ -104,8 +104,8 @@ class QingtingMusicClient(BaseMusicClient):
                 if not download_url or not str(download_url).startswith('http'): continue
                 song_info = SongInfo(
                     raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('title')), singers=legalizestring(', '.join([singer.get('nick_name') for singer in (safeextractfromdict(search_result, ['channel_info', 'data', 'podcasters'], []) or []) if isinstance(singer, dict) and singer.get('nick_name')])),
-                    album=legalizestring(safeextractfromdict(search_result, ['channel_info', 'data', 'title'], None) or search_result.get('desc')), ext=download_url.split('?')[0].split('.')[-1], file_size_bytes=int(float(edition.get('size', 0) or 0)) * 1024, file_size=byte2mb(int(float(edition.get('size', 0) or 0)) * 1024), identifier=song_id, duration_s=search_result.get('duration', 0),
-                    duration=seconds2hms(search_result.get('duration', 0) or 0), lyric=None, cover_url=safeextractfromdict(search_result, ['cover'], None), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+                    album=legalizestring(safeextractfromdict(search_result, ['channel_info', 'data', 'title'], None) or search_result.get('desc')), ext=download_url.split('?')[0].split('.')[-1], file_size_bytes=int(float(edition.get('size', 0) or 0)) * 1024, file_size=SongInfoUtils.byte2mb(int(float(edition.get('size', 0) or 0)) * 1024), identifier=song_id, duration_s=search_result.get('duration', 0),
+                    duration=SongInfoUtils.seconds2hms(search_result.get('duration', 0) or 0), lyric=None, cover_url=safeextractfromdict(search_result, ['cover'], None), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
                 )
                 if song_info.with_valid_download_url: break
             if song_info.with_valid_download_url: break
@@ -170,9 +170,9 @@ class QingtingMusicClient(BaseMusicClient):
             progress.advance(download_album_pid, 1)
             progress.update(download_album_pid, description=f"{self.source}._parsebyalbum >>> ({track_idx+1}/{len(tracks)}) episodes completed in album {search_result['id']}")
             if not song_info.with_valid_download_url: continue
-            try: song_info.duration_s = sum([eps.duration_s for eps in song_info.episodes]); song_info.duration = seconds2hms(song_info.duration_s)
+            try: song_info.duration_s = sum([eps.duration_s for eps in song_info.episodes]); song_info.duration = SongInfoUtils.seconds2hms(song_info.duration_s)
             except Exception: pass
-            try: song_info.file_size_bytes = sum([eps.file_size_bytes for eps in song_info.episodes]); song_info.file_size = byte2mb(song_info.file_size_bytes)
+            try: song_info.file_size_bytes = sum([eps.file_size_bytes for eps in song_info.episodes]); song_info.file_size = SongInfoUtils.byte2mb(song_info.file_size_bytes)
             except Exception: pass
             song_infos.append(song_info)
             if self.strict_limit_search_size_per_page and len(song_infos) >= self.search_size_per_page: break

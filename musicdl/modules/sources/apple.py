@@ -16,7 +16,7 @@ from ..utils.hosts import APPLE_MUSIC_HOSTS
 from urllib.parse import urlencode, urlparse
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
 from ..utils.appleutils import AppleMusicClientDownloadSongUtils, AppleMusicClientAPIUtils, AppleMusicClientItunesApiUtils, DownloadItem, SongCodec, RemuxMode
-from ..utils import touchdir, legalizestring, resp2json, seconds2hms, usesearchheaderscookies, safeextractfromdict, usedownloadheaderscookies, useparseheaderscookies, hostmatchessuffix, obtainhostname, cleanlrc, SongInfo, SongInfoUtils, AudioLinkTester
+from ..utils import legalizestring, resp2json, usesearchheaderscookies, safeextractfromdict, usedownloadheaderscookies, useparseheaderscookies, hostmatchessuffix, obtainhostname, cleanlrc, SongInfo, SongInfoUtils, AudioLinkTester, IOUtils
 
 
 '''AppleMusicClient'''
@@ -45,7 +45,7 @@ class AppleMusicClient(BaseMusicClient):
         request_overrides = request_overrides or {}
         if isinstance(song_info.download_url, str): return super()._download(song_info=song_info, request_overrides=request_overrides, downloaded_song_infos=downloaded_song_infos, progress=progress, song_progress_id=song_progress_id, auto_supplement_song=auto_supplement_song)
         try:
-            touchdir(song_info.work_dir); tmp_dir = f'apple_id_{str(song_info.identifier)}'; touchdir(tmp_dir); download_item: DownloadItem = song_info.download_url
+            IOUtils.touchdir(song_info.work_dir); tmp_dir = f'apple_id_{str(song_info.identifier)}'; IOUtils.touchdir(tmp_dir); download_item: DownloadItem = song_info.download_url
             progress.update(song_progress_id, total=1, kind='overall'); progress.update(song_progress_id, description=f"{self.source}.download >>> {song_info.song_name[:10] + '...' if len(song_info.song_name) > 13 else song_info.song_name[:13]} (Downloading)")
             AppleMusicClientDownloadSongUtils.download(download_item=download_item, work_dir=tmp_dir, silent=self.disable_print, codec=self.codec, wrapper_decrypt_ip=self.wrapper_decrypt_ip, artist=song_info.singers, use_wrapper=self.use_wrapper, remux_mode=RemuxMode.FFMPEG); shutil.move(download_item.staged_path, song_info.save_path)
             progress.update(song_progress_id, total=os.path.getsize(song_info.save_path), kind='download'); progress.advance(song_progress_id, os.path.getsize(song_info.save_path))
@@ -95,7 +95,7 @@ class AppleMusicClient(BaseMusicClient):
             except Exception: duration_in_secs = 0
             song_info = SongInfo(
                 raw_data={'search': search_result, 'download': {}, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(search_result, ['attributes', 'name'], None)), singers=legalizestring(safeextractfromdict(search_result, ['attributes', 'artistName'], None)), album=legalizestring(safeextractfromdict(search_result, ['attributes', 'albumName'], None)), 
-                ext=str(download_url).split('?')[0].split('.')[-1], file_size=None, identifier=song_id, duration_s=duration_in_secs, duration=seconds2hms(duration_in_secs), lyric=None, cover_url=safeextractfromdict(search_result, ['attributes', 'artwork', 'url'], None), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+                ext=str(download_url).split('?')[0].split('.')[-1], file_size=None, identifier=song_id, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, cover_url=safeextractfromdict(search_result, ['attributes', 'artwork', 'url'], None), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
             )
             song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
             song_info.file_size = song_info.download_url_status['probe_status']['file_size']
@@ -120,7 +120,7 @@ class AppleMusicClient(BaseMusicClient):
             except Exception: duration_in_secs = 0
             song_info = SongInfo(
                 raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(search_result, ['attributes', 'name'], None)), singers=legalizestring(safeextractfromdict(search_result, ['attributes', 'artistName'], None)), album=legalizestring(safeextractfromdict(search_result, ['attributes', 'albumName'], None)),
-                ext=download_item.stream_info.file_format.value, file_size='HLS', identifier=song_id, duration_s=duration_in_secs, duration=seconds2hms(duration_in_secs), lyric=cleanlrc(str(download_item.lyrics.synced)) or 'NULL', cover_url=safeextractfromdict(search_result, ['attributes', 'artwork', 'url'], None), download_url=download_item, download_url_status={'ok': True},
+                ext=download_item.stream_info.file_format.value, file_size='HLS', identifier=song_id, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=cleanlrc(str(download_item.lyrics.synced)) or 'NULL', cover_url=safeextractfromdict(search_result, ['attributes', 'artwork', 'url'], None), download_url=download_item, download_url_status={'ok': True},
             )
             if song_info.cover_url and song_info.cover_url.startswith('http'): song_info.cover_url = song_info.cover_url.format(w=600, h=600, f='jpg')
         # return
@@ -190,6 +190,6 @@ class AppleMusicClient(BaseMusicClient):
         song_infos = self._removeduplicates(song_infos=song_infos); work_dir = self._constructuniqueworkdir(keyword=legalizestring(playlist_name or f"playlist-{playlist_id}"))
         for song_info in song_infos:
             song_info.work_dir = work_dir; episodes = song_info.episodes if isinstance(song_info.episodes, list) else []
-            for eps_info in episodes: eps_info.work_dir = sanitize_filepath(os.path.join(work_dir, song_info.song_name)); touchdir(work_dir)
+            for eps_info in episodes: eps_info.work_dir = sanitize_filepath(os.path.join(work_dir, song_info.song_name)); IOUtils.touchdir(work_dir)
         # return results
         return song_infos

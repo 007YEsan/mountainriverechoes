@@ -13,7 +13,7 @@ from bs4 import BeautifulSoup
 from rich.progress import Progress
 from ..sources import BaseMusicClient
 from urllib.parse import urljoin, urlparse
-from ..utils import legalizestring, usesearchheaderscookies, resp2json, safeextractfromdict, extractdurationsecondsfromlrc, seconds2hms, searchdictbykey, cleanlrc, SongInfo, QuarkParser, AudioLinkTester
+from ..utils import legalizestring, usesearchheaderscookies, resp2json, safeextractfromdict, extractdurationsecondsfromlrc, searchdictbykey, cleanlrc, SongInfo, QuarkParser, AudioLinkTester, SongInfoUtils
 
 
 '''GequhaiMusicClient'''
@@ -76,7 +76,7 @@ class GequhaiMusicClient(BaseMusicClient):
         duration = [int(float(d)) for d in searchdictbykey(download_result, 'duration') if int(float(d)) > 0]; duration_in_secs = duration[0] if duration else 0
         song_info = SongInfo(
             raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(download_result.get('mp3_title')), singers=legalizestring(download_result.get('mp3_author', None)), album='NULL', ext='mp3', file_size=None, 
-            identifier=download_result.get('mp3_id') or urlparse(str(search_result['play_url'])).path.strip('/').split('/')[-1], duration_s=duration_in_secs, duration=seconds2hms(duration_in_secs), lyric=cleanlrc(soup.find("div", id="content-lrc2").get_text("\n", strip=True)), 
+            identifier=download_result.get('mp3_id') or urlparse(str(search_result['play_url'])).path.strip('/').split('/')[-1], duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=cleanlrc(soup.find("div", id="content-lrc2").get_text("\n", strip=True)), 
             cover_url=download_result.get('mp3_cover'), download_url=download_url, download_url_status=self.quark_audio_link_tester.test(download_url, request_overrides), default_download_headers=self.quark_default_download_headers,
         )
         song_info.download_url_status['probe_status'] = self.quark_audio_link_tester.probe(song_info.download_url, request_overrides)
@@ -85,7 +85,7 @@ class GequhaiMusicClient(BaseMusicClient):
         elif (song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS): song_info.ext = 'mp3'
         if not song_info.with_valid_download_url: return SongInfo(source=self.source)
         if not song_info.lyric or '歌词获取失败' in song_info.lyric: song_info.lyric = 'NULL'
-        if not song_info.duration or song_info.duration == '-:-:-': song_info.duration = seconds2hms(extractdurationsecondsfromlrc(song_info.lyric))
+        if not song_info.duration or song_info.duration == '-:-:-': song_info.duration = SongInfoUtils.seconds2hms(extractdurationsecondsfromlrc(song_info.lyric))
         # return
         return song_info
     '''_parsesearchresultfromweb'''
@@ -113,7 +113,7 @@ class GequhaiMusicClient(BaseMusicClient):
         elif (song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS): song_info.ext = 'mp3'
         if not song_info.with_valid_download_url: return SongInfo(source=self.source)
         if not song_info.lyric or '歌词获取失败' in song_info.lyric: song_info.lyric = 'NULL'
-        if not song_info.duration or song_info.duration == '-:-:-': song_info.duration = seconds2hms(extractdurationsecondsfromlrc(song_info.lyric))
+        if not song_info.duration or song_info.duration == '-:-:-': song_info.duration = SongInfoUtils.seconds2hms(extractdurationsecondsfromlrc(song_info.lyric))
         # return
         return song_info
     '''_search'''

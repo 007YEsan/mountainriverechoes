@@ -16,7 +16,7 @@ from Crypto.Cipher import AES
 from rich.progress import Progress
 from ..sources import BaseMusicClient
 from urllib.parse import urlencode, urlparse, parse_qs
-from ..utils import byte2mb, resp2json, seconds2hms, legalizestring, safeextractfromdict, usesearchheaderscookies, SongInfo
+from ..utils import resp2json, legalizestring, safeextractfromdict, usesearchheaderscookies, SongInfo, SongInfoUtils
 
 
 '''XimalayaMusicClient'''
@@ -84,7 +84,7 @@ class XimalayaMusicClient(BaseMusicClient):
         song_info = SongInfo(
             raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('title')), singers=legalizestring(search_result.get('nickname')),
             album=legalizestring(search_result.get('album_title') or search_result.get('albumTitle')), ext=download_url.split('?')[0].split('.')[-1], file_size_bytes=file_size_bytes, file_size=file_size, identifier=song_id,
-            duration_s=int(float(search_result.get('duration', 0) or 0)), duration=seconds2hms(search_result.get('duration', 0) or 0), lyric=None, cover_url=safeextractfromdict(search_result, ['cover_path'], None),
+            duration_s=int(float(search_result.get('duration', 0) or 0)), duration=SongInfoUtils.seconds2hms(search_result.get('duration', 0) or 0), lyric=None, cover_url=safeextractfromdict(search_result, ['cover_path'], None),
             download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
         )
         song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
@@ -108,7 +108,7 @@ class XimalayaMusicClient(BaseMusicClient):
             song_info = SongInfo(
                 raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('title')), singers=legalizestring(search_result.get('nickname')),
                 album=legalizestring(search_result.get('album_title') or search_result.get('albumTitle')), ext=download_url.split('?')[0].split('.')[-1] or 'mp3', file_size_bytes=float(encrypted_url.get('fileSize', 0) or 0), 
-                file_size=byte2mb(encrypted_url.get('fileSize', 0)), identifier=song_id, duration_s=int(float(search_result.get('duration', 0) or 0)), duration=seconds2hms(search_result.get('duration', 0) or 0), lyric=None, 
+                file_size=SongInfoUtils.byte2mb(encrypted_url.get('fileSize', 0)), identifier=song_id, duration_s=int(float(search_result.get('duration', 0) or 0)), duration=SongInfoUtils.seconds2hms(search_result.get('duration', 0) or 0), lyric=None, 
                 cover_url=safeextractfromdict(search_result, ['cover_path'], None), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
             )
             if not song_info.with_valid_download_url: continue
@@ -175,9 +175,9 @@ class XimalayaMusicClient(BaseMusicClient):
             progress.advance(download_album_pid, 1)
             progress.update(download_album_pid, description=f"{self.source}._parsebyalbum >>> ({track_idx+1}/{len(tracks)}) episodes completed in album {search_result['id']}")
             if not song_info.with_valid_download_url: continue
-            try: song_info.duration_s = sum([eps.duration_s for eps in song_info.episodes]); song_info.duration = seconds2hms(song_info.duration_s)
+            try: song_info.duration_s = sum([eps.duration_s for eps in song_info.episodes]); song_info.duration = SongInfoUtils.seconds2hms(song_info.duration_s)
             except Exception: pass
-            try: song_info.file_size_bytes = sum([eps.file_size_bytes for eps in song_info.episodes]); song_info.file_size = byte2mb(song_info.file_size_bytes)
+            try: song_info.file_size_bytes = sum([eps.file_size_bytes for eps in song_info.episodes]); song_info.file_size = SongInfoUtils.byte2mb(song_info.file_size_bytes)
             except Exception: pass
             song_infos.append(song_info)
             if self.strict_limit_search_size_per_page and len(song_infos) >= self.search_size_per_page: break

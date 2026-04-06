@@ -16,7 +16,7 @@ from pathvalidate import sanitize_filepath
 from ..utils.hosts import MIGU_MUSIC_HOSTS
 from urllib.parse import urlencode, urlparse, parse_qs, urlsplit, urljoin
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
-from ..utils import touchdir, byte2mb, resp2json, seconds2hms, legalizestring, safeextractfromdict, usesearchheaderscookies, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo, AudioLinkTester
+from ..utils import resp2json, legalizestring, safeextractfromdict, usesearchheaderscookies, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo, AudioLinkTester, IOUtils, SongInfoUtils
 
 
 '''MiguMusicClient'''
@@ -72,7 +72,7 @@ class MiguMusicClient(BaseMusicClient):
         if lossless_quality_is_sufficient and song_info_flac.with_valid_download_url and (song_info_flac.ext in lossless_quality_definitions): song_info = song_info_flac
         else:
             for rate in sorted((search_result.get('rateFormats', []) or []) + (search_result.get('newRateFormats', []) or []) + (search_result.get('audioFormats', []) or []), key=lambda x: int(safe_obtain_filesize_func(x)), reverse=True):
-                if (not isinstance(rate, dict)) or (byte2mb(safe_obtain_filesize_func(rate)) == 'NULL') or (not rate.get('formatType')) or (not rate.get('resourceType')): continue
+                if (not isinstance(rate, dict)) or (SongInfoUtils.byte2mb(safe_obtain_filesize_func(rate)) == 'NULL') or (not rate.get('formatType')) or (not rate.get('resourceType')): continue
                 if rate['formatType'] in {'Z3D'}: continue # TODO: support decrypt Z3D files in migu music
                 try: (resp := self.get(f"https://c.musicapp.migu.cn/MIGUM3.0/strategy/listen-url/v2.4?resourceType={rate['resourceType']}&netType=01&scene=&toneFlag={rate['formatType']}&contentId={content_id}&copyrightId={copyright_id}&lowerQualityContentId={content_id}", **request_overrides)).raise_for_status()
                 except Exception: continue
@@ -82,8 +82,8 @@ class MiguMusicClient(BaseMusicClient):
                 duration_in_secs = safeextractfromdict(download_result, ['data', 'song', 'duration'], 0)
                 song_info = SongInfo(
                     raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('name') or search_result.get('songName')), singers=legalizestring(', '.join([singer.get('name') for singer in (search_result.get('singers') or search_result.get('singerList') or []) if isinstance(singer, dict) and singer.get('name')])),
-                    album=legalizestring(search_result.get('album') or (', '.join([album.get('name') for album in (search_result.get('albums') or []) if isinstance(album, dict) and album.get('name')]))), ext=MiguMusicClient.MUSIC_QUALITIES.get(rate['formatType']) or 'mp3', file_size_bytes=safe_obtain_filesize_func(rate), file_size=byte2mb(safe_obtain_filesize_func(rate)), identifier=content_id, 
-                    duration_s=duration_in_secs, duration=seconds2hms(duration_in_secs), lyric=None, cover_url=safeextractfromdict(search_result, ['imgItems', -1, 'img'], None) or next((search_result.get(k) for k in ("img3", "img2", "img1") if search_result.get(k)), None), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+                    album=legalizestring(search_result.get('album') or (', '.join([album.get('name') for album in (search_result.get('albums') or []) if isinstance(album, dict) and album.get('name')]))), ext=MiguMusicClient.MUSIC_QUALITIES.get(rate['formatType']) or 'mp3', file_size_bytes=safe_obtain_filesize_func(rate), file_size=SongInfoUtils.byte2mb(safe_obtain_filesize_func(rate)), identifier=content_id, 
+                    duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, cover_url=safeextractfromdict(search_result, ['imgItems', -1, 'img'], None) or next((search_result.get(k) for k in ("img3", "img2", "img1") if search_result.get(k)), None), download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
                 )
                 song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
                 song_info.file_size = song_info.download_url_status['probe_status']['file_size']; song_info.ext = song_info.download_url_status['probe_status']['ext']
@@ -162,6 +162,6 @@ class MiguMusicClient(BaseMusicClient):
         song_infos = self._removeduplicates(song_infos=song_infos); work_dir = self._constructuniqueworkdir(keyword=legalizestring(playlist_name or f"playlist-{playlist_id}"))
         for song_info in song_infos:
             song_info.work_dir = work_dir; episodes = song_info.episodes if isinstance(song_info.episodes, list) else []
-            for eps_info in episodes: eps_info.work_dir = sanitize_filepath(os.path.join(work_dir, song_info.song_name)); touchdir(work_dir)
+            for eps_info in episodes: eps_info.work_dir = sanitize_filepath(os.path.join(work_dir, song_info.song_name)); IOUtils.touchdir(work_dir)
         # return results
         return song_infos

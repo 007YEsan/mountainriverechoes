@@ -12,16 +12,21 @@ import base64
 import shutil
 import requests
 import tempfile
+from io import BytesIO
 from pathlib import Path
-from mutagen import File
 from .data import SongInfo
+from mutagen.mp3 import MP3
 from tinytag import TinyTag
+from mutagen.asf import ASF
 from .lyric import WhisperLRC
+from mutagen.aiff import AIFF
+from mutagen.wave import WAVE
 from mimetypes import guess_type
 from .logger import LoggerHandle
-from mutagen.flac import Picture
-from mutagen.mp4 import MP4Cover
-from .misc import seconds2hms, byte2mb
+from mutagen.mp4 import MP4Cover, MP4
+from mutagen.flac import Picture, FLAC
+from mutagen import File as MutagenFile
+from mutagen.oggvorbis import OggVorbis
 from mutagen.id3 import ID3, USLT, APIC, TIT2, TALB, TPE1
 
 
@@ -34,11 +39,11 @@ class SongInfoUtils:
         # correct file size
         size = path.stat().st_size
         song_info.file_size_bytes = size
-        song_info.file_size = byte2mb(size=size)
+        song_info.file_size = SongInfoUtils.byte2mb(size=size)
         # tinytag parse
         try: tag = TinyTag.get(str(path))
         except Exception as err: logger_handle.warning(f'SongInfoUtils.supplsonginfothensavelyricsthenwritetags >>> {str(path)} (Err: {err})', disable_print=disable_print); tag = None
-        if tag and tag.duration: song_info.duration_s = int(round(tag.duration)); song_info.duration = seconds2hms(tag.duration)
+        if tag and tag.duration: song_info.duration_s = int(round(tag.duration)); song_info.duration = SongInfoUtils.seconds2hms(tag.duration)
         if tag and tag.bitrate: song_info.bitrate = int(round(tag.bitrate))
         if tag and tag.samplerate: song_info.samplerate = int(tag.samplerate)
         if tag and tag.channels: song_info.channels = int(tag.channels)
@@ -111,7 +116,7 @@ class SongInfoUtils:
     @staticmethod
     def embedlyrics(audio_path: Path, *, overwrite: bool, lyrics_text: str) -> bool:
         # init
-        audio = File(audio_path)
+        audio = MutagenFile(audio_path)
         if audio is None: return False
         cls = audio.__class__.__name__; text = (lyrics_text or "").replace("\r\n", "\n").strip()
         if not text: return False
@@ -147,7 +152,7 @@ class SongInfoUtils:
     @staticmethod
     def embedbasictags(audio_path: Path, *, overwrite: bool, title: str | None, album: str | None, artists: list[str] | None) -> bool:
         # init
-        audio = File(audio_path)
+        audio = MutagenFile(audio_path)
         if audio is None: return False
         cls = audio.__class__.__name__; changed = False
         # MP3
@@ -186,7 +191,7 @@ class SongInfoUtils:
     '''embedcover'''
     @staticmethod
     def embedcover(audio_path: Path, *, overwrite: bool, cover_source: str, timeout: int = 15) -> bool:
-        audio = File(audio_path)
+        audio = MutagenFile(audio_path)
         if audio is None: return False
         cls = audio.__class__.__name__
         cover_bytes, mime = SongInfoUtils.loadimagebytesandmime(cover_source, timeout=timeout)
@@ -271,7 +276,7 @@ class SongInfoUtils:
     def audioreadable(audio_path: Path) -> bool:
         try:
             if not audio_path.exists() or audio_path.stat().st_size <= 0: return False
-            audio = File(audio_path)
+            audio = MutagenFile(audio_path)
             if audio is None or getattr(audio, "info", None) is None: return False
             TinyTag.get(str(audio_path))
             return True
@@ -291,8 +296,50 @@ class SongInfoUtils:
         try: temp_path.write_text(text, encoding="utf-8"); os.replace(temp_path, path); return True
         except Exception: return False
         finally: temp_path.unlink(missing_ok=True)
+
+
+
+
     '''loadorcreateid3'''
     @staticmethod
     def loadorcreateid3(audio_path: Path) -> ID3:
         try: return ID3(audio_path)
         except Exception: return ID3()
+    '''estimatedurationwithfilesizebr'''
+    @staticmethod
+    def estimatedurationwithfilesizebr(file_size_bytes: int, br_kbps: float, return_seconds: bool = False) -> str:
+        if (not file_size_bytes) or (not br_kbps) or (br_kbps <= 0): return (0 if return_seconds else "-:-:-")
+        duration_seconds = int(file_size_bytes * 8 / (br_kbps * 1000))
+        hours, minutes, seconds = duration_seconds // 3600, (duration_seconds % 3600) // 60, duration_seconds % 60
+        return (duration_seconds if return_seconds else f"{hours:02d}:{minutes:02d}:{seconds:02d}")
+    '''estimatedurationwithfilelink'''
+    @staticmethod
+    def estimatedurationwithfilelink(filelink: str = '', headers: dict = None, request_overrides: dict = None):
+        headers, request_overrides = dict(headers or {}), dict(request_overrides or {})
+        try: (resp := requests.get(filelink, headers=headers, timeout=10, **request_overrides)).raise_for_status(); audio: FLAC = MutagenFile(BytesIO(resp.content)); return int(getattr(audio.info, "length", 0))
+        except Exception: return 0
+    '''seconds2hms'''
+    @staticmethod
+    def seconds2hms(seconds: int):
+        try: hms = '-:-:-' if not (t := int(float(seconds))) else f'{t//3600:02d}:{t//60%60:02d}:{t%60:02d}'
+        except Exception: hms = '-:-:-'
+        return hms
+    '''byte2mb'''
+    @staticmethod
+    def byte2mb(size: int):
+        try: size = 'NULL' if not (mb := round(int(float(size)) / 1024 / 1024, 2)) else f'{mb} MB'
+        except Exception: size = 'NULL'
+        return size
+    '''mb2byte'''
+    def mb2byte(size: str | float):
+        try: nbytes = 0 if size == 'NULL' else int(float(size.removesuffix('MB').strip()) * 1024 * 1024)
+        except Exception: nbytes = 0
+        return nbytes
+    '''naiveguessextfromaudiobytes'''
+    @staticmethod
+    def naiveguessextfromaudiobytes(content: bytes):
+        if (audio := MutagenFile(BytesIO(content))) is None: return None
+        AUDIO_EXTENSIONS = {MP3: "mp3", FLAC: "flac", MP4: "m4a", OggVorbis: "ogg", WAVE: "wav", AIFF: "aiff", ASF: "wma"}
+        for cls, ext in AUDIO_EXTENSIONS.items():
+            if isinstance(audio, cls): return ext
+        return None

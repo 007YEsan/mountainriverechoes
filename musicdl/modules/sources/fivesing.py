@@ -15,7 +15,7 @@ from pathvalidate import sanitize_filepath
 from ..utils.hosts import FIVESING_MUSIC_HOSTS
 from urllib.parse import urlencode, urlparse, urljoin
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
-from ..utils import touchdir, legalizestring, byte2mb, resp2json, usesearchheaderscookies, safeextractfromdict, extractdurationsecondsfromlrc, seconds2hms, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo, AudioLinkTester
+from ..utils import legalizestring, resp2json, usesearchheaderscookies, safeextractfromdict, extractdurationsecondsfromlrc, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo, AudioLinkTester, IOUtils, SongInfoUtils
 
 
 '''FiveSingMusicClient'''
@@ -61,7 +61,7 @@ class FiveSingMusicClient(BaseMusicClient):
                 if not download_url or not (str(download_url).startswith('http')): continue
                 song_info = SongInfo(
                     raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('songName')), singers=legalizestring(search_result.get('singer')), album='NULL', ext=safeextractfromdict(download_result, ['data', f'{quality}ext'], 'mp3'), 
-                    file_size_bytes=safeextractfromdict(download_result, ['data', f'{quality}size'], 0), file_size=byte2mb(safeextractfromdict(download_result, ['data', f'{quality}size'], 0)), identifier=song_id, duration='-:-:-', lyric=None, cover_url=safeextractfromdict(download_result, ['data', 'user', 'I'], None), 
+                    file_size_bytes=safeextractfromdict(download_result, ['data', f'{quality}size'], 0), file_size=SongInfoUtils.byte2mb(safeextractfromdict(download_result, ['data', f'{quality}size'], 0)), identifier=song_id, duration='-:-:-', lyric=None, cover_url=safeextractfromdict(download_result, ['data', 'user', 'I'], None), 
                     download_url=download_url, download_url_status=self.audio_link_tester.test(download_url, request_overrides),
                 )
                 song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
@@ -78,7 +78,7 @@ class FiveSingMusicClient(BaseMusicClient):
         song_info.lyric = lyric if (lyric and (lyric not in {'NULL'})) else song_info.lyric
         song_info.album = legalizestring(safeextractfromdict(lyric_result, ['data', 'albumName'], None))
         song_info.cover_url = safeextractfromdict(lyric_result, ['data', 'user', 'I'], None)
-        if not song_info.duration or song_info.duration == '-:-:-': song_info.duration = seconds2hms(extractdurationsecondsfromlrc(song_info.lyric))
+        if not song_info.duration or song_info.duration == '-:-:-': song_info.duration = SongInfoUtils.seconds2hms(extractdurationsecondsfromlrc(song_info.lyric))
         # return
         return song_info
     '''_search'''
@@ -142,6 +142,6 @@ class FiveSingMusicClient(BaseMusicClient):
         song_infos = self._removeduplicates(song_infos=song_infos); work_dir = self._constructuniqueworkdir(keyword=legalizestring(playlist_name or f"playlist-{playlist_id}"))
         for song_info in song_infos:
             song_info.work_dir = work_dir; episodes = song_info.episodes if isinstance(song_info.episodes, list) else []
-            for eps_info in episodes: eps_info.work_dir = sanitize_filepath(os.path.join(work_dir, song_info.song_name)); touchdir(work_dir)
+            for eps_info in episodes: eps_info.work_dir = sanitize_filepath(os.path.join(work_dir, song_info.song_name)); IOUtils.touchdir(work_dir)
         # return results
         return song_infos

@@ -10,7 +10,7 @@ import copy
 from urllib.parse import urljoin
 from rich.progress import Progress
 from ..sources import BaseMusicClient
-from ..utils import legalizestring, resp2json, usesearchheaderscookies, seconds2hms, extractdurationsecondsfromlrc, safeextractfromdict, cleanlrc, SongInfo, AudioLinkTester
+from ..utils import legalizestring, resp2json, usesearchheaderscookies, extractdurationsecondsfromlrc, safeextractfromdict, cleanlrc, SongInfo, AudioLinkTester, SongInfoUtils
 
 
 '''JBSouMusicClient'''
@@ -81,7 +81,7 @@ class JBSouMusicClient(BaseMusicClient):
                 if (song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS) and (song_info.download_url_status['probe_status']['ext'] in AudioLinkTester.VALID_AUDIO_EXTS): song_info.ext = song_info.download_url_status['probe_status']['ext']
                 elif (song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS): song_info.ext = 'mp3'
                 # --lyric results
-                try: (resp := self.get(urljoin(base_url, search_result['lrc']), **request_overrides)).raise_for_status(); lyric, lyric_result = cleanlrc(resp.text), {'lyric': resp.text}; song_info.duration_s = extractdurationsecondsfromlrc(lyric); song_info.duration = seconds2hms(song_info.duration_s)
+                try: (resp := self.get(urljoin(base_url, search_result['lrc']), **request_overrides)).raise_for_status(); lyric, lyric_result = cleanlrc(resp.text), {'lyric': resp.text}; song_info.duration_s = extractdurationsecondsfromlrc(lyric); song_info.duration = SongInfoUtils.seconds2hms(song_info.duration_s)
                 except Exception: lyric_result, lyric = dict(), 'NULL'
                 song_info.raw_data['lyric'] = lyric_result if lyric_result else song_info.raw_data['lyric']
                 song_info.lyric = lyric if (lyric and (lyric not in {'NULL'})) else song_info.lyric
