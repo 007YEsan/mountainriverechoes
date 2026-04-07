@@ -17,10 +17,10 @@ import random
 import base64
 import hashlib
 import requests
-from Crypto.PublicKey import RSA
+from Cryptodome.PublicKey import RSA
 from .misc import safeextractfromdict
 from typing import Any, Dict, Optional
-from Crypto.Cipher import AES, PKCS1_v1_5
+from Cryptodome.Cipher import AES, PKCS1_v1_5
 
 
 '''settings'''
