@@ -24,7 +24,6 @@ import unicodedata
 from bs4 import BeautifulSoup
 from pathlib import PurePosixPath
 from .importutils import optionalimport
-from .songinfoutils import SongInfoUtils
 from urllib.parse import urlsplit, unquote
 from requests.structures import CaseInsensitiveDict
 from pathvalidate import sanitize_filepath, sanitize_filename
@@ -195,6 +194,12 @@ class AudioLinkTester:
         self.headers = {'Accept': '*/*', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36'}
         self.headers.update(dict(headers or {}))
         self.session = requests.Session()
+    '''byte2mb'''
+    @staticmethod
+    def byte2mb(size: int):
+        try: size = 'NULL' if not (mb := round(int(float(size)) / 1024 / 1024, 2)) else f'{mb} MB'
+        except Exception: size = 'NULL'
+        return size
     '''normalizectype'''
     @staticmethod
     def normalizectype(content_type: Optional[str]) -> Optional[str]:
@@ -305,7 +310,7 @@ class AudioLinkTester:
             head_resp: requests.Response = (head_info := self.request("HEAD", url, request_overrides=request_overrides))["resp"]
             result["status_code"], result["download_url"] = head_info["status_code"], head_info["download_url"] or url
             result["ctype"], result["file_size_bytes"] = head_info["ctype"] or "NULL", head_info["file_size_bytes"] or 0
-            result["file_size"] = SongInfoUtils.byte2mb(result["file_size_bytes"])
+            result["file_size"] = AudioLinkTester.byte2mb(result["file_size_bytes"])
             if not head_info["ok"]: reason.append(f"HEAD returned non-2xx status: {head_info['status_code']}"); result["method"] = "requests.head"; head_resp.close()
             else:
                 reason.append(f"HEAD success: status={head_info['status_code']}, ctype={head_info['ctype']!r}, final_url={head_info['download_url']!r}")
@@ -319,7 +324,7 @@ class AudioLinkTester:
             get_resp: requests.Response = (get_info := self.request("GET", url, request_overrides=request_overrides, range_bytes=(0, 8191)))["resp"]
             result["status_code"], result["download_url"] = get_info["status_code"], get_info["download_url"] or url
             result["ctype"], result["file_size_bytes"] = get_info["ctype"] or "NULL", get_info["file_size_bytes"] or 0
-            result["file_size"] = SongInfoUtils.byte2mb(result["file_size_bytes"])
+            result["file_size"] = AudioLinkTester.byte2mb(result["file_size_bytes"])
             if not get_info["ok"]: reason.append(f"GET returned non-2xx status: {get_info['status_code']}"); result["method"] = "requests.get"; get_resp.close()
             else:
                 reason.append(f"GET success: status={get_info['status_code']}, ctype={get_info['ctype']!r}, final_url={get_info['download_url']!r}")

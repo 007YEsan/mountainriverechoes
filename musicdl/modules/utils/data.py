@@ -11,12 +11,9 @@ import os
 import uuid
 import hashlib
 from pathlib import Path
-from .misc import sanitize_filepath
 from typing import Any, Dict, Optional
+from pathvalidate import sanitize_filepath
 from dataclasses import dataclass, field, fields
-from ..utils.tidalutils import StreamUrl as TidalStreamObj
-from ..utils.youtubeutils import Stream as YouTubeStreamObj
-from ..utils.appleutils import DownloadItem as AppleStreamObj
 
 
 '''SongInfo'''
@@ -56,11 +53,13 @@ class SongInfo:
     protocol: Optional[str] = 'HTTP' # should be in {'HTTP', 'HLS'}
     @property
     def with_valid_download_url(self) -> bool:
+        from ..utils.tidalutils import StreamUrl as TidalStreamObj
+        from ..utils.youtubeutils import Stream as YouTubeStreamObj
+        from ..utils.appleutils import DownloadItem as AppleStreamObj
         if self.episodes: return all([eps.with_valid_download_url for eps in self.episodes])
-        with_downloaded_contents = bool(self.downloaded_contents)
         is_valid_download_url_format = self.download_url.startswith('http') if isinstance(self.download_url, str) else isinstance(self.download_url, (TidalStreamObj, YouTubeStreamObj, AppleStreamObj))
-        is_downloadable = isinstance(self.download_url_status, dict) and self.download_url_status.get('ok')
-        return bool((is_valid_download_url_format or with_downloaded_contents) and is_downloadable)
+        is_downloadable, with_downloaded_contents = isinstance(self.download_url_status, dict) and self.download_url_status.get('ok'), bool(self.downloaded_contents)
+        return bool(with_downloaded_contents or (is_valid_download_url_format and is_downloadable))
     # save info
     work_dir: Optional[str] = './'
     _save_path: Optional[str] = None
@@ -68,9 +67,7 @@ class SongInfo:
     def save_path(self) -> str:
         if self._save_path is not None: return self.legalizepathlength(self._save_path)
         sp, same_name_file_idx = os.path.join(self.work_dir, f"{self.song_name} - {self.identifier}.{self.ext.removeprefix('.')}"), 1
-        while os.path.exists(sp):
-            sp = os.path.join(self.work_dir, f"{self.song_name} - {self.identifier} ({same_name_file_idx}).{self.ext.removeprefix('.')}")
-            same_name_file_idx += 1
+        while os.path.exists(sp): sp = os.path.join(self.work_dir, f"{self.song_name} - {self.identifier} ({same_name_file_idx}).{self.ext.removeprefix('.')}"); same_name_file_idx += 1
         self._save_path = sanitize_filepath(sp)
         return self.legalizepathlength(self._save_path)
     # identifier

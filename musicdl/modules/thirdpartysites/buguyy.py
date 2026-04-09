@@ -9,10 +9,12 @@ WeChat Official Account (微信公众号):
 import re
 import html
 import copy
+import warnings
 from urllib.parse import urlencode
 from rich.progress import Progress
 from ..sources import BaseMusicClient
 from ..utils import legalizestring, usesearchheaderscookies, resp2json, safeextractfromdict, searchdictbykey, cleanlrc, SongInfo, QuarkParser, AudioLinkTester, SongInfoUtils
+warnings.filterwarnings('ignore')
 
 
 '''BuguyyMusicClient'''
@@ -33,13 +35,10 @@ class BuguyyMusicClient(BaseMusicClient):
     def _constructsearchurls(self, keyword: str, rule: dict = None, request_overrides: dict = None):
         # init
         rule, request_overrides = rule or {}, request_overrides or {}
-        # search rules
-        default_rule = {'keyword': keyword}
-        default_rule.update(rule)
+        (default_rule := {'keyword': keyword}).update(rule)
         # construct search urls based on search rules
         base_url = 'https://a.buguyy.top/newapi/search.php?'
-        page_rule = copy.deepcopy(default_rule)
-        search_urls = [base_url + urlencode(page_rule)]
+        search_urls = [base_url + urlencode(copy.deepcopy(default_rule))]
         self.search_size_per_page = self.search_size_per_source
         # return
         return search_urls
@@ -79,21 +78,18 @@ class BuguyyMusicClient(BaseMusicClient):
     def _parsesearchresultfromweb(self, search_result: dict, request_overrides: dict = None):
         # init
         request_overrides, song_info = request_overrides or {}, SongInfo(source=self.source)
-        # parse
-        try: (resp := self.get(f'https://a.buguyy.top/newapi/geturl2.php?id={search_result["id"]}', verify=False, **request_overrides)).raise_for_status(); download_result = resp2json(resp=resp)
-        except Exception: download_result = dict()
-        download_url = safeextractfromdict(download_result, ['data', 'url'], '')
-        if not download_url or not download_url.startswith('http'): return song_info
+        # parse download url
+        try: (resp := self.get(f'https://a.buguyy.top/newapi/geturl2.php?id={search_result["id"]}', verify=False, **request_overrides)).raise_for_status()
+        except Exception: return song_info
+        download_url = safeextractfromdict((download_result := resp2json(resp=resp)), ['data', 'url'], '')
+        if not download_url or not str(download_url).startswith('http'): return song_info
+        download_url_status: dict = self.audio_link_tester.test(download_url, request_overrides)
         song_info = SongInfo(
-            raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('title')), singers=legalizestring(search_result.get('singer')), 
-            album=legalizestring(safeextractfromdict(download_result, ["data", "album"], None)), ext=download_url.split('?')[0].split('.')[-1], file_size_bytes=None, file_size=None, identifier=search_result.get("id"), 
-            duration_s=None, duration='-:-:-', lyric=cleanlrc(safeextractfromdict(download_result, ['data', 'lrc'], 'NULL')), cover_url=safeextractfromdict(search_result, ['picurl'], None), download_url=download_url, 
-            download_url_status=self.audio_link_tester.test(download_url, request_overrides),
+            raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('title')), singers=legalizestring(search_result.get('singer')), album=legalizestring(safeextractfromdict(download_result, ["data", "album"], None)), ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], 
+            file_size=download_url_status['file_size'], identifier=search_result.get("id"), duration_s=None, duration='-:-:-', lyric=cleanlrc(safeextractfromdict(download_result, ['data', 'lrc'], 'NULL')), cover_url=search_result.get('picurl'), download_url=download_url_status['download_url'], download_url_status=download_url_status
         )
-        song_info.download_url_status['probe_status'] = self.audio_link_tester.probe(song_info.download_url, request_overrides)
-        song_info.file_size = song_info.download_url_status['probe_status']['file_size']
-        if (song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS) and (song_info.download_url_status['probe_status']['ext'] in AudioLinkTester.VALID_AUDIO_EXTS): song_info.ext = song_info.download_url_status['probe_status']['ext']
-        elif (song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS): song_info.ext = 'mp3'
+        if not song_info.with_valid_download_url or song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS: return song_info
+        # parse lyric result
         if not song_info.duration or song_info.duration == '-:-:-' or song_info.duration == '00:00:00':
             try: song_info.duration = '{:02d}:{:02d}:{:02d}'.format(*([0,0,0] + list(map(int, re.findall(r'\d+', safeextractfromdict(download_result, ['data', 'duration'], '')))))[-3:])
             except Exception: song_info.duration = '-:-:-'
@@ -111,8 +107,7 @@ class BuguyyMusicClient(BaseMusicClient):
         try:
             # --search results
             (resp := self.get(search_url, verify=False, **request_overrides)).raise_for_status()
-            search_results = resp2json(resp=resp)['data']['list']
-            for search_result in search_results:
+            for search_result in resp2json(resp=resp)['data']['list']:
                 # --download results
                 if not isinstance(search_result, dict) or ('id' not in search_result): continue
                 song_info = SongInfo(source=self.source)
@@ -127,9 +122,10 @@ class BuguyyMusicClient(BaseMusicClient):
                 # --judgement for search_size
                 if self.strict_limit_search_size_per_page and len(song_infos) >= self.search_size_per_page: break
             # --update progress
-            progress.update(progress_id, description=f"{self.source}.search >>> {search_url} (Success)")
+            progress.update(progress_id, description=f"{self.source}._search >>> {search_url} (Success)")
         # failure
         except Exception as err:
-            progress.update(progress_id, description=f"{self.source}.search >>> {search_url} (Error: {err})")
+            progress.update(progress_id, description=f"{self.source}._search >>> {search_url} (Error: {err})")
+            self.logger_handle.error(f"{self.source}._search >>> {search_url} (Error: {err})")
         # return
         return song_infos

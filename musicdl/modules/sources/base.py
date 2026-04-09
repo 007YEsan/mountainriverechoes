@@ -65,7 +65,7 @@ class BaseMusicClient():
         # whether maintain session
         self.maintain_session = maintain_session
         # max http request retries
-        self.max_retries = max_retries
+        self.max_retries = max(max_retries, 1)
         # headers and ua trick
         self.random_update_ua = random_update_ua
         self.default_search_headers = {'User-Agent': UserAgent().random}
@@ -171,7 +171,7 @@ class BaseMusicClient():
     def _download(self, song_info: SongInfo, request_overrides: dict = None, downloaded_song_infos: list[SongInfo] = [], progress: Progress = None, song_progress_id: int = 0, auto_supplement_song: bool = True):
         # init
         song_info, request_overrides = copy.deepcopy(song_info), copy.deepcopy(request_overrides or {})
-        song_info.save_path = sanitize_filepath(song_info.save_path); song_info.work_dir = os.path.dirname(song_info.save_path); IOUtils.touchdir(song_info.work_dir)
+        song_info._save_path = sanitize_filepath(song_info.save_path); song_info.work_dir = os.path.dirname(song_info.save_path); IOUtils.touchdir(song_info.work_dir)
         # hls
         if song_info.protocol.upper() in {'HLS'}:
             try:
@@ -253,10 +253,9 @@ class BaseMusicClient():
     def get(self, url, **kwargs):
         if 'cookies' not in kwargs: kwargs['cookies'] = self.default_cookies
         if 'impersonate' not in kwargs and self.enable_curl_cffi: kwargs['impersonate'] = random.choice(self.cc_impersonates)
-        resp = None
         for _ in range(self.max_retries):
             if not self.maintain_session: self._initsession(); self.random_update_ua and self.session.headers.update({'User-Agent': UserAgent().random})
-            proxies = kwargs.pop('proxies', None) or self._autosetproxies()
+            proxies, resp = kwargs.pop('proxies', None) or self._autosetproxies(), None
             try: (resp := self.session.get(url, proxies=proxies, **kwargs)).raise_for_status()
             except Exception as err: self.logger_handle.error(f'{self.source}.get >>> {url} (Error: {err}; status={getattr(locals().get("resp"), "status_code", None)})', disable_print=self.disable_print); continue
             return resp
@@ -265,10 +264,9 @@ class BaseMusicClient():
     def post(self, url, **kwargs):
         if 'cookies' not in kwargs: kwargs['cookies'] = self.default_cookies
         if 'impersonate' not in kwargs and self.enable_curl_cffi: kwargs['impersonate'] = random.choice(self.cc_impersonates)
-        resp = None
         for _ in range(self.max_retries):
             if not self.maintain_session: self._initsession(); self.random_update_ua and self.session.headers.update({'User-Agent': UserAgent().random})
-            proxies = kwargs.pop('proxies', None) or self._autosetproxies()
+            proxies, resp = kwargs.pop('proxies', None) or self._autosetproxies(), None
             try: (resp := self.session.post(url, proxies=proxies, **kwargs)).raise_for_status()
             except Exception as err: self.logger_handle.error(f'{self.source}.post >>> {url} (Error: {err}; status={getattr(locals().get("resp"), "status_code", None)})', disable_print=self.disable_print); continue
             return resp

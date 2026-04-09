@@ -15,7 +15,7 @@ from urllib.parse import urlparse, parse_qs
 from ..utils.hosts import SPOTIFY_MUSIC_HOSTS
 from ..utils.spotifyutils import SpotifyMusicClientPlaylistUtils, SpotifyMusicClientSearchUtils
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
-from ..utils import legalizestring, resp2json, usesearchheaderscookies, safeextractfromdict, naiveguessextfromaudiobytes, useparseheaderscookies, obtainhostname, hostmatchessuffix, extractdurationsecondsfromlrc, SongInfo, AudioLinkTester, LyricSearchClient, IOUtils, SongInfoUtils
+from ..utils import legalizestring, resp2json, usesearchheaderscookies, safeextractfromdict, useparseheaderscookies, obtainhostname, hostmatchessuffix, extractdurationsecondsfromlrc, SongInfo, AudioLinkTester, LyricSearchClient, IOUtils, SongInfoUtils
 
 
 '''SpotifyMusicClient'''
@@ -54,7 +54,7 @@ class SpotifyMusicClient(BaseMusicClient):
         try: duration_in_secs = float(safeextractfromdict(download_result, ['tracks', 0, 'duration_ms'], 0)) / 1000
         except Exception: duration_in_secs = 0
         song_info = SongInfo(
-            raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(download_result, ['tracks', 0, 'name'], None)), singers=legalizestring(', '.join(safeextractfromdict(download_result, ['tracks', 0, 'artists'], []) or [])), album=legalizestring(safeextractfromdict(download_result, ['tracks', 0, 'album'], None)), ext=naiveguessextfromaudiobytes(resp.content), 
+            raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(download_result, ['tracks', 0, 'name'], None)), singers=legalizestring(', '.join(safeextractfromdict(download_result, ['tracks', 0, 'artists'], []) or [])), album=legalizestring(safeextractfromdict(download_result, ['tracks', 0, 'album'], None)), ext=SongInfoUtils.naiveguessextfromaudiobytes(resp.content), 
             file_size_bytes=resp.content.__sizeof__(), file_size=SongInfoUtils.byte2mb(resp.content.__sizeof__()), identifier=song_id, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, cover_url=safeextractfromdict(download_result, ['tracks', 0, 'image', 'url'], None), download_url=None, downloaded_contents=resp.content, download_url_status={'ok': True},
         )
         if (song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS): song_info.ext = 'mp3'
