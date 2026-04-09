@@ -319,9 +319,9 @@ class AudioLinkTester:
                 reason.append("HEAD succeeded but could not infer a valid audio ext; fallback to GET.")
         except Exception as exc:
             reason.append(f"HEAD error: {exc}")
-        # 2) GET with Range
+        # 2) GET with Stream
         try:
-            get_resp: requests.Response = (get_info := self.request("GET", url, request_overrides=request_overrides, range_bytes=(0, 8191)))["resp"]
+            get_resp: requests.Response = (get_info := self.request("GET", url, request_overrides=request_overrides))["resp"]
             result["status_code"], result["download_url"] = get_info["status_code"], get_info["download_url"] or url
             result["ctype"], result["file_size_bytes"] = get_info["ctype"] or "NULL", get_info["file_size_bytes"] or 0
             result["file_size"] = AudioLinkTester.byte2mb(result["file_size_bytes"])
@@ -330,8 +330,8 @@ class AudioLinkTester:
                 reason.append(f"GET success: status={get_info['status_code']}, ctype={get_info['ctype']!r}, final_url={get_info['download_url']!r}")
                 sample_bytes = self.sampleresponsebytes(get_resp, max_bytes=8192)
                 ext, ext_method = self.inferext(original_url=url, final_url=get_info["download_url"], content_type=get_info["ctype"], content_disposition=get_resp.headers.get("Content-Disposition"), sample_bytes=sample_bytes, reason=reason); get_resp.close()
-                if ext: result["ext"], result["ok"], result["method"] = ext, True, f"requests.get(range) + {ext_method}"
-                else: reason.append("GET succeeded but still could not infer a valid audio ext."); result["method"] = "requests.get(range) + ext_inference_failed"
+                if ext: result["ext"], result["ok"], result["method"] = ext, True, f"requests.get(stream) + {ext_method}"
+                else: reason.append("GET succeeded but still could not infer a valid audio ext."); result["method"] = "requests.get(stream) + ext_inference_failed"
         except Exception as exc:
             reason.append(f"GET error: {exc}")
         # return
