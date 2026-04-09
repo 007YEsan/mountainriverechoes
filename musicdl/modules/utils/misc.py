@@ -279,7 +279,7 @@ class AudioLinkTester:
         candidates.append(("mimetypes.from_content_type", self.MIME_TO_PREFERRED_EXT.get((normalized_ctype := self.normalizectype(content_type)))))
         if normalized_ctype: ext = guessed.lstrip(".") if (guessed := mimetypes.guess_extension(normalized_ctype)) else None; candidates.append(("mimetypes.guess_extension(content_type)", ("m4a" if ext == "mp4" and normalized_ctype in {"audio/mp4", "video/mp4"} else ext)))
         for strategy, raw_ext in candidates:
-            if self.isvalidaudioext(self.normalizeext(raw_ext)): return ext, strategy
+            if self.isvalidaudioext(ext := self.normalizeext(raw_ext)): return ext, strategy
             reason.append(f"{strategy} -> {raw_ext!r} (invalid or non-audio ext)")
         # 3) byte sniff fallback
         if not sample_bytes: reason.append("byte sniff skipped: empty sample bytes"); return None, "NULL"
