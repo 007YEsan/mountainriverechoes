@@ -45,7 +45,7 @@ class BuguyyMusicClient(BaseMusicClient):
     '''_parsesearchresultfromquark'''
     def _parsesearchresultfromquark(self, search_result: dict, request_overrides: dict = None):
         # init
-        request_overrides, song_info, song_id = request_overrides or {}, SongInfo(source=self.source), search_result["id"]
+        request_overrides, song_info, song_id = request_overrides or {}, SongInfo(source=self.source), search_result.get("id")
         # parse download url
         try: (resp := self.get(f'https://a.buguyy.top/newapi/geturl2.php?id={song_id}', verify=False, **request_overrides)).raise_for_status(); lyric_result = resp2json(resp=resp)
         except Exception: lyric_result = dict()
@@ -73,7 +73,7 @@ class BuguyyMusicClient(BaseMusicClient):
     '''_parsesearchresultfromweb'''
     def _parsesearchresultfromweb(self, search_result: dict, request_overrides: dict = None):
         # init
-        request_overrides, song_info, song_id = request_overrides or {}, SongInfo(source=self.source), search_result["id"]
+        request_overrides, song_info, song_id = request_overrides or {}, SongInfo(source=self.source), search_result.get("id")
         # parse download url
         try: (resp := self.get(f'https://a.buguyy.top/newapi/geturl2.php?id={song_id}', verify=False, **request_overrides)).raise_for_status()
         except Exception: return song_info
@@ -113,9 +113,7 @@ class BuguyyMusicClient(BaseMusicClient):
                 # ----parse from play url
                 if not song_info.with_valid_download_url: song_info = self._parsesearchresultfromweb(search_result, request_overrides)
                 # ----filter if invalid
-                if not song_info.with_valid_download_url: continue
-                # --append to song_infos
-                song_infos.append(song_info)
+                if song_info.with_valid_download_url: song_infos.append(song_info)
                 # --judgement for search_size
                 if self.strict_limit_search_size_per_page and len(song_infos) >= self.search_size_per_page: break
             # --update progress
@@ -123,6 +121,6 @@ class BuguyyMusicClient(BaseMusicClient):
         # failure
         except Exception as err:
             progress.update(progress_id, description=f"{self.source}._search >>> {search_url} (Error: {err})")
-            self.logger_handle.error(f"{self.source}._search >>> {search_url} (Error: {err})")
+            self.logger_handle.error(f"{self.source}._search >>> {search_url} (Error: {err})", disable_print=self.disable_print)
         # return
         return song_infos
