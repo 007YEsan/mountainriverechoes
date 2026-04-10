@@ -11,6 +11,7 @@ import ast
 import base64
 import json_repair
 from bs4 import BeautifulSoup
+from contextlib import suppress
 from rich.progress import Progress
 from ..sources import BaseMusicClient
 from urllib.parse import urljoin, urlparse
@@ -74,8 +75,7 @@ class FangpiMusicClient(BaseMusicClient):
         # init
         request_overrides, song_info, song_id = request_overrides or {}, SongInfo(source=self.source), download_result.get("play_id")
         # parse download url
-        try: (resp := self.post('https://www.fangpi.net/api/play-url', json={'id': song_id}, **request_overrides)).raise_for_status()
-        except Exception: return song_info
+        (resp := self.post('https://www.fangpi.net/api/play-url', json={'id': song_id}, **request_overrides)).raise_for_status()
         download_result['api/play-url'] = resp2json(resp=resp); download_url = safeextractfromdict(download_result['api/play-url'], ['data', 'url'], '')
         if not download_url or not str(download_url).startswith('http'): return song_info
         download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
@@ -105,20 +105,19 @@ class FangpiMusicClient(BaseMusicClient):
             for search_result in self._parsesearchresultsfromhtml(resp.text):
                 # --download results
                 if not isinstance(search_result, dict) or ('url' not in search_result): continue
-                song_info = SongInfo(source=self.source)
                 # ----obtain basic information
-                try: (resp := self.get(search_result['url'], **request_overrides)).raise_for_status()
-                except Exception: continue
+                with suppress(Exception): (resp := self.get(search_result['url'], **request_overrides)).raise_for_status()
+                if not locals().get('resp') or not hasattr(locals().get('resp'), 'text'): continue
                 if (script_tag := (soup := BeautifulSoup(resp.text, "lxml")).find("script", string=re.compile(r"window\.appData"))) is None: continue
                 if not (m := re.search(r'JSON\.parse\(\s*(?P<lit>(["\'])(?:\\.|(?!\2).)*?\2)\s*\)', script_tag.string, re.S)): continue
                 if (download_result := json_repair.loads(ast.literal_eval(m.group('lit')))).get("mp3_cover"): download_result["mp3_cover"] = str(download_result["mp3_cover"]).replace("\\/", "/")
                 if download_result.get("extra_recommend_wap_url"): download_result["extra_recommend_wap_url"] = str(download_result["extra_recommend_wap_url"]).replace("\\/", "/")
                 for share_link in (download_result.get("mp3_extra_urls", []) or []): isinstance(share_link, dict) and share_link.__setitem__('share_link', str(share_link.get('share_link', '')).replace("\\/", "/"))
                 # ----parse from quark links
-                if self.quark_parser_config.get('cookies'): song_info = self._parsesearchresultfromquark(search_result, download_result, soup, request_overrides)
+                with suppress(Exception): song_info = self._parsesearchresultfromquark(search_result, download_result, soup, request_overrides) if self.quark_parser_config.get('cookies') else SongInfo(source=self.source)
                 # ----parse from play url
-                if not song_info.with_valid_download_url: song_info = self._parsesearchresultfromweb(search_result, download_result, soup, request_overrides)
-                # ----filter if invalid
+                with suppress(Exception): song_info = self._parsesearchresultfromweb(search_result, download_result, soup, request_overrides) if not song_info.with_valid_download_url else song_info
+                # --append to song_infos
                 if song_info.with_valid_download_url: song_infos.append(song_info)
                 # --judgement for search_size
                 if self.strict_limit_search_size_per_page and len(song_infos) >= self.search_size_per_page: break

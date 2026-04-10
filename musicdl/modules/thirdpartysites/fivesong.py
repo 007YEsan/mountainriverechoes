@@ -8,6 +8,7 @@ WeChat Official Account (微信公众号):
 '''
 import re
 from bs4 import BeautifulSoup
+from contextlib import suppress
 from rich.progress import Progress
 from ..sources import BaseMusicClient
 from urllib.parse import urljoin, urlparse
@@ -66,12 +67,11 @@ class FiveSongMusicClient(BaseMusicClient):
             for search_result in self._parsesearchresultsfromhtml(resp.text):
                 # --download results
                 if not isinstance(search_result, dict) or ('detail_url' not in search_result): continue
-                song_info, song_id = SongInfo(source=self.source), urlparse(str(search_result['detail_url'])).path.strip('/').split('/')[-1].split('.')[0]
+                song_info, song_id, quark_links = SongInfo(source=self.source), urlparse(str(search_result['detail_url'])).path.strip('/').split('/')[-1].split('.')[0], []
                 # ----obtain basic information
-                try: (resp := self.get(search_result['detail_url'], **request_overrides)).raise_for_status()
-                except Exception: continue
-                soup, quark_links = BeautifulSoup(resp.text, "lxml"), []
-                for li in soup.select("div.download ul li[data-url]"):
+                with suppress(Exception): (resp := self.get(search_result['detail_url'], **request_overrides)).raise_for_status()
+                if not locals().get('resp') or not hasattr(locals().get('resp'), 'text'): continue
+                for li in (soup := BeautifulSoup(resp.text, "lxml")).select("div.download ul li[data-url]"):
                     if not (quark_url := (li.get("data-url") or "").strip()): continue
                     label = a.get_text(" ", strip=True) if (a := li.select_one("a[href]")) else None
                     pc_download_url = urljoin(base_url, pc_download_href) if (pc_download_href := a.get("href", "").strip() if a else None) else None
@@ -91,7 +91,7 @@ class FiveSongMusicClient(BaseMusicClient):
                 # ----supplement some meta information
                 if not song_info.lyric or '歌词获取失败' in song_info.lyric: song_info.lyric = 'NULL'
                 if not song_info.duration or song_info.duration == '-:-:-': song_info.duration = SongInfoUtils.seconds2hms(extractdurationsecondsfromlrc(song_info.lyric))
-                # ----filter if invalid
+                # --append to song_infos
                 if song_info.with_valid_download_url: song_infos.append(song_info)
                 # --judgement for search_size
                 if self.strict_limit_search_size_per_page and len(song_infos) >= self.search_size_per_page: break
