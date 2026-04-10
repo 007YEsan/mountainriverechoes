@@ -47,7 +47,7 @@ class MusicClient():
     LOSSLESS_QUALITY_DEFINITIONS = {'flac', 'wav', 'alac', 'ape', 'wv', 'tta', 'dsf', 'dff'}
     def __init__(self, music_sources: list = [], init_music_clients_cfg: dict = {}, clients_threadings: dict = {}, requests_overrides: dict = {}, search_rules: dict = {}):
         # prepare and assert
-        music_source = [music_sources] if isinstance(music_sources, str) else music_source
+        music_sources = [music_sources] if isinstance(music_sources, str) else music_sources
         assert isinstance(music_sources, Iterable) and isinstance(init_music_clients_cfg, dict) and isinstance(clients_threadings, dict) and isinstance(requests_overrides, dict) and isinstance(search_rules, dict)
         music_sources, init_music_clients_cfg, clients_threadings, requests_overrides, search_rules = copy.deepcopy(music_sources), copy.deepcopy(init_music_clients_cfg), copy.deepcopy(clients_threadings), copy.deepcopy(requests_overrides), copy.deepcopy(search_rules)
         # set attributes
