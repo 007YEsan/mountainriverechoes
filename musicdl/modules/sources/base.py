@@ -222,13 +222,13 @@ class BaseMusicClient():
         # multi threadings for downloading music files
         columns = [SpinnerColumn(), TextColumn("{task.description}"), BarColumn(bar_width=None), TaskProgressColumn(), AudioAwareColumn(), TransferSpeedColumn(), TimeRemainingColumn()]
         with Progress(*columns, refresh_per_second=20, expand=True) as progress:
-            songs_progress_id, song_progress_ids, submitted_tasks = progress.add_task(f"{self.source}.download >>> completed (0/{len(song_infos)})", total=len(song_infos), kind='overall'), [], []; downloaded_song_infos: list[SongInfo] = []
+            songs_progress_id, song_progress_ids, submitted_tasks = progress.add_task(f"{self.source}.download >>> Completed (0/{len(song_infos)}) SongInfos", total=len(song_infos), kind='overall'), [], []; downloaded_song_infos: list[SongInfo] = []
             for _, song_info in enumerate(song_infos):
                 desc = f"{self.source}.download >>> {song_info.song_name[:15] + '...' if len(song_info.song_name) > 18 else song_info.song_name[:18]} (Preparing)"
                 song_progress_ids.append(progress.add_task(desc, total=None, kind='download'))
             with ThreadPoolExecutor(max_workers=num_threadings) as pool:
                 for song_progress_id, song_info in zip(song_progress_ids, song_infos): submitted_tasks.append(pool.submit(self._download, song_info, dict(request_overrides or {}), downloaded_song_infos, progress, song_progress_id, auto_supplement_song))
-                for _ in as_completed(submitted_tasks): progress.advance(songs_progress_id, 1); progress.update(songs_progress_id, description=f"{self.source}.download >>> completed ({int(progress.tasks[songs_progress_id].completed)}/{len(song_infos)})")
+                for _ in as_completed(submitted_tasks): progress.advance(songs_progress_id, 1); progress.update(songs_progress_id, description=f"{self.source}.download >>> Completed ({int(progress.tasks[songs_progress_id].completed)}/{len(song_infos)}) SongInfos")
         # logging
         if len(downloaded_song_infos) > 0:
             work_dir_to_song_info, work_dir = defaultdict(list), ', '.join(list(set([str(s.work_dir) for s in downloaded_song_infos])))
