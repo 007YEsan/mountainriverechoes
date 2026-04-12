@@ -154,7 +154,7 @@ class BaseMusicClient():
         song_infos = list(chain.from_iterable(song_infos.values())); song_infos: list[SongInfo] = self._removeduplicates(song_infos=song_infos); work_dir = self._constructuniqueworkdir(keyword=keyword)
         for song_info in song_infos:
             song_info.work_dir = work_dir; episodes = song_info.episodes if isinstance(song_info.episodes, list) else []
-            for eps_info in episodes: eps_info.work_dir = sanitize_filepath(os.path.join(work_dir, song_info.song_name)); IOUtils.touchdir(work_dir)
+            for eps_info in episodes: eps_info.work_dir = sanitize_filepath(os.path.join(work_dir, f"{song_info.song_name} - {song_info.singers}")); IOUtils.touchdir(work_dir)
         # logging
         if len(song_infos) > 0:
             work_dir_to_song_info, work_dir = defaultdict(list), ', '.join(list(set([str(s.work_dir) for s in song_infos])))
