@@ -151,18 +151,16 @@ class BaseMusicClient():
                     main_process_context.update(progress_id, description=f"{self.source}.search >>> Completed ({num_searched_urls}/{len(search_urls)}) Search URLs")
                     main_progress_id is not None and main_process_context.advance(main_progress_id, 1)
                     main_progress_id is not None and main_process_context.update(main_progress_id, description=f"Search From Sources >>> Completed ({int(main_process_context.tasks[main_progress_id].completed)}/{int(main_process_context.tasks[main_progress_id].total or 0)}) Search URLs")
-        song_infos = list(chain.from_iterable(song_infos.values())); song_infos: list[SongInfo] = self._removeduplicates(song_infos=song_infos); work_dir = self._constructuniqueworkdir(keyword=keyword)
+        song_infos, work_dir, work_dir_to_song_info = self._removeduplicates(song_infos=list(chain.from_iterable(song_infos.values()))), self._constructuniqueworkdir(keyword=keyword), defaultdict(list)
         for song_info in song_infos:
-            song_info.work_dir = work_dir; episodes = song_info.episodes if isinstance(song_info.episodes, list) else []
-            for eps_info in episodes: eps_info.work_dir = sanitize_filepath(os.path.join(work_dir, f"{song_info.song_name} - {song_info.singers}")); IOUtils.touchdir(work_dir)
-        # logging
-        if len(song_infos) > 0:
-            work_dir_to_song_info, work_dir = defaultdict(list), ', '.join(list(set([str(s.work_dir) for s in song_infos])))
-            for s in song_infos: s.work_dir = str(s.work_dir); work_dir_to_song_info[s.work_dir].append(s.todict())
-            for w, items in work_dir_to_song_info.items(): IOUtils.touchdir(w); self._savetopkl(items, os.path.join(w, "search_results.pkl"))
-        else:
-            work_dir = self.work_dir # no songs searched, so fallback to original work dir without specify source dir
-        self.logger_handle.info(f'Finished searching music files using {self.source}. Search results have been saved to {work_dir}, valid items: {len(song_infos)}.', disable_print=self.disable_print)
+            if not isinstance(song_info, SongInfo) or not song_info.with_valid_download_url: continue
+            song_info.work_dir, episodes = work_dir, song_info.episodes if isinstance(song_info.episodes, list) else []
+            work_dir_to_song_info[song_info.work_dir].append(song_info.todict())
+            for eps_info in episodes: eps_info.work_dir = sanitize_filepath(os.path.join(work_dir, f"{song_info.song_name} - {song_info.singers}")); IOUtils.touchdir(eps_info.work_dir)
+        # logging and save search results
+        work_dir_for_logging = ', '.join(list(set([k for k, _ in work_dir_to_song_info.items()])))
+        [self._savetopkl(items, os.path.join(w, "search_results.pkl")) for w, items in work_dir_to_song_info.items()]
+        self.logger_handle.info(f'Finished searching music files from {self.source}. Search results have been saved to {work_dir_for_logging}, valid items: {len(song_infos)}.', disable_print=self.disable_print)
         if owns_progress: main_process_context.__exit__(None, None, None)
         # return
         return song_infos
@@ -229,14 +227,13 @@ class BaseMusicClient():
             with ThreadPoolExecutor(max_workers=num_threadings) as pool:
                 for song_progress_id, song_info in zip(song_progress_ids, song_infos): submitted_tasks.append(pool.submit(self._download, song_info, dict(request_overrides or {}), downloaded_song_infos, progress, song_progress_id, auto_supplement_song))
                 for _ in as_completed(submitted_tasks): progress.advance(songs_progress_id, 1); progress.update(songs_progress_id, description=f"{self.source}.download >>> Completed ({int(progress.tasks[songs_progress_id].completed)}/{len(song_infos)}) SongInfos")
-        # logging
-        if len(downloaded_song_infos) > 0:
-            work_dir_to_song_info, work_dir = defaultdict(list), ', '.join(list(set([str(s.work_dir) for s in downloaded_song_infos])))
-            for s in downloaded_song_infos: s.work_dir = str(s.work_dir); work_dir_to_song_info[s.work_dir].append(s.todict())
-            for w, items in work_dir_to_song_info.items(): IOUtils.touchdir(w); self._savetopkl(items, os.path.join(w, "download_results.pkl"))
-        else:
-            work_dir = self.work_dir # no songs downloaded, so fallback to original work dir without specify source dir
-        self.logger_handle.info(f'Finished downloading music files using {self.source}. Download results have been saved to {work_dir}, valid downloads: {len(downloaded_song_infos)}.', disable_print=self.disable_print)
+        # logging and save download results
+        work_dir_to_song_info, work_dir_for_logging = defaultdict(list), ', '.join(list(set([str(s.work_dir) for s in downloaded_song_infos])))
+        for song_info in downloaded_song_infos:
+            if not isinstance(song_info, SongInfo) or not song_info.with_valid_download_url: continue
+            work_dir_to_song_info[song_info.work_dir].append(song_info.todict())
+        [(IOUtils.touchdir(w), self._savetopkl(items, os.path.join(w, "download_results.pkl"))) for w, items in work_dir_to_song_info.items()]
+        self.logger_handle.info(f'Finished downloading music files from {self.source}. Download results have been saved to {work_dir_for_logging}, valid downloads: {len(downloaded_song_infos)}.', disable_print=self.disable_print)
         # return
         return downloaded_song_infos
     '''parseplaylist'''
