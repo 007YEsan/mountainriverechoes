@@ -136,7 +136,7 @@ class BaseMusicClient():
         if owns_progress: main_process_context = Progress(TextColumn("{task.description}"), BarColumn(bar_width=None), MofNCompleteColumn(), TimeRemainingColumn(), refresh_per_second=10); main_process_context.__enter__()
         main_progress_lock = Lock() if main_progress_lock is None else main_progress_lock
         with main_progress_lock:
-            progress_id = main_process_context.add_task(f"{self.source}.search >>> completed (0/{len(search_urls)})", total=len(search_urls))
+            progress_id = main_process_context.add_task(f"{self.source}.search >>> completed (0/{len(search_urls)}) URLs", total=len(search_urls))
             if main_progress_id is not None:
                 cur_total = main_process_context.tasks[main_progress_id].total or 0
                 main_process_context.update(main_progress_id, total=cur_total + len(search_urls))
@@ -148,7 +148,7 @@ class BaseMusicClient():
                 future.result()
                 with main_progress_lock:
                     main_process_context.advance(progress_id, 1); num_searched_urls = int(main_process_context.tasks[progress_id].completed)
-                    main_process_context.update(progress_id, description=f"{self.source}.search >>> completed ({num_searched_urls}/{len(search_urls)})")
+                    main_process_context.update(progress_id, description=f"{self.source}.search >>> completed ({num_searched_urls}/{len(search_urls)}) URLs")
                     main_progress_id is not None and main_process_context.advance(main_progress_id, 1)
                     main_progress_id is not None and main_process_context.update(main_progress_id, description=f"Search from sources >>> completed ({int(main_process_context.tasks[main_progress_id].completed)}/{int(main_process_context.tasks[main_progress_id].total or 0)}) URLs")
         song_infos = list(chain.from_iterable(song_infos.values())); song_infos: list[SongInfo] = self._removeduplicates(song_infos=song_infos); work_dir = self._constructuniqueworkdir(keyword=keyword)
