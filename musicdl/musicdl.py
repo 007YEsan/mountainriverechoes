@@ -107,7 +107,7 @@ class MusicClient():
         self.logger_handle.info(f'Searching {colorize(keyword, "highlight")} From {colorize("|".join(self.music_sources), "highlight")}')
         max_workers, main_progress_lock = min(len(self.music_sources), 10), Lock()
         with Progress(TextColumn("{task.description}"), BarColumn(bar_width=None), MofNCompleteColumn(), TimeRemainingColumn(), refresh_per_second=10) as main_process_context:
-            main_progress_id = main_process_context.add_task(f"Search From Sources >>> Completed (0/0) URLs", total=0)
+            main_progress_id = main_process_context.add_task(f"Search From Sources >>> Completed (0/0) Search URLs", total=0)
             def search_func(ms):
                 try: return ms, self.music_clients[ms].search(keyword=keyword, num_threadings=self.clients_threadings[ms], request_overrides=self.requests_overrides[ms], rule=self.search_rules[ms], main_process_context=main_process_context, main_progress_id=main_progress_id, main_progress_lock=main_progress_lock)
                 except Exception as err: self.logger_handle.error(f'MusicClient.{ms}.search >>> {keyword} (Error: {err})'); return ms, []
