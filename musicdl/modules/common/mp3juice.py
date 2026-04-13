@@ -81,6 +81,7 @@ class MP3JuiceMusicClient(BaseMusicClient):
                     if not locals().get('convert_resp') or not hasattr(locals().get('convert_resp'), 'text') or ('convert' not in download_result) or (not (redirect_url := download_result['convert'].get('redirectURL', ''))): continue
                     with suppress(Exception): (redirect_resp := self.get(redirect_url, **request_overrides)).raise_for_status(); download_result['redirect'] = resp2json(resp=redirect_resp)
                     if not locals().get('redirect_resp') or not hasattr(locals().get('redirect_resp'), 'text') or ('redirect' not in download_result) or (not (download_url := download_result['redirect'].get('downloadURL', ''))): continue
+                    del init_resp; del convert_resp; del redirect_resp
                 # ----summarize
                 download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
                 song_info = SongInfo(

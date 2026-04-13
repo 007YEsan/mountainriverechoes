@@ -96,7 +96,7 @@ class GDStudioMusicClient(BaseMusicClient):
                         file_size=download_url_status['file_size'], identifier=song_id, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, cover_url=None, download_url=download_url_status['download_url'], download_url_status=download_url_status, root_source=search_result['source'],
                     )
                     if search_result['source'] in {'bilibili'}: song_info.download_url_status['ok'] = True if song_info.download_url_status['file_size_bytes'] > 0 else False # use proxy url, general test method will fail
-                    song_info.ext = 'm4a' if song_info.ext in {'m4s', 'mp4'} else song_info.ext
+                    del resp; song_info.ext = 'm4a' if song_info.ext in {'m4s', 'mp4'} else song_info.ext
                     if song_info.with_valid_download_url and song_info.ext in AudioLinkTester.VALID_AUDIO_EXTS: break
                 if not song_info.with_valid_download_url or song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS: continue
                 # --lyric results

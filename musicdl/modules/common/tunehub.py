@@ -100,7 +100,7 @@ class TuneHubMusicClient(BaseMusicClient):
                         data = {'quality': quality, 'ids': search_result['id'], 'platform': search_result['source']}
                         with suppress(Exception): (tune_resp := self.post('https://tunehub.sayqz.com/api/v1/parse?', timeout=10, data=data, **request_overrides)).raise_for_status()
                         if not locals().get('tune_resp') or not hasattr(locals().get('tune_resp'), 'text'): continue
-                        download_url = safeextractfromdict((download_result := resp2json(resp=tune_resp)), ['data', 'data', 0, 'url'], '')
+                        download_url = safeextractfromdict((download_result := resp2json(resp=tune_resp)), ['data', 'data', 0, 'url'], ''); del tune_resp
                         if not download_url or not str(download_url).startswith('http'): continue
                         duration_in_secs = safeextractfromdict(download_result, ['data', 'data', 0, 'info', 'duration'], 0)
                         download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)

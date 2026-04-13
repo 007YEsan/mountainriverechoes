@@ -117,7 +117,7 @@ class LizhiMusicClient(BaseMusicClient):
                 with suppress(Exception): (album_resp := self.get(f'https://m.lizhi.fm/vodapi/user/{album_id}?pageNo={page_no}&pageSize={page_size}', **request_overrides)).raise_for_status()
                 if not locals().get('album_resp') or not hasattr(locals().get('album_resp'), 'text'): break
                 if not (download_result := resp2json(resp=album_resp)).get('data'): break
-                download_results.append(download_result); progress.update(download_album_pid, total=(page_no := page_no + 1), completed=page_no)
+                del album_resp; download_results.append(download_result); progress.update(download_album_pid, total=(page_no := page_no + 1), completed=page_no)
                 progress.update(download_album_pid, description=f"{self.source}._parsebyalbum >>> ({page_no}/{page_no}) pages downloaded in album {album_id}")
             total_episodes = sum([len(safeextractfromdict(download_result, ['data'], []) or []) for download_result in download_results])
             download_album_pid = progress.add_task(f"{self.source}._parsebyalbum >>> (0/{total_episodes}) episodes completed in album {album_id}", total=total_episodes)
