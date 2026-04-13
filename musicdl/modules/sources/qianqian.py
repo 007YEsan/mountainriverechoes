@@ -81,7 +81,7 @@ class QianqianMusicClient(BaseMusicClient):
                 if not locals().get('resp') or not hasattr(locals().get('resp'), 'text'): continue
                 download_url = safeextractfromdict((download_result := resp2json(resp)), ['data', 'path'], '') or safeextractfromdict(download_result, ['data', 'trail_audio_info', 'path'], '')
                 if not download_url or not str(download_url).startswith('http'): continue
-                download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
+                download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True); del resp
                 song_info = SongInfo(
                     raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('title')), singers=legalizestring(', '.join([singer.get('name') for singer in (search_result.get('artist', []) or []) if isinstance(singer, dict) and singer.get('name')])), album=legalizestring(search_result.get('albumTitle')), ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], 
                     file_size=download_url_status['file_size'], identifier=song_id, duration_s=int(float(safeextractfromdict(download_result, ['data', 'duration'], 0) or 0)), duration=SongInfoUtils.seconds2hms(int(float(safeextractfromdict(download_result, ['data', 'duration'], 0) or 0))), lyric=None, cover_url=search_result.get('pic'), download_url=download_url_status['download_url'], download_url_status=download_url_status, 
@@ -131,7 +131,7 @@ class QianqianMusicClient(BaseMusicClient):
             params = {'pageNo': page, 'pageSize': 50, 'appid': QianqianMusicClient.APPID, 'id': playlist_id}
             with suppress(Exception): (resp := self.get(f"https://music.91q.com/v1/tracklist/info", params=self._addsignandtstoparams(params=params), **request_overrides)).raise_for_status()
             if not locals().get('resp') or not hasattr(locals().get('resp'), 'text') or (not safeextractfromdict((playlist_result := resp2json(resp=resp)), ['data', 'trackList'], [])): break
-            tracks_in_playlist.extend(safeextractfromdict(playlist_result, ['data', 'trackList'], [])); page += 1
+            tracks_in_playlist.extend(safeextractfromdict(playlist_result, ['data', 'trackList'], [])); page += 1; del resp
             if not playlist_result_first: playlist_result_first = copy.deepcopy(playlist_result)
             if (float(safeextractfromdict(playlist_result, ['data', 'trackCount'], 0)) <= len(tracks_in_playlist)): break
         tracks_in_playlist = list({d["TSID"]: d for d in tracks_in_playlist}.values())

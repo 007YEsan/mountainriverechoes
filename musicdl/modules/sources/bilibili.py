@@ -74,7 +74,7 @@ class BilibiliMusicClient(BaseMusicClient):
                     identifier=cid, duration_s=int(float(safeextractfromdict(download_result, ['data', 'dash', 'duration'], 0) or 0)), duration=SongInfoUtils.seconds2hms(int(float(safeextractfromdict(download_result, ['data', 'dash', 'duration'], 0) or 0))), lyric=None, cover_url=search_result.get('pic'), download_url=download_url_status['download_url'], download_url_status=download_url_status, 
                 )
                 eps_info.cover_url = f'https:{eps_info.cover_url}' if eps_info.cover_url and (not eps_info.cover_url.startswith('http')) else eps_info.cover_url
-                eps_info.ext = 'm4a' if eps_info.ext in {'m4s', 'mp4'} else eps_info.ext
+                del resp; eps_info.ext = 'm4a' if eps_info.ext in {'m4s', 'mp4'} else eps_info.ext
                 if eps_info.with_valid_download_url and eps_info.ext in AudioLinkTester.VALID_AUDIO_EXTS: song_info.append(eps_info)
                 if self.strict_limit_search_size_per_page and len(song_info) >= self.search_size_per_page: break
         # return

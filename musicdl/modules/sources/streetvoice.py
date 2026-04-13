@@ -56,7 +56,7 @@ class StreetVoiceMusicClient(BaseMusicClient):
             if not locals().get('resp') or not hasattr(locals().get('resp'), 'text'): return song_info
             with suppress(Exception): (hls_resp := self.post(f"https://www.streetvoice.cn/api/v5/song/{song_id}/hls/file/", **request_overrides)).raise_for_status()
             if not locals().get('hls_resp') or not hasattr(locals().get('hls_resp'), 'text'): return song_info
-            (download_result := resp2json(resp=resp))['hls/file'] = resp2json(resp=hls_resp)
+            (download_result := resp2json(resp=resp))['hls/file'] = resp2json(resp=hls_resp); del resp; del hls_resp
             if not (download_url := download_result['hls/file']['file']) or not str(download_url).startswith('http'): return song_info
             download_url_status = {'ok': False, 'ext': Path(urlparse(str(download_url)).path).suffixes[-2].lstrip("."), 'file_size_bytes': None, 'file_size': 'HLS', 'download_url': download_url}
             with suppress(Exception): self.get(download_url, **request_overrides).raise_for_status(); download_url_status['ok'] = True
@@ -127,7 +127,7 @@ class StreetVoiceMusicClient(BaseMusicClient):
             with suppress(Exception): (resp := self.get(playlist_url if page == 1 else f"{playlist_url}?page={page}", allow_redirects=True, **request_overrides)).raise_for_status()
             if not locals().get('resp') or not hasattr(locals().get('resp'), 'text') or (not (songs := self._extractplaylistpagesongs(resp.text, "https://streetvoice.cn"))): break
             (playlist_result := {'name': self._extractplaylistname(resp.text), 'id': playlist_id})['songs'] = songs
-            tracks_in_playlist.extend(playlist_result['songs']); page += 1
+            tracks_in_playlist.extend(playlist_result['songs']); page += 1; del resp
             if not playlist_result_first: playlist_result_first = copy.deepcopy(playlist_result)
         # parse track by track in playlist
         with Progress(TextColumn("{task.description}"), BarColumn(bar_width=None), MofNCompleteColumn(), TimeRemainingColumn(), refresh_per_second=10) as main_process_context:
