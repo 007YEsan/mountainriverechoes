@@ -680,9 +680,7 @@ class TIDALMusicClientUtils:
     @staticmethod
     def getexpectedextension(stream: StreamUrl):
         url, codec = (stream.url or '').lower(), (stream.codec or '').lower()
-        if '.flac' in url: return '.flac'
-        if ".mp4" in url: return ".mp4" if ("ac4" in codec or "mha1" in codec) else (".flac" if "flac" in codec else ".m4a")
-        return '.m4a'
+        return '.flac' if '.flac' in url else '.mp4' if '.mp4' in url and ('ac4' in codec or 'mha1' in codec) else '.flac' if '.mp4' in url and 'flac' in codec else '.m4a'
     '''shouldremuxflac'''
     @staticmethod
     def shouldremuxflac(download_ext: str, final_ext: str, stream: StreamUrl) -> bool:
@@ -1093,7 +1091,7 @@ class TIDALMusicClientUtils:
     '''getstreamurl'''
     @staticmethod
     def getstreamurl(song_id, quality: str, apply_thirdpart_apis: bool = True, request_overrides: dict = None) -> Tuple[StreamUrl, Any]:
-        candidate_parsers = [TIDALMusicClientUtils.getstreamurlspotisaverapi, TIDALMusicClientUtils.getstreamurlsquidapi, TIDALMusicClientUtils.getstreamurlmonochromeapi, TIDALMusicClientUtils.getstreamurlbinimumapi, TIDALMusicClientUtils.getstreamurlqqdlapi] if apply_thirdpart_apis else []
+        candidate_parsers = [TIDALMusicClientUtils.getstreamurlspotisaverapi, TIDALMusicClientUtils.getstreamurlsquidapi, TIDALMusicClientUtils.getstreamurlqqdlapi, TIDALMusicClientUtils.getstreamurlmonochromeapi, TIDALMusicClientUtils.getstreamurlbinimumapi] if apply_thirdpart_apis else []
         for parser in [*candidate_parsers, TIDALMusicClientUtils.getstreamurlofficialapi]:
             try: stream_url, stream_resp = parser(song_id=song_id, quality=quality, request_overrides=request_overrides); assert stream_url.urls; break
             except Exception: continue

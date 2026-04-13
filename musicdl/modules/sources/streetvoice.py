@@ -58,7 +58,7 @@ class StreetVoiceMusicClient(BaseMusicClient):
             if not locals().get('hls_resp') or not hasattr(locals().get('hls_resp'), 'text'): return song_info
             (download_result := resp2json(resp=resp))['hls/file'] = resp2json(resp=hls_resp); del resp; del hls_resp
             if not (download_url := download_result['hls/file']['file']) or not str(download_url).startswith('http'): return song_info
-            download_url_status = {'ok': False, 'ext': Path(urlparse(str(download_url)).path).suffixes[-2].lstrip("."), 'file_size_bytes': None, 'file_size': 'HLS', 'download_url': download_url}
+            download_url_status = {'ok': False, 'ext': Path(urlparse(str(download_url)).path).suffixes[-2].lstrip("."), 'file_size_bytes': 'HLS', 'file_size': 'HLS', 'download_url': download_url}
             with suppress(Exception): self.get(download_url, **request_overrides).raise_for_status(); download_url_status['ok'] = True
             song_info = SongInfo(
                 raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(download_result.get('name')), singers=legalizestring(safeextractfromdict(download_result, ['user', 'profile', 'nickname'], None)), album=legalizestring(safeextractfromdict(download_result, ['album', 'name'], None)), ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], 
