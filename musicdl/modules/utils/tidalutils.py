@@ -26,6 +26,7 @@ from .logger import colorize
 from functools import reduce
 from Crypto.Cipher import AES
 from mutagen.flac import FLAC
+from contextlib import suppress
 from Crypto.Util import Counter
 from xml.etree import ElementTree
 from abc import ABC, abstractmethod
@@ -981,7 +982,7 @@ class TIDALMusicClientUtils:
             representation: Representation = next((rep for rep in audio_reps if rep.segments), audio_reps[0])
             if (codec := (representation.codec or '').upper()).startswith('MP4A'): codec = 'AAC'
             ret.codec, ret.encryptionKey, ret.urls = codec, "", representation.segments
-            if len(ret.urls) > 0: ret.url = ret.urls[0]
+            ret.url = ret.urls[0] if len(ret.urls) > 0 else ret.url
             return ret, data
         raise Exception("Can't get the streamUrl, type is " + resp.manifestMimeType)
     '''getstreamurlsquidapi'''
@@ -1001,7 +1002,7 @@ class TIDALMusicClientUtils:
             representation: Representation = next((rep for rep in audio_reps if rep.segments), audio_reps[0])
             if (codec := (representation.codec or '').upper()).startswith('MP4A'): codec = 'AAC'
             ret.codec, ret.encryptionKey, ret.urls = codec, "", representation.segments
-            if len(ret.urls) > 0: ret.url = ret.urls[0]
+            ret.url = ret.urls[0] if len(ret.urls) > 0 else ret.url
             return ret, data
         raise Exception("Can't get the streamUrl, type is " + resp.manifestMimeType)
     '''getstreamurlmonochromeapi'''
@@ -1021,7 +1022,7 @@ class TIDALMusicClientUtils:
             representation: Representation = next((rep for rep in audio_reps if rep.segments), audio_reps[0])
             if (codec := (representation.codec or '').upper()).startswith('MP4A'): codec = 'AAC'
             ret.codec, ret.encryptionKey, ret.urls = codec, "", representation.segments
-            if len(ret.urls) > 0: ret.url = ret.urls[0]
+            ret.url = ret.urls[0] if len(ret.urls) > 0 else ret.url
             return ret, data
         raise Exception("Can't get the streamUrl, type is " + resp.manifestMimeType)
     '''getstreamurlbinimumapi'''
@@ -1041,7 +1042,7 @@ class TIDALMusicClientUtils:
             representation: Representation = next((rep for rep in audio_reps if rep.segments), audio_reps[0])
             if (codec := (representation.codec or '').upper()).startswith('MP4A'): codec = 'AAC'
             ret.codec, ret.encryptionKey, ret.urls = codec, "", representation.segments
-            if len(ret.urls) > 0: ret.url = ret.urls[0]
+            ret.url = ret.urls[0] if len(ret.urls) > 0 else ret.url
             return ret, data
         raise Exception("Can't get the streamUrl, type is " + resp.manifestMimeType)
     '''getstreamurlspotisaverapi'''
@@ -1049,8 +1050,8 @@ class TIDALMusicClientUtils:
     def getstreamurlspotisaverapi(song_id, quality: str, request_overrides: dict = None) -> Tuple[StreamUrl, Any]:
         headers, request_overrides = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"}, request_overrides or {}
         for host in ['hifi-one.spotisaver.net', 'hifi-two.spotisaver.net']:
-            try: data = requests.get(f'https://{host}/track/?id={song_id}&quality={quality}', headers=headers, timeout=10, **request_overrides).json()['data']; break
-            except Exception: continue
+            with suppress(Exception): data = requests.get(f'https://{host}/track/?id={song_id}&quality={quality}', headers=headers, timeout=10, **request_overrides).json()['data']
+            if locals().get('data') and isinstance(locals().get('data'), dict) and ('trackId' in locals().get('data')): break
         if "vnd.tidal.bt" in (resp := aigpy.model.dictToModel(data, StreamRespond())).manifestMimeType:
             manifest, ret = json.loads(base64.b64decode(resp.manifest).decode('utf-8')), StreamUrl()
             ret.trackid, ret.soundQuality, ret.codec, ret.encryptionKey, ret.url, ret.urls = resp.trackid, resp.audioQuality, manifest['codecs'], manifest['keyId'] if 'keyId' in manifest else "", manifest['urls'][0], [manifest['urls'][0]]
@@ -1063,7 +1064,7 @@ class TIDALMusicClientUtils:
             representation: Representation = next((rep for rep in audio_reps if rep.segments), audio_reps[0])
             if (codec := (representation.codec or '').upper()).startswith('MP4A'): codec = 'AAC'
             ret.codec, ret.encryptionKey, ret.urls = codec, "", representation.segments
-            if len(ret.urls) > 0: ret.url = ret.urls[0]
+            ret.url = ret.urls[0] if len(ret.urls) > 0 else ret.url
             return ret, data
         raise Exception("Can't get the streamUrl, type is " + resp.manifestMimeType)
     '''getstreamurlqqdlapi'''
@@ -1071,8 +1072,8 @@ class TIDALMusicClientUtils:
     def getstreamurlqqdlapi(song_id, quality: str, request_overrides: dict = None) -> Tuple[StreamUrl, Any]:
         headers, request_overrides = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"}, request_overrides or {}
         for host in ['maus.qqdl.site', 'hund.qqdl.site', 'katze.qqdl.site', 'wolf.qqdl.site', 'vogel.qqdl.site']:
-            try: data = requests.get(f'https://{host}/track/?id={song_id}&quality={quality}', headers=headers, timeout=10, **request_overrides).json()['data']; break
-            except Exception: continue
+            with suppress(Exception): data = requests.get(f'https://{host}/track/?id={song_id}&quality={quality}', headers=headers, timeout=10, **request_overrides).json()['data']
+            if locals().get('data') and isinstance(locals().get('data'), dict) and ('trackId' in locals().get('data')): break
         if "vnd.tidal.bt" in (resp := aigpy.model.dictToModel(data, StreamRespond())).manifestMimeType:
             manifest, ret = json.loads(base64.b64decode(resp.manifest).decode('utf-8')), StreamUrl()
             ret.trackid, ret.soundQuality, ret.codec, ret.encryptionKey, ret.url, ret.urls = resp.trackid, resp.audioQuality, manifest['codecs'], manifest['keyId'] if 'keyId' in manifest else "", manifest['urls'][0], [manifest['urls'][0]]
@@ -1085,7 +1086,7 @@ class TIDALMusicClientUtils:
             representation: Representation = next((rep for rep in audio_reps if rep.segments), audio_reps[0])
             if (codec := (representation.codec or '').upper()).startswith('MP4A'): codec = 'AAC'
             ret.codec, ret.encryptionKey, ret.urls = codec, "", representation.segments
-            if len(ret.urls) > 0: ret.url = ret.urls[0]
+            ret.url = ret.urls[0] if len(ret.urls) > 0 else ret.url
             return ret, data
         raise Exception("Can't get the streamUrl, type is " + resp.manifestMimeType)
     '''getstreamurl'''
@@ -1093,8 +1094,8 @@ class TIDALMusicClientUtils:
     def getstreamurl(song_id, quality: str, apply_thirdpart_apis: bool = True, request_overrides: dict = None) -> Tuple[StreamUrl, Any]:
         candidate_parsers = [TIDALMusicClientUtils.getstreamurlspotisaverapi, TIDALMusicClientUtils.getstreamurlsquidapi, TIDALMusicClientUtils.getstreamurlqqdlapi, TIDALMusicClientUtils.getstreamurlmonochromeapi, TIDALMusicClientUtils.getstreamurlbinimumapi] if apply_thirdpart_apis else []
         for parser in [*candidate_parsers, TIDALMusicClientUtils.getstreamurlofficialapi]:
-            try: stream_url, stream_resp = parser(song_id=song_id, quality=quality, request_overrides=request_overrides); assert stream_url.urls; break
-            except Exception: continue
+            with suppress(Exception): stream_url, stream_resp = parser(song_id=song_id, quality=quality, request_overrides=request_overrides)
+            if locals().get('stream_url') and locals().get('stream_resp') and stream_url.urls: break
         return stream_url, stream_resp
     '''downloadstreamwithnm3u8dlre'''
     @staticmethod
