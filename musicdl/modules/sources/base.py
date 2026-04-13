@@ -217,6 +217,7 @@ class BaseMusicClient():
     def download(self, song_infos: list[SongInfo], num_threadings: int = 5, request_overrides: dict = None, auto_supplement_song: bool = True) -> list[SongInfo]:
         # logging
         self.logger_handle.info(f'Start to download music files using {self.source}.', disable_print=self.disable_print)
+        song_infos = [song_info for song_info in song_infos if song_info.with_valid_download_url and song_info.ext in AudioLinkTester.VALID_AUDIO_EXTS]
         # multi threadings for downloading music files
         columns = [SpinnerColumn(), TextColumn("{task.description}"), BarColumn(bar_width=None), TaskProgressColumn(), AudioAwareColumn(), TransferSpeedColumn(), TimeRemainingColumn()]
         with Progress(*columns, refresh_per_second=20, expand=True) as progress:

@@ -71,9 +71,14 @@ class YouTubeMusicClient(BaseMusicClient):
         # init
         request_overrides, song_id, song_info, MUSIC_QUALITIES = request_overrides or {}, search_result['videoId'], SongInfo(source=self.source), ['320', '256', '128', '96'][:2]
         transform_search_duration_func = lambda d: "{:02}:{:02}:{:02}".format(*([0] * (3 - len(str(d).split(":"))) + list(map(int, str(d).split(":")))))
+        headers = {
+            "accept": "*/*", "referer": f"https://embed.dlsrv.online/v1/full?videoId={song_id}", "sec-ch-ua": "\"Chromium\";v=\"146\", \"Not-A.Brand\";v=\"24\", \"Google Chrome\";v=\"146\"", "sec-ch-ua-mobile": "?0", "sec-ch-ua-platform": "\"Windows\"", "sec-fetch-dest": "empty", 
+            "sec-fetch-mode": "cors", "sec-fetch-site": "same-origin", "sec-fetch-storage-access": "active", "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36"
+        }
+        (token_resp := self.get('https://embed.dlsrv.online/api/session-token', headers=headers, **request_overrides)).raise_for_status()
         # parse
         for music_quality in MUSIC_QUALITIES:
-            with suppress(Exception): resp = None; (resp := self.post('https://embed.dlsrv.online/api/download/mp3', json={"videoId": song_id, "format": "mp3", "quality": music_quality}, headers={"Content-Type": "application/json", "Origin": "https://embed.dlsrv.online", "Accept": "*/*"}, timeout=10, **request_overrides)).raise_for_status()
+            with suppress(Exception): resp = None; (resp := self.post('https://embed.dlsrv.online/api/download/audio227', json={"videoId": song_id, "format": "mp3", "quality": music_quality}, headers={**headers, "X-Session-Token": resp2json(resp=token_resp)['token']}, timeout=10, **request_overrides)).raise_for_status()
             if not (download_url := (download_result := resp2json(resp=resp)).get('url')) or not str(download_url).startswith('http'): continue
             with suppress(Exception): resp = None; (resp := self.get(download_url, allow_redirects=True, **request_overrides)).raise_for_status()
             if not locals().get('resp') or not hasattr(locals().get('resp'), 'text'): continue
@@ -109,7 +114,7 @@ class YouTubeMusicClient(BaseMusicClient):
         # return
         return song_info
     '''_parsewithmp3youtube'''
-    def _parsvidewithmp3youtube(self, search_result: dict, request_overrides: dict = None):
+    def _parsewithmp3youtube(self, search_result: dict, request_overrides: dict = None):
         # init
         request_overrides, song_id, song_info, MUSIC_QUALITIES = request_overrides or {}, search_result['videoId'], SongInfo(source=self.source), ['320', '256', '128', '96'][:2]
         transform_search_duration_func = lambda d: "{:02}:{:02}:{:02}".format(*([0] * (3 - len(str(d).split(":"))) + list(map(int, str(d).split(":")))))
@@ -187,7 +192,7 @@ class YouTubeMusicClient(BaseMusicClient):
     '''_parsewiththirdpartapis'''
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         if self.default_cookies or request_overrides.get('cookies'): return SongInfo(source=self.source)
-        for parser_func in [self._parsvidewithmp3youtube, self._parsewithnoteai, self._parsewithacethinker, self._parsewithclipto, self._parsewithyt1s]:
+        for parser_func in [self._parsewithyt1s, self._parsewithmp3youtube, self._parsewithacethinker, self._parsewithnoteai, self._parsewithclipto]:
             song_info_flac = SongInfo(source=self.source, raw_data={'search': search_result, 'download': {}, 'lyric': {}})
             with suppress(Exception): song_info_flac = parser_func(search_result, request_overrides)
             if song_info_flac.with_valid_download_url and song_info_flac.ext in AudioLinkTester.VALID_AUDIO_EXTS: break
