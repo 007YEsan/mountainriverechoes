@@ -19,9 +19,12 @@ import requests
 import mimetypes
 import functools
 import puremagic
+import subprocess
 import json_repair
 import unicodedata
+from pathlib import Path
 from bs4 import BeautifulSoup
+from contextlib import suppress
 from pathlib import PurePosixPath
 from .importutils import optionalimport
 from urllib.parse import urlsplit, unquote
@@ -194,6 +197,29 @@ class AudioLinkTester:
         self.headers = {'Accept': '*/*', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36'}
         self.headers.update(dict(headers or {}))
         self.session = requests.Session()
+    '''ffprobeaudiocodec'''
+    @staticmethod
+    def ffprobeaudiocodec(file_path: str) -> str | None:
+        cmd, result = ["ffprobe", "-v", "error", "-select_streams", "a:0", "-show_entries", "stream=codec_name", "-of", "json", file_path], '{}'
+        with suppress(Exception): result = subprocess.run(cmd, capture_output=True, text=True, check=True).stdout
+        streams: list[dict] = json_repair.loads(result).get("streams", [])
+        if not streams: return None
+        return streams[0].get("codec_name")
+    '''chooseaudioextfromffprobeoutput'''
+    @staticmethod
+    def chooseaudioextfromffprobeoutput(codec_name: str | None) -> str:
+        if codec_name is None: return ".mka"
+        mapping = {"aac": ".m4a", "mp3": ".mp3", "flac": ".flac", "alac": ".m4a", "opus": ".ogg", "vorbis": ".ogg"}
+        return mapping[codec_name] if (codec_name := codec_name.lower()) in mapping else ".wav" if codec_name.startswith("pcm_") else ".mka"
+    '''extractaudiofromvideolossless'''
+    @staticmethod
+    def extractaudiofromvideolossless(video_path, audio_path: str | None = None) -> str:
+        if not (video_path := Path(video_path)).exists(): raise FileNotFoundError(video_path)
+        ext = AudioLinkTester.chooseaudioextfromffprobeoutput(AudioLinkTester.ffprobeaudiocodec(str(video_path)))
+        audio_path = str((Path(audio_path) if audio_path is not None else video_path).with_suffix(ext))
+        cmd = ["ffmpeg", "-v", "error", "-y", "-i", str(video_path), "-vn", "-map", "0:a:0", "-c", "copy", audio_path]
+        try: subprocess.run(cmd, capture_output=True, text=True, check=True); return audio_path, ext.removeprefix('.')
+        except subprocess.CalledProcessError: subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(video_path), "-vn", "-map", "0:a:0", "-c", "copy", (fallback_path := str(video_path.with_suffix(".mka")))], capture_output=True, text=True, check=True); return fallback_path, 'mka'
     '''byte2mb'''
     @staticmethod
     def byte2mb(size: int):

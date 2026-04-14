@@ -177,7 +177,7 @@ class HLSDownloader:
         return MapSpec(uri=uri, byterange=getattr(map_obj, "byterange", None))
     '''downloadsegments'''
     def downloadsegments(self, segments: List[SegmentSpec], segment_dir: str, progress: Progress, progress_id: int) -> List[str]:
-        progress.update(progress_id, description=f"HLSDownloader._downloadallsegments >>> completed (0/{len(segments)})", total=len(segments), kind='hls')
+        progress.update(progress_id, description=f"HLSDownloader._downloadallsegments >>> Completed (0/{len(segments)}) Segments", total=len(segments), kind='hls')
         def worker(spec: SegmentSpec) -> Tuple[int, str]:
             output_file = os.path.join(segment_dir, f"seg_{spec.index:06d}.bin")
             if os.path.exists(output_file) and os.path.getsize(output_file) > 0: return spec.index, output_file
@@ -189,7 +189,7 @@ class HLSDownloader:
             for future in cf.as_completed(futures):
                 try: index, path = future.result(); segment_paths[index] = path
                 except BaseException as exc: exceptions.append(exc)
-                finally: progress.advance(progress_id, 1); progress.update(progress_id, description=f"HLSDownloader._downloadallsegments >>> completed ({int(progress.tasks[progress_id].completed)}/{len(segments)})")
+                finally: progress.advance(progress_id, 1); progress.update(progress_id, description=f"HLSDownloader._downloadallsegments >>> Completed ({int(progress.tasks[progress_id].completed)}/{len(segments)}) Segments")
         if exceptions: raise RuntimeError(f"Segment download failed: {exceptions[0]}") from exceptions[0]
         return [p for p in segment_paths if p is not None]
     '''downloadsegmentpayload'''
