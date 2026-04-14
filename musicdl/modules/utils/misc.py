@@ -174,13 +174,16 @@ class ClientProtocolObj(Protocol):
 '''AudioLinkTester'''
 class AudioLinkTester:
     VALID_AUDIO_EXTS = {
+        # common
         "aac", "aax", "aaxc", "ac3", "adts", "aif", "aifc", "aiff", "alac", "amr", "ape", "au", "avr", "awb", "caf", "cda", "dff", "dfsf", "dsf", "dss", "mdl",
         "dts", "dtshd", "ec3", "f32", "f64", "flac", "gsm", "hca", "htk", "iff", "ima", "ircam", "kar", "kss", "l16", "la", "m15", "m3u8", "m4a", "m4b", "hes", 
         "m4p", "m4r", "m4s", "mat4", "mat5", "med", "mid", "midi", "mlp", "mod", "mo3", "mp1", "mp2", "mp3", "mpa", "mpc", "mpc2k", "mp+", "mpp", "ult", "gym", 
         "msv", "mt2", "mtm", "mxmf", "nist", "nsa", "nsf", "oga", "ogg", "okt", "oma", "ofr", "ofs", "opus", "paf", "pcm", "psf", "psf1", "psf2", "ptm", "gsf", 
         "pvf", "qsf", "ra", "ram", "raw", "rf64", "rmi", "rmj", "rmm", "rmx", "roq", "s3m", "sap", "sd2", "sds", "sf", "shn", "sid", "mptm", "ul", "xm", "gbs", 
         "spu", "spx", "ssf", "stm", "snd", "tak", "thd", "tta", "spc", "sd2f", "umx", "usf", "miniusf", "voc", "vgm", "vgz", "wav", "wave", "w64", "it", "far", 
-        "wax", "wma", "wve", "wv", "wvx", "xi", "8svx", "16svx", "2sf", "3ga", "669", "aa3", "amf", "at3", "at9", "dmf", "m4s", "weba"
+        "wax", "wma", "wve", "wv", "wvx", "xi", "8svx", "16svx", "2sf", "3ga", "669", "aa3", "amf", "at3", "at9", "dmf", "weba",
+        # special and encrypted
+        "m4s", "mflac", "mgg", "qmcflac", "qmc0", "qmc3", "qmcogg", "bkcmp3", "bkcflac", "tkm", "kgm", "vpr", "kwm", "ncm", "mg3d"
     }
     AUDIO_MIME_PREFIX = "audio/"
     AUDIO_MIME_EXTRA = {"application/octet-stream", "application/flac", "application/ogg", "application/vnd.apple.mpegurl", "application/x-flac", "application/x-mpegurl", "video/mp4"}
