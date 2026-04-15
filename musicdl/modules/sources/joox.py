@@ -88,6 +88,7 @@ class JooxMusicClient(BaseMusicClient):
             # --search results
             (resp := self.get(search_url, **request_overrides)).raise_for_status()
             for search_result in resp2json(resp=resp)['tracks']:
+                # --init song info
                 search_result = search_result[0] if isinstance(search_result, list) else search_result
                 song_info = SongInfo(source=self.source, raw_data={'search': search_result, 'download': {}, 'lyric': {}})
                 # --parse with official apis
@@ -122,7 +123,8 @@ class JooxMusicClient(BaseMusicClient):
                 if idx > 0: main_process_context.advance(main_progress_id, 1); main_process_context.update(main_progress_id, description=f"{len(tracks_in_playlist)} Songs Found in Playlist {playlist_id} >>> Completed ({idx}/{len(tracks_in_playlist)}) SongInfo")
                 song_info = SongInfo(source=self.source, raw_data={'search': track_info, 'download': {}, 'lyric': {}})
                 with suppress(Exception): song_info = self._parsewithofficialapiv1(search_result=track_info, lang=lang, country=country, song_info_flac=None, lossless_quality_is_sufficient=False, request_overrides=request_overrides)
-                if song_info.with_valid_download_url: song_infos.append(song_info)
+                if song_info.with_valid_download_url: song_infos.append(song_info); continue
+                self.logger_handle.warning(f'Fail to parse song id {song_info.identifier} >>> {song_info.album} {song_info.song_name} {song_info.singers} {song_info.download_url}', disable_print=self.disable_print)
             main_process_context.advance(main_progress_id, 1); main_process_context.update(main_progress_id, description=f"{len(tracks_in_playlist)} Songs Found in Playlist {playlist_id} >>> Completed ({idx+1}/{len(tracks_in_playlist)}) SongInfo")
         # post processing
         playlist_name = legalizestring(safeextractfromdict(playlist_result['props']['pageProps']['allPlaylistTracks'], ['name'], None) or f"playlist-{playlist_id}")

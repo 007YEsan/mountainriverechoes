@@ -233,6 +233,7 @@ class YouTubeMusicClient(BaseMusicClient):
             with suppress(Exception): search_results = None; resp = ytmusicapi_candidate_api['api'](**ytmusicapi_candidate_api['inputs']); search_results = [s for s in resp if s['resultType'] == 'song']
             if not search_results: resp = rapidapi_candidate_api['api'](**rapidapi_candidate_api['inputs']); search_results = resp2json(resp=resp)['result']
             for search_result in (search_results or list()):
+                # --init song info
                 song_info = SongInfo(source=self.source, raw_data={'search': search_result, 'download': {}, 'lyric': {}})
                 # --parse with third part apis
                 song_info_flac = self._parsewiththirdpartapis(search_result=search_result, request_overrides=request_overrides)
