@@ -34,6 +34,7 @@ class SodaMusicClient(BaseMusicClient):
     '''_download'''
     @usedownloadheaderscookies
     def _download(self, song_info: SongInfo, request_overrides: dict = None, downloaded_song_infos: list = [], progress: Progress = None, song_progress_id: int = 0, auto_supplement_song: bool = True):
+        if not song_info.raw_data.get('play_auth'): return super()._download(song_info=song_info, request_overrides=request_overrides, downloaded_song_infos=downloaded_song_infos, progress=progress, song_progress_id=song_progress_id, auto_supplement_song=auto_supplement_song)
         song_info = super()._download(song_info=song_info, request_overrides=request_overrides, downloaded_song_infos=[], progress=progress, song_progress_id=song_progress_id, auto_supplement_song=False)[0]
         output_filepath, file_data = (output_filepath := Path(song_info.save_path)).parent / f'{output_filepath.stem}.{song_info.ext}', bytearray(Path(song_info.save_path).read_bytes())
         AudioDecryptor.decrypt(file_data=file_data, play_auth=song_info.raw_data['play_auth'], output_filepath=str(output_filepath))
@@ -83,6 +84,34 @@ class SodaMusicClient(BaseMusicClient):
         song_info.lyric = lyric if (lyric and (lyric not in {'NULL'})) else song_info.lyric
         # return
         return song_info
+    '''_parsewithofficialapiv2'''
+    def _parsewithofficialapiv2(self, search_result: dict, song_info_flac: SongInfo = None, lossless_quality_is_sufficient: bool = True, lossless_quality_definitions: set | list | tuple = {'flac'}, request_overrides: dict = None) -> "SongInfo":
+        # init
+        song_info, request_overrides, song_info_flac = SongInfo(source=self.source), request_overrides or {}, song_info_flac or SongInfo(source=self.source)
+        if (not isinstance(search_result, dict)) or (not (song_id := safeextractfromdict(search_result, ['entity', 'track', 'id'], None))): return song_info
+        headers = {"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1", "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"}
+        # parse download url based on arguments
+        if lossless_quality_is_sufficient and song_info_flac.with_valid_download_url and (song_info_flac.ext in lossless_quality_definitions): song_info = song_info_flac
+        else:
+            (resp := self.get(f"https://music.douyin.com/qishui/share/track?track_id={song_id}", headers=headers, **request_overrides)).raise_for_status()
+            download_result = json_repair.loads(re.search(r'_ROUTER_DATA\s*=\s*({.*?});', resp.text, re.S).group(1))
+            audio_option = safeextractfromdict(download_result, ['loaderData', 'track_page', 'audioWithLyricsOption'], {}) or {}
+            download_url = (audio_option.get('url') or '').replace("\\u002F", "/").replace("%7C", "|").replace("%3D", "=")
+            download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
+            song_info = SongInfo(
+                raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(search_result, ['entity', 'track', 'name'], None)), singers=legalizestring(', '.join([singer.get('name') for singer in (safeextractfromdict(search_result, ['entity', 'track', 'artists'], []) or []) if isinstance(singer, dict) and singer.get('name')])), album=legalizestring(safeextractfromdict(search_result, ['entity', 'track', 'album', 'name'], None)), ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], 
+                file_size=download_url_status['file_size'], identifier=song_id, duration_s=int(float(audio_option.get('duration', 0) or 0)), duration=SongInfoUtils.seconds2hms(int(float(audio_option.get('duration', 0) or 0))), lyric=None, cover_url=str(safeextractfromdict(search_result, ['entity', 'track', 'album', 'url_cover', 'urls', 0], '')) + str(safeextractfromdict(search_result, ['entity', 'track', 'album', 'url_cover', 'uri'], '')) + '~c5_375x375.jpg', download_url=download_url_status['download_url'], download_url_status=download_url_status, 
+            )
+        if not song_info.with_valid_download_url or song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS: return song_info
+        # supplement lyric results
+        with suppress(Exception): lyric_result = {}; (resp := self.get(f'https://music.douyin.com/qishui/share/track?track_id={song_id}', **request_overrides)).raise_for_status(); lyric_result = json_repair.loads(re.search(r'_ROUTER_DATA\s*=\s*({[\s\S]*?});', resp.text).group(1).strip())
+        sentences, lrc_list = safeextractfromdict(lyric_result, ['loaderData', 'track_page', 'audioWithLyricsOption', 'lyrics', 'sentences'], []) or [], []
+        to_lrc_func = lambda sentence: f"[{(s:=sentence.get('startMs', 0))//60000:02d}:{(s%60000)//1000:02d}.{s%1000:03d}]{''.join(w.get('text', '') for w in sentence.get('words', []) if isinstance(w, dict))}"
+        lrc_list.extend(to_lrc_func(sentence) for sentence in sentences if isinstance(sentence, dict)); lyric = cleanlrc("\n".join(lrc_list))
+        song_info.raw_data['lyric'] = lyric_result if lyric_result else song_info.raw_data['lyric']
+        song_info.lyric = lyric if (lyric and (lyric not in {'NULL'})) else song_info.lyric
+        # return
+        return song_info
     '''_search'''
     @usesearchheaderscookies
     def _search(self, keyword: str = '', search_url: str = '', request_overrides: dict = None, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
@@ -96,6 +125,7 @@ class SodaMusicClient(BaseMusicClient):
                 song_info = SongInfo(source=self.source, raw_data={'search': search_result, 'download': {}, 'lyric': {}})
                 # --parse with official apis
                 with suppress(Exception): song_info = self._parsewithofficialapiv1(search_result=search_result, song_info_flac=None, lossless_quality_is_sufficient=False, request_overrides=request_overrides)
+                with suppress(Exception): song_info = song_info if song_info.with_valid_download_url else self._parsewithofficialapiv2(search_result=search_result, song_info_flac=None, lossless_quality_is_sufficient=False, request_overrides=request_overrides)
                 # --append to song_infos
                 if song_info.with_valid_download_url: song_infos.append(song_info)
                 # --judgement for search_size
