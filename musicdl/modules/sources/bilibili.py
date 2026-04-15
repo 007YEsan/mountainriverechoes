@@ -89,6 +89,7 @@ class BilibiliMusicClient(BaseMusicClient):
             # --search results
             (resp := self.get(search_url, **request_overrides)).raise_for_status()
             for search_result in resp2json(resp)['data']['result']:
+                # --init song info
                 song_info = SongInfo(source=self.source, raw_data={'search': search_result, 'download': {}, 'lyric': {}})
                 # --parse with official apis
                 with suppress(Exception): song_info = self._parsewithofficialapiv1(search_result=search_result, song_info_flac=None, lossless_quality_is_sufficient=False, request_overrides=request_overrides)
