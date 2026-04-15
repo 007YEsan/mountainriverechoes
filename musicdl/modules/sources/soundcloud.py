@@ -14,7 +14,7 @@ from pathvalidate import sanitize_filepath
 from urllib.parse import urlencode, urlparse
 from ..utils.hosts import SOUNDCLOUD_MUSIC_HOSTS
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
-from ..utils import touchdir, legalizestring, resp2json, usesearchheaderscookies, seconds2hms, safeextractfromdict, hostmatchessuffix, obtainhostname, useparseheaderscookies, SongInfo, AudioLinkTester, LyricSearchClient
+from ..utils import legalizestring, resp2json, usesearchheaderscookies, safeextractfromdict, hostmatchessuffix, obtainhostname, useparseheaderscookies, SongInfo, AudioLinkTester, LyricSearchClient, IOUtils, SongInfoUtils
 
 
 '''SoundCloudMusicClient'''
@@ -107,7 +107,7 @@ class SoundCloudMusicClient(BaseMusicClient):
                 except Exception: duration_in_secs = 0
                 song_info = SongInfo(
                     raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('title')), singers=legalizestring(safeextractfromdict(search_result, ['publisher_metadata', 'artist'], None) or safeextractfromdict(search_result, ['user', 'username'], None)), album=legalizestring(safeextractfromdict(search_result, ['publisher_metadata', 'album_title'], None)), 
-                    ext=ext, file_size_bytes=None, file_size=None, identifier=song_id, duration_s=duration_in_secs, duration=seconds2hms(duration_in_secs), lyric='NULL', cover_url=search_result.get('artwork_url'), download_url=download_url, download_url_status=download_url_status
+                    ext=ext, file_size_bytes=None, file_size=None, identifier=song_id, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric='NULL', cover_url=search_result.get('artwork_url'), download_url=download_url, download_url_status=download_url_status
                 )
                 if str(protocol).lower() in {'hls'}: song_info.protocol, song_info.file_size = 'HLS', 'HLS'
                 else:
@@ -174,6 +174,6 @@ class SoundCloudMusicClient(BaseMusicClient):
         song_infos = self._removeduplicates(song_infos=song_infos); work_dir = self._constructuniqueworkdir(keyword=legalizestring(playlist_name or f"playlist-{playlist_id}"))
         for song_info in song_infos:
             song_info.work_dir = work_dir; episodes = song_info.episodes if isinstance(song_info.episodes, list) else []
-            for eps_info in episodes: eps_info.work_dir = sanitize_filepath(os.path.join(work_dir, song_info.song_name)); touchdir(work_dir)
+            for eps_info in episodes: eps_info.work_dir = sanitize_filepath(os.path.join(work_dir, song_info.song_name)); IOUtils.touchdir(work_dir)
         # return results
         return song_infos
