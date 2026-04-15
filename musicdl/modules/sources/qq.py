@@ -204,7 +204,7 @@ class QQMusicClient(BaseMusicClient):
         # init
         song_info, request_overrides, song_info_flac = SongInfo(source=self.source), request_overrides or {}, song_info_flac or SongInfo(source=self.source)
         if (not isinstance(search_result, dict)) or (not (song_id := search_result.get('mid') or search_result.get('songmid'))): return song_info
-        # obtain basic song_info
+        # parse download url based on arguments
         if lossless_quality_is_sufficient and song_info_flac.with_valid_download_url and (song_info_flac.ext in lossless_quality_definitions): song_info = song_info_flac
         else:
             # --non-vip / vip users using enc_endpoint
