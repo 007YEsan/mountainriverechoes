@@ -72,8 +72,10 @@
 
 # 🎵 Introduction
 
-A lightweight music downloader written entirely in pure Python, built for simplicity, clarity, and ease of use. 
-If you find this project useful, please consider giving it a ⭐ star to support the project and stay updated with future improvements.
+A lightweight music downloader built entirely in pure Python, designed for simplicity, clarity, and ease of use. 
+It is suitable for personal listening workflows, collection management, and academic or educational purposes such as music information retrieval, data collection, and reproducible research. 
+With a clean codebase and minimal dependencies, the project is easy to use, extend, and study. 
+If you find this project useful, please consider giving it a ⭐ star to support ongoing development, help more people discover it, and stay updated with future improvements.
 
 
 # ⚠️ Disclaimer
