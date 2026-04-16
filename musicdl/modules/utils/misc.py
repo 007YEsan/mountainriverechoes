@@ -30,6 +30,7 @@ from .importutils import optionalimport
 from urllib.parse import urlsplit, unquote
 from requests.structures import CaseInsensitiveDict
 from pathvalidate import sanitize_filepath, sanitize_filename
+from .cmd import FFprobeAudioCodecCommand, ExtractAudioFromVideoFFmpegCommand
 from typing import TYPE_CHECKING, Protocol, Callable, Any, Dict, List, Optional, Tuple
 curl_cffi = optionalimport('curl_cffi')
 if TYPE_CHECKING: import curl_cffi as curl_cffi
@@ -203,7 +204,7 @@ class AudioLinkTester:
     '''ffprobeaudiocodec'''
     @staticmethod
     def ffprobeaudiocodec(file_path: str) -> str | None:
-        cmd, result = ["ffprobe", "-v", "error", "-select_streams", "a:0", "-show_entries", "stream=codec_name", "-of", "json", file_path], '{}'
+        cmd, result = FFprobeAudioCodecCommand().build(file_path), '{}'
         with suppress(Exception): result = subprocess.run(cmd, capture_output=True, text=True, check=True).stdout
         streams: list[dict] = json_repair.loads(result).get("streams", [])
         if not streams: return None
@@ -220,9 +221,9 @@ class AudioLinkTester:
         if not (video_path := Path(video_path)).exists(): raise FileNotFoundError(video_path)
         ext = AudioLinkTester.chooseaudioextfromffprobeoutput(AudioLinkTester.ffprobeaudiocodec(str(video_path)))
         audio_path = str((Path(audio_path) if audio_path is not None else video_path).with_suffix(ext))
-        cmd = ["ffmpeg", "-v", "error", "-y", "-i", str(video_path), "-vn", "-map", "0:a:0", "-c", "copy", audio_path]
+        cmd = ExtractAudioFromVideoFFmpegCommand().build(video_path=str(video_path), audio_path=audio_path)
         try: subprocess.run(cmd, capture_output=True, text=True, check=True); return audio_path, ext.removeprefix('.')
-        except subprocess.CalledProcessError: subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(video_path), "-vn", "-map", "0:a:0", "-c", "copy", (fallback_path := str(video_path.with_suffix(".mka")))], capture_output=True, text=True, check=True); return fallback_path, 'mka'
+        except subprocess.CalledProcessError: subprocess.run(ExtractAudioFromVideoFFmpegCommand().build(str(video_path), (fallback_path := str(video_path.with_suffix(".mka")))), capture_output=True, text=True, check=True); return fallback_path, 'mka'
     '''byte2mb'''
     @staticmethod
     def byte2mb(size: int):
