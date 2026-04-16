@@ -180,7 +180,7 @@ Certain music clients supported by musicdl require extra CLI tools to function c
   
   Install Guidance:
   
-  - Windows: Download a build from the [official FFmpeg site](https://ffmpeg.org/download.html), extract it, and add the "bin" directory to your `PATH`.
+  - Windows: Download a build from the [official site](https://ffmpeg.org/download.html), extract it, and add the "bin" directory to your `PATH`.
   - macOS: `brew install ffmpeg`
   - Ubuntu / Debian: `sudo apt install ffmpeg`
   
