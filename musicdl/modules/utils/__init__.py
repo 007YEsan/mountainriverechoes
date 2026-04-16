@@ -13,6 +13,6 @@ from .lyric import WhisperLRC, LyricSearchClient, extractdurationsecondsfromlrc,
 from .logger import LoggerHandle, colorize, printtable, printfullline, smarttrunctable, cursorpickintable
 from .misc import AudioLinkTester, IOUtils, legalizestring, resp2json, isvalidresp, safeextractfromdict, usedownloadheaderscookies, useparseheaderscookies, usesearchheaderscookies, searchdictbykey, dedupkeeporder, hashablesth
 from .cmd import (
-    CmdArg, CmdOp, CommandBuilder, CommandModsApplier, FFmpegCommandFactory, FFprobeCommandFactory, MetaflacCommandFactory, NM3U8DLRECommandFactory, FFprobeAudioCodecCommand, ExtractAudioFromVideoFFmpegCommand, ConvertImageToJpegFFmpegCommand, MetaflacBlockCommand, 
-    MetaflacListPictureCommand, MetaflacRemovePictureCommand, MetaflacExportPictureCommand, MetaflacImportPictureCommand, NM3U8DLREDownloadCommand
+    CmdArg, CmdOp, CommandBuilder, CommandModsApplier, FFmpegCommandFactory, FFprobeCommandFactory, MetaflacCommandFactory, NM3U8DLRECommandFactory, MP4BoxCommandFactory, Mp4DecryptCommandFactory, AmdecryptCommandFactory, FFprobeAudioCodecCommand, ExtractAudioFromVideoFFmpegCommand, ConvertImageToJpegFFmpegCommand, 
+    FFmpegDecryptRemuxCommand, MetaflacBlockCommand, MetaflacListPictureCommand, MetaflacRemovePictureCommand, MetaflacExportPictureCommand, MetaflacImportPictureCommand, NM3U8DLREDownloadCommand, MP4BoxAddCommand, Mp4DecryptCommand, AmdecryptCommand,
 )

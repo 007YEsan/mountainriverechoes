@@ -187,6 +187,17 @@ class ConvertImageToJpegFFmpegCommand(FFmpegCommandFactory):
         return builder.tolist()
 
 
+'''FFmpegDecryptRemuxCommand'''
+class FFmpegDecryptRemuxCommand(FFmpegCommandFactory):
+    '''build'''
+    def build(self, input_path: str, output_path: str, decryption_key: Optional[str] = None, loglevel: str = "error", codec: str = "copy", movflags: str = "+faststart", mods: Optional[ModType] = None) -> list[str]:
+        builder = self.newbuilder().opt("-loglevel", loglevel).flag("-y")
+        if decryption_key: builder.opt("-decryption_key", decryption_key)
+        builder.opt("-i", str(input_path)).opt("-c", codec).opt("-movflags", movflags).positional(str(output_path))
+        self.applymods(builder, mods)
+        return builder.tolist()
+
+
 '''FFprobeCommandFactory'''
 class FFprobeCommandFactory(FFmpegCommandFactory):
     def __init__(self, executable: str = "ffprobe"):
@@ -263,11 +274,58 @@ class NM3U8DLRECommandFactory(FFmpegCommandFactory):
 '''NM3U8DLREDownloadCommand'''
 class NM3U8DLREDownloadCommand(NM3U8DLRECommandFactory):
     '''build'''
-    def build(self, stream_url: str, download_path: str | Path, log_file_path: str | Path, ffmpeg_binary_path: Optional[str] = None, auto_select: bool = True, binary_merge: bool = True, save_pattern: Optional[str] = None, tmp_dir: Optional[str | Path] = None, mods: Optional[ModType] = None) -> list[str]:
+    def build(self, stream_url: str, download_path: str | Path, log_file_path: str | Path, ffmpeg_binary_path: Optional[str] = None, save_pattern: Optional[str] = None, tmp_dir: Optional[str | Path] = None, mods: Optional[ModType] = None) -> list[str]:
         download_path_obj, ffmpeg_binary_path = Path(download_path), ffmpeg_binary_path or shutil.which("ffmpeg")
         tmp_dir, save_pattern = Path(tmp_dir) if tmp_dir is not None else download_path_obj.parent, save_pattern or download_path_obj.name
-        builder = self.newbuilder().positional(stream_url); binary_merge and builder.flag("--binary-merge"); ffmpeg_binary_path and builder.opt("--ffmpeg-binary-path", ffmpeg_binary_path)
-        builder.opt("--save-name", download_path_obj.stem).opt("--save-dir", download_path_obj.parent).opt("--tmp-dir", tmp_dir).opt("--log-file-path", log_file_path)
-        auto_select and builder.flag("--auto-select"); builder.opt("--save-pattern", save_pattern)
+        builder = self.newbuilder().positional(stream_url).flag("--binary-merge").opt("--ffmpeg-binary-path", ffmpeg_binary_path).opt("--save-name", download_path_obj.stem).opt("--save-dir", download_path_obj.parent).opt("--tmp-dir", tmp_dir).opt("--log-file-path", log_file_path).flag("--auto-select").opt("--save-pattern", save_pattern)
+        self.applymods(builder, mods)
+        return builder.tolist()
+
+
+'''MP4BoxCommandFactory'''
+class MP4BoxCommandFactory(FFmpegCommandFactory):
+    def __init__(self, executable: str = "MP4Box"):
+        super().__init__(executable=executable)
+
+
+'''MP4BoxAddCommand'''
+class MP4BoxAddCommand(MP4BoxCommandFactory):
+    '''build'''
+    def build(self, input_path: str, output_path: str, itags: Optional[str] = None, quiet: bool = True, mods: Optional[ModType] = None) -> list[str]:
+        builder = self.newbuilder(); quiet and builder.flag("-quiet")
+        builder.opt("-add", str(input_path)).opt("-itags", itags).flag("-keep-utc").flag("-new").positional(str(output_path))
+        self.applymods(builder, mods)
+        return builder.tolist()
+
+
+'''Mp4DecryptCommandFactory'''
+class Mp4DecryptCommandFactory(FFmpegCommandFactory):
+    def __init__(self, executable: str = "mp4decrypt"):
+        super().__init__(executable=executable)
+
+
+'''Mp4DecryptCommand'''
+class Mp4DecryptCommand(Mp4DecryptCommandFactory):
+    '''build'''
+    def build(self, input_path: str, output_path: str, keys: Optional[Sequence[str]] = None, mods: Optional[ModType] = None) -> list[str]:
+        builder = self.newbuilder()
+        for key in (keys or []): builder.opt("--key", key)
+        builder.positional(str(input_path)).positional(str(output_path))
+        self.applymods(builder, mods)
+        return builder.tolist()
+
+
+'''AmdecryptCommandFactory'''
+class AmdecryptCommandFactory(FFmpegCommandFactory):
+    def __init__(self, executable: str = "amdecrypt"):
+        super().__init__(executable=executable)
+
+
+'''AmdecryptCommand'''
+class AmdecryptCommand(AmdecryptCommandFactory):
+    '''build'''
+    def build(self, wrapper_decrypt_ip: str, media_id: str, fairplay_key: str, input_path: str, output_path: str, mp4decrypt_binary_path: Optional[str] = None, mods: Optional[ModType] = None) -> list[str]:
+        mp4decrypt_binary_path = mp4decrypt_binary_path or shutil.which("mp4decrypt") or "mp4decrypt"
+        builder = (self.newbuilder().positional(str(wrapper_decrypt_ip)).positional(str(mp4decrypt_binary_path)).positional(str(media_id)).positional(str(fairplay_key)).positional(str(input_path)).positional(str(output_path)))
         self.applymods(builder, mods)
         return builder.tolist()
