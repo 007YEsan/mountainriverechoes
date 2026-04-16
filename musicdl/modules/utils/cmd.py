@@ -7,6 +7,8 @@ WeChat Official Account (微信公众号):
     Charles的皮卡丘
 '''
 from __future__ import annotations
+import shutil
+from pathlib import Path
 from dataclasses import dataclass
 from typing import Any, Callable, Mapping, Optional, Sequence, Union
 
@@ -56,6 +58,10 @@ class CommandBuilder:
     '''opt'''
     def opt(self, key: str, value: Any) -> "CommandBuilder":
         self.args.append(CmdArg(key=key, value=str(value)))
+        return self
+    '''inlineopt'''
+    def inlineopt(self, key: str, value: Any, sep: str = "=") -> "CommandBuilder":
+        self.args.append(CmdArg(key=f"{key}{sep}{value}", value=None))
         return self
     '''positional'''
     def positional(self, value: Any) -> "CommandBuilder":
@@ -170,6 +176,17 @@ class ExtractAudioFromVideoFFmpegCommand(FFmpegCommandFactory):
         return builder.tolist()
 
 
+'''ConvertImageToJpegFFmpegCommand'''
+class ConvertImageToJpegFFmpegCommand(FFmpegCommandFactory):
+    '''build'''
+    def build(self, src_img: str, out_jpg: str, scale: Optional[str] = None, quality: int = 3, pix_fmt: str = "yuvj420p", mods: Optional[ModType] = None) -> list[str]:
+        builder = (self.newbuilder().flag("-y").opt("-v", "error").opt("-i", src_img))
+        if scale: builder.opt("-vf", scale)
+        builder.opt("-q:v", quality).opt("-pix_fmt", pix_fmt).positional(out_jpg)
+        self.applymods(builder, mods)
+        return builder.tolist()
+
+
 '''FFprobeCommandFactory'''
 class FFprobeCommandFactory(FFmpegCommandFactory):
     def __init__(self, executable: str = "ffprobe"):
@@ -181,5 +198,76 @@ class FFprobeAudioCodecCommand(FFprobeCommandFactory):
     '''build'''
     def build(self, file_path: str, mods: Optional[ModType] = None) -> list[str]:
         builder = (self.newbuilder().opt("-v", "error").opt("-select_streams", "a:0").opt("-show_entries", "stream=codec_name").opt("-of", "json").positional(file_path))
+        self.applymods(builder, mods)
+        return builder.tolist()
+
+
+'''MetaflacCommandFactory'''
+class MetaflacCommandFactory(FFmpegCommandFactory):
+    def __init__(self, executable: str = "metaflac"):
+        super().__init__(executable=executable)
+
+
+'''MetaflacBlockCommand'''
+class MetaflacBlockCommand(MetaflacCommandFactory):
+    '''build'''
+    def build(self, flac_path: str, action_flag: str, block_type: str = "PICTURE", mods: Optional[ModType] = None) -> list[str]:
+        builder = (self.newbuilder().flag(action_flag).opt("--block-type", block_type).positional(flac_path))
+        self.applymods(builder, mods)
+        return builder.tolist()
+
+
+'''MetaflacListPictureCommand'''
+class MetaflacListPictureCommand(MetaflacBlockCommand):
+    '''build'''
+    def build(self, flac_path: str, mods: Optional[ModType] = None) -> list[str]:
+        return super().build(flac_path=flac_path, action_flag="--list", block_type="PICTURE", mods=mods)
+
+
+'''MetaflacRemovePictureCommand'''
+class MetaflacRemovePictureCommand(MetaflacBlockCommand):
+    '''build'''
+    def build(self, flac_path: str, mods: Optional[ModType] = None) -> list[str]:
+        return super().build(flac_path=flac_path, action_flag="--remove", block_type="PICTURE", mods=mods)
+
+
+'''MetaflacExportPictureCommand'''
+class MetaflacExportPictureCommand(MetaflacCommandFactory):
+    '''build'''
+    def build(self, flac_path: str, dest_file: str, mods: Optional[ModType] = None) -> list[str]:
+        builder = (self.newbuilder().inlineopt("--export-picture-to", dest_file).positional(flac_path))
+        self.applymods(builder, mods)
+        return builder.tolist()
+
+
+'''MetaflacImportPictureCommand'''
+class MetaflacImportPictureCommand(MetaflacCommandFactory):
+    '''buildpicturespec'''
+    @staticmethod
+    def buildpicturespec(img_file: str, picture_type: int = 3, mime: str = "image/jpeg", description: str = "", extra: str = "") -> str:
+        return f"{picture_type}|{mime}|{description}|{extra}|{img_file}"
+    '''build'''
+    def build(self, flac_path: str, img_file: str, picture_type: int = 3, mime: str = "image/jpeg", description: str = "", extra: str = "", mods: Optional[ModType] = None) -> list[str]:
+        picture_spec = self.buildpicturespec(img_file=img_file, picture_type=picture_type, mime=mime, description=description, extra=extra)
+        builder = (self.newbuilder().inlineopt("--import-picture-from", picture_spec).positional(flac_path))
+        self.applymods(builder, mods)
+        return builder.tolist()
+
+
+'''NM3U8DLRECommandFactory'''
+class NM3U8DLRECommandFactory(FFmpegCommandFactory):
+    def __init__(self, executable: str = "N_m3u8DL-RE"):
+        super().__init__(executable=executable)
+
+
+'''NM3U8DLREDownloadCommand'''
+class NM3U8DLREDownloadCommand(NM3U8DLRECommandFactory):
+    '''build'''
+    def build(self, stream_url: str, download_path: str | Path, log_file_path: str | Path, ffmpeg_binary_path: Optional[str] = None, auto_select: bool = True, binary_merge: bool = True, save_pattern: Optional[str] = None, tmp_dir: Optional[str | Path] = None, mods: Optional[ModType] = None) -> list[str]:
+        download_path_obj, ffmpeg_binary_path = Path(download_path), ffmpeg_binary_path or shutil.which("ffmpeg")
+        tmp_dir, save_pattern = Path(tmp_dir) if tmp_dir is not None else download_path_obj.parent, save_pattern or download_path_obj.name
+        builder = self.newbuilder().positional(stream_url); binary_merge and builder.flag("--binary-merge"); ffmpeg_binary_path and builder.opt("--ffmpeg-binary-path", ffmpeg_binary_path)
+        builder.opt("--save-name", download_path_obj.stem).opt("--save-dir", download_path_obj.parent).opt("--tmp-dir", tmp_dir).opt("--log-file-path", log_file_path)
+        auto_select and builder.flag("--auto-select"); builder.opt("--save-pattern", save_pattern)
         self.applymods(builder, mods)
         return builder.tolist()
