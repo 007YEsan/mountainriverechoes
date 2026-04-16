@@ -318,7 +318,7 @@ If you want overseas sources, specify them explicitly each time, for example:
 musicdl -m QobuzMusicClient,JamendoMusicClient,YouTubeMusicClient
 ```
 
-If you already know where a song is likely to be available, it is usually better to search a small number of sources directly:
+If you already know where a song is likely to be available, it is usually better to search a small number of sources:
 
 ```bash
 musicdl -m NeteaseMusicClient,QQMusicClient
