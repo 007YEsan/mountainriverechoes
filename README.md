@@ -392,7 +392,7 @@ You can always inspect the full command-line interface with:
 musicdl --help
 ```
 
-<details>
+<details style="margin-bottom: 24px;">
 <summary><em>Show CLI help output</em></summary>
 <br>
 
@@ -776,7 +776,7 @@ tiny, tiny.en, base, base.en, small, small.en, distil-small.en, medium, medium.e
 
 In general, larger models generate better lyrics but take longer to run.
 
-If you want to generate lyric files automatically during music downloading, set the environment variable `ENABLE_WHISPERLRC=True`.
+Use the environment variable `ENABLE_WHISPERLRC=True` to toggle on-the-fly lyric generation for all music downloads.
 For example:
 
 ```bash
