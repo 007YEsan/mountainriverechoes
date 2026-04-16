@@ -39,6 +39,7 @@ from urllib.parse import urljoin, urlparse, parse_qs
 from .misc import safeextractfromdict, resp2json, IOUtils
 from .importutils import optionalimport, optionalimportfrom
 from typing import List, Optional, Any, Union, Tuple, Callable, Dict, TYPE_CHECKING
+from .cmd import ExtractAudioFromVideoFFmpegCommand, MetaflacListPictureCommand, MetaflacRemovePictureCommand, MetaflacExportPictureCommand, MetaflacImportPictureCommand, ConvertImageToJpegFFmpegCommand, NM3U8DLREDownloadCommand
 
 
 '''MediaMetadata'''
@@ -709,7 +710,7 @@ class TIDALMusicClientUtils:
     @staticmethod
     def remuxwithffmpeg(src_path: str, dest_path: str) -> Tuple[bool, str]:
         if not TIDALMusicClientUtils.ffmpegready(): return False, "ffmpeg backend unavailable"
-        cmd = ["ffmpeg", "-y", "-v", "error", "-i", src_path, "-map", "0:a:0", "-c:a", "copy", dest_path]
+        cmd = ExtractAudioFromVideoFFmpegCommand().build(src_path, dest_path)
         try: subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         except subprocess.CalledProcessError as exc: return False, f"ffmpeg exited with code {exc.returncode}"
         return os.path.exists(dest_path) and os.path.getsize(dest_path) > 0, "ffmpeg"
@@ -811,7 +812,7 @@ class TIDALMusicClientUtils:
     @staticmethod
     def ensureflaccoverartisalreadygood(flac_path: Path, max_px: int) -> bool:
         run_cmd_func = lambda cmd, *, check=True, capture=True: subprocess.run(list(cmd), check=check, stdout=subprocess.PIPE if capture else None, stderr=subprocess.PIPE if capture else None, text=True)
-        try: out = run_cmd_func(["metaflac", "--list", "--block-type=PICTURE", str(flac_path)]).stdout
+        try: out = run_cmd_func(MetaflacListPictureCommand().build(str(flac_path))).stdout
         except subprocess.CalledProcessError: return False
         if len((blocks := out.split("METADATA_BLOCK_PICTURE"))) != 2: return False
         block = blocks[1].splitlines()
@@ -825,14 +826,14 @@ class TIDALMusicClientUtils:
     @staticmethod
     def hasmetaflacfrontcover(flac_path: Path) -> bool:
         run_cmd_func = lambda cmd, *, check=True, capture=True: subprocess.run(list(cmd), check=check, stdout=subprocess.PIPE if capture else None, stderr=subprocess.PIPE if capture else None, text=True)
-        try: out = run_cmd_func(["metaflac", "--list", "--block-type=PICTURE", str(flac_path)]).stdout
+        try: out = run_cmd_func(MetaflacListPictureCommand().build(str(flac_path))).stdout
         except subprocess.CalledProcessError: return False
         return bool(re.compile(r"^\s*type:\s+3\b", re.M).search(out))
     '''exportexistingpicture'''
     @staticmethod
     def exportexistingpicture(flac_path: Path, dest_file: Path) -> bool:
         run_cmd_func = lambda cmd, *, check=True, capture=True: subprocess.run(list(cmd), check=check, stdout=subprocess.PIPE if capture else None, stderr=subprocess.PIPE if capture else None, text=True)
-        try: run_cmd_func(["metaflac", f"--export-picture-to={dest_file}", str(flac_path)])
+        try: run_cmd_func(MetaflacExportPictureCommand().build(str(flac_path), dest_file))
         except subprocess.CalledProcessError: return False
         return dest_file.exists() and dest_file.stat().st_size > 0
     '''findfoldercover'''
@@ -846,16 +847,15 @@ class TIDALMusicClientUtils:
     @staticmethod
     def importfrontcover(flac_path: Path, jpg_file: Path) -> None:
         run_cmd_func = lambda cmd, *, check=True, capture=True: subprocess.run(list(cmd), check=check, stdout=subprocess.PIPE if capture else None, stderr=subprocess.PIPE if capture else None, text=True)
-        run_cmd_func(["metaflac", "--remove", "--block-type=PICTURE", str(flac_path)], capture=False)
-        run_cmd_func(["metaflac", f"--import-picture-from=3|image/jpeg|||{jpg_file}", str(flac_path)], capture=False)
+        run_cmd_func(MetaflacRemovePictureCommand().build(str(flac_path)), capture=False)
+        run_cmd_func(MetaflacImportPictureCommand().build(str(flac_path), str(jpg_file)), capture=False)
     '''reencodewithffmpeg'''
     @staticmethod
     def reencodewithffmpeg(src_img: Path, out_jpg: Path, max_px: int) -> Tuple[bool, str]:
         if not bool(shutil.which("ffmpeg") is not None): return False, "ffmpeg backend unavailable"
         run_cmd_func = lambda cmd, *, check=True, capture=True: subprocess.run(list(cmd), check=check, stdout=subprocess.PIPE if capture else None, stderr=subprocess.PIPE if capture else None, text=True)
         scale = "scale='min({0},iw)':'min({0},ih)':force_original_aspect_ratio=decrease".format(max_px)
-        cmd = ["ffmpeg", "-y", "-v", "error", "-i", str(src_img), "-vf", scale, "-q:v", "3", "-pix_fmt", "yuvj420p", str(out_jpg)]
-        try: run_cmd_func(cmd)
+        try: run_cmd_func(ConvertImageToJpegFFmpegCommand().build(str(src_img), str(out_jpg), scale))
         except subprocess.CalledProcessError as exc: return False, f"ffmpeg exited with code {exc.returncode}"
         return out_jpg.exists() and out_jpg.stat().st_size > 0, "ffmpeg"
     '''reencodewithpyav'''
@@ -1122,6 +1122,6 @@ class TIDALMusicClientUtils:
     def downloadstreamwithnm3u8dlre(stream_url: str, download_path: str, silent: bool = False, random_uuid: str = ''):
         (download_path_obj := Path(download_path)).parent.mkdir(parents=True, exist_ok=True)
         log_file_path = os.path.join(user_log_dir(appname='musicdl', appauthor='zcjin'), f"musicdl_{random_uuid}.log")
-        cmd = ["N_m3u8DL-RE", stream_url, "--binary-merge", "--ffmpeg-binary-path", shutil.which('ffmpeg'), "--save-name", download_path_obj.stem, "--save-dir", download_path_obj.parent, "--tmp-dir", download_path_obj.parent, "--log-file-path", log_file_path, "--auto-select", "--save-pattern", download_path_obj.name]
+        cmd = NM3U8DLREDownloadCommand().build(stream_url, download_path_obj, log_file_path)
         ret = subprocess.run(cmd, check=True, capture_output=(True if silent else False), text=True, encoding='utf-8', errors='ignore')
         return (ret.returncode == 0)

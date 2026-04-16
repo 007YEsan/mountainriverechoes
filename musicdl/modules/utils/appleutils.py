@@ -13,7 +13,6 @@ import m3u8
 import uuid
 import json
 import base64
-import shutil
 import datetime
 import requests
 import subprocess
@@ -29,6 +28,7 @@ from pywidevine import PSSH, Cdm, Device
 from urllib.parse import parse_qs, urlparse
 from .misc import safeextractfromdict, resp2json
 from pywidevine.license_protocol_pb2 import WidevinePsshData
+from .cmd import NM3U8DLREDownloadCommand, MP4BoxAddCommand, FFmpegDecryptRemuxCommand, AmdecryptCommand, Mp4DecryptCommand
 
 
 '''settings'''
@@ -668,27 +668,26 @@ class AppleMusicClientDownloadSongUtils:
     '''remuxmp4box'''
     @staticmethod
     def remuxmp4box(input_path: str, output_path: str, silent: bool = False, artist: str = ''):
-        cmd = ["MP4Box", "-quiet", "-add", input_path, "-itags", f"artist={artist}", "-keep-utc", "-new", output_path]
+        cmd = MP4BoxAddCommand().build(input_path=input_path, output_path=output_path, itags=f"artist={artist}")
         ret = subprocess.run(cmd, check=False, capture_output=(True if silent else False), text=True, encoding='utf-8', errors='ignore')
         return (ret.returncode == 0)
     '''remuxffmpeg'''
     @staticmethod
     def remuxffmpeg(input_path: str, output_path: str, decryption_key: str = None, silent: bool = False):
-        key = ["-decryption_key", decryption_key] if decryption_key else []
-        cmd = ['ffmpeg', "-loglevel", "error", "-y", *key, "-i", input_path, "-c", "copy", "-movflags", "+faststart", output_path]
+        cmd = FFmpegDecryptRemuxCommand().build(input_path, output_path, decryption_key)
         ret = subprocess.run(cmd, check=False, capture_output=(True if silent else False), text=True, encoding='utf-8', errors='ignore')
         return (ret.returncode == 0)
     '''decryptmp4decrypt'''
     @staticmethod
     def decryptmp4decrypt(input_path: str, output_path: str, decryption_key: str, legacy: bool, silent: bool = False):
-        if legacy: keys = ["--key", f"1:{decryption_key}"]
-        else: AppleMusicClientDownloadSongUtils.fixkeyid(input_path); keys = ["--key", "0" * 31 + "1" + f":{decryption_key}", "--key", "0" * 32 + f":{DEFAULT_SONG_DECRYPTION_KEY}"]
-        ret = subprocess.run(["mp4decrypt", *keys, input_path, output_path], check=False, capture_output=(True if silent else False), text=True, encoding='utf-8', errors='ignore')
+        if not legacy: AppleMusicClientDownloadSongUtils.fixkeyid(input_path)
+        keys = [f"1:{decryption_key}"] if legacy else ["0" * 31 + "1" + f":{decryption_key}", "0" * 32 + f":{DEFAULT_SONG_DECRYPTION_KEY}"]
+        ret = subprocess.run(Mp4DecryptCommand().build(input_path, output_path, keys), check=False, capture_output=(True if silent else False), text=True, encoding='utf-8', errors='ignore')
         return (ret.returncode == 0)
     '''decryptamdecrypt'''
     @staticmethod
     def decryptamdecrypt(input_path: str, output_path: str, media_id: str, fairplay_key: str, wrapper_decrypt_ip: str = "127.0.0.1:10020", silent: bool = False):
-        cmd = ['amdecrypt', wrapper_decrypt_ip, shutil.which('mp4decrypt'), media_id, fairplay_key, input_path, output_path]
+        cmd = AmdecryptCommand().build(wrapper_decrypt_ip=wrapper_decrypt_ip, media_id=media_id, fairplay_key=fairplay_key, input_path=input_path, output_path=output_path)
         ret = subprocess.run(cmd, check=False, capture_output=(True if silent else False), text=True, encoding='utf-8', errors='ignore')
         return (ret.returncode == 0)
     '''stage'''
@@ -707,7 +706,7 @@ class AppleMusicClientDownloadSongUtils:
     def downloadstreamwithnm3u8dlre(stream_url: str, download_path: str, silent: bool = False, random_uuid: str = ''):
         (download_path_obj := Path(download_path)).parent.mkdir(parents=True, exist_ok=True)
         log_file_path = os.path.join(user_log_dir(appname='musicdl', appauthor='zcjin'), f"musicdl_{random_uuid}.log")
-        cmd = ["N_m3u8DL-RE", stream_url, "--binary-merge", "--ffmpeg-binary-path", shutil.which('ffmpeg'), "--save-name", download_path_obj.stem, "--save-dir", download_path_obj.parent, "--tmp-dir", download_path_obj.parent, "--log-file-path", log_file_path]
+        cmd = NM3U8DLREDownloadCommand().build(stream_url, download_path_obj, log_file_path)
         ret = subprocess.run(cmd, check=False, capture_output=(True if silent else False), text=True, encoding='utf-8', errors='ignore')
         return (ret.returncode == 0)
     '''download'''
