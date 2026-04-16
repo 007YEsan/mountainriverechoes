@@ -589,7 +589,7 @@ musicdl -k "tail ring" -m NeteaseMusicClient \
 (6) Pass Source-Specific Search Rules
 
 Use `search_rules` when a source supports extra search options.
-The exact meaning depends on the client implementation.
+Behavior is implementation-specific.
 
 ```python
 from musicdl import musicdl
@@ -756,7 +756,7 @@ music_client.download(song_infos=song_infos)
 
 #### WhisperLRC
 
-On some music platforms, it is not possible to obtain lyric files directly, for example `XimalayaMusicClient` and `MituMusicClient`.
+On some music platforms, it is not possible to obtain lyric files directly, for example `XimalayaMusicClient`, `LizhiMusicClient`, `LRTSMusicClient`, `QingtingMusicClient` and `MituMusicClient`.
 To handle this, musicdl provides a faster-whisper-based interface that can generate lyrics automatically.
 
 Generate lyrics from a local file:
@@ -776,7 +776,7 @@ tiny, tiny.en, base, base.en, small, small.en, distil-small.en, medium, medium.e
 
 In general, larger models generate better lyrics but take longer to run.
 
-If you want to generate lyric files automatically during downloading, set the environment variable `ENABLE_WHISPERLRC=True`.
+If you want to generate lyric files automatically during music downloading, set the environment variable `ENABLE_WHISPERLRC=True`.
 For example:
 
 ```bash
