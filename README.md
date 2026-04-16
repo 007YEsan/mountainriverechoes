@@ -169,7 +169,7 @@ python setup.py install
 
 Certain music clients supported by musicdl require extra CLI tools to function correctly, mainly to decrypt encrypted search and download requests, as well as protected audio files. These tools include:
 
-- [FFmpeg](https://www.ffmpeg.org/)
+- [FFmpeg](https://www.ffmpeg.org/) is a cross-platform command-line tool for processing audio and video. The official FFmpeg site provides source code and links to ready-to-use builds for different platforms.
   
   Required By:
 
@@ -177,8 +177,6 @@ Certain music clients supported by musicdl require extra CLI tools to function c
   - [SoundCloudMusicClient](https://soundcloud.com/discover)
   - [StreetVoiceMusicClient](https://www.streetvoice.cn/)
   - [TIDALMusicClient](https://tidal.com/)
-  
-  FFmpeg is a cross-platform command-line tool for processing audio and video. The official FFmpeg site provides source code and links to ready-to-use builds for different platforms.
   
   Install Guidance:
   
@@ -194,13 +192,11 @@ Certain music clients supported by musicdl require extra CLI tools to function c
   
   If version information is shown, FFmpeg was installed successfully.
 
-- [Node.js](https://nodejs.org/en)
+- [Node.js](https://nodejs.org/en) is a cross-platform JavaScript runtime used to run JavaScript outside the browser.
 
   Required By:
   
   - [YouTubeMusicClient](https://music.youtube.com/)
-  
-  Node.js is a cross-platform JavaScript runtime used to run JavaScript outside the browser.
   
   Install Guidance:
   
@@ -217,15 +213,13 @@ Certain music clients supported by musicdl require extra CLI tools to function c
   
   If both commands print version information, Node.js was installed successfully.
 
-- [N_m3u8DL-RE](https://github.com/nilaoda/N_m3u8DL-RE)
+- [N_m3u8DL-RE](https://github.com/nilaoda/N_m3u8DL-RE) is a cross-platform stream downloader for MPD, M3U8, and ISM.
 
   Required By:
   
   - [AppleMusicClient](https://music.apple.com/)
   - [SoundCloudMusicClient](https://soundcloud.com/discover)
   - [TIDALMusicClient](https://tidal.com/)
-  
-  N_m3u8DL-RE is a cross-platform stream downloader for MPD, M3U8, and ISM.
   
   Install Guidance:
   
@@ -242,15 +236,13 @@ Certain music clients supported by musicdl require extra CLI tools to function c
   
   If version information is shown, N_m3u8DL-RE was installed successfully.
 
-- [Bento4](https://www.bento4.com/downloads/)
+- [Bento4](https://www.bento4.com/downloads/) is a full-featured MP4 and MPEG-DASH toolkit. In this setup, its mp4decrypt tool is required by amdecrypt and N_m3u8DL-RE.
 
   Required By:
   
   - [AppleMusicClient](https://music.apple.com/)
   - [SoundCloudMusicClient](https://soundcloud.com/discover)
   - [TIDALMusicClient](https://tidal.com/)
-  
-  Bento4 is a full-featured MP4 and MPEG-DASH toolkit. In this setup, its mp4decrypt tool is required by amdecrypt and N_m3u8DL-RE.
   
   Install Guidance:
 
@@ -266,13 +258,11 @@ Certain music clients supported by musicdl require extra CLI tools to function c
   
   If usage or version information is shown, Bento4 was installed successfully.
 
-- [amdecrypt](https://github.com/CharlesPikachu/musicdl/releases/tag/clitools)
+- [amdecrypt](https://github.com/CharlesPikachu/musicdl/releases/tag/clitools) is a command-line tool for decrypting Apple Music songs in conjunction with a wrapper server.
   
   Required By:
   
   - [AppleMusicClient](https://music.apple.com/)
-  
-  amdecrypt is a command-line tool for decrypting Apple Music songs in conjunction with a wrapper server.
   
   Install Guidance:
 
