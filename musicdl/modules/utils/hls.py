@@ -27,6 +27,7 @@ from urllib.parse import urljoin
 from dataclasses import dataclass
 from rich.progress import Progress
 from collections.abc import Iterable
+from .cmd import ExtractAudioFromVideoFFmpegCommand
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
@@ -364,6 +365,6 @@ class HLSDownloader:
     '''ffmpegcopyaudio'''
     def ffmpegcopyaudio(self, input_path: str, output_path: str) -> None:
         IOUtils.touchdir(os.path.dirname(os.path.abspath(output_path)) or ".", exist_ok=True)
-        command = [self.ffmpeg_path, "-y", "-loglevel", "error", "-i", input_path, "-map", "0:a:0?", "-vn", "-c", "copy", output_path]
+        command = ExtractAudioFromVideoFFmpegCommand(self.ffmpeg_path).build(input_path, output_path)
         completed = subprocess.run(command, check=False, capture_output=True, text=True)
         if completed.returncode != 0 or not os.path.exists(output_path) or os.path.getsize(output_path) == 0: raise RuntimeError(completed.stderr.strip() or "ffmpeg remux failed")

@@ -165,7 +165,7 @@ class FFmpegCommandFactory:
 class ExtractAudioFromVideoFFmpegCommand(FFmpegCommandFactory):
     '''build'''
     def build(self, video_path: str, audio_path: str, mods: Optional[ModType] = None) -> list[str]:
-        builder = (self.newbuilder().opt("-v", "error").flag("-y").opt("-i", video_path).flag("-vn").opt("-map", "0:a:0").opt("-c", "copy").positional(audio_path))
+        builder = (self.newbuilder().opt("-v", "error").flag("-y").opt("-i", video_path).flag("-vn").opt("-map", "0:a:0").opt("-c:a", "copy").positional(audio_path))
         self.applymods(builder, mods)
         return builder.tolist()
 
