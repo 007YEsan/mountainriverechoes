@@ -557,7 +557,7 @@ musicdl -m NeteaseMusicClient \
 
 (5) Override Request Settings Per Source
 
-Use `requests_overrides` when you need to pass extra request options such as `headers`, `proxies`, `timeout`, or `verify`.
+Use `requests_overrides` when you need to pass extra request options such as `proxies`, `timeout`, or `verify`.
 
 ```python
 from musicdl import musicdl
