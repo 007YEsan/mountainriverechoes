@@ -463,8 +463,7 @@ musicdl -m MiguMusicClient,NeteaseMusicClient,QQMusicClient \
 
 (2) Pass Cookies for VIP or Logged-in Access
 
-If a source works better when logged in, provide cookies from that platform's web session.
-For example, for `QQMusicClient`:
+If a source works better when logged in, provide cookies from that platform's web session, *e.g.*, `QQMusicClient`:
 
 ```python
 from musicdl import musicdl
