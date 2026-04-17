@@ -27,8 +27,11 @@ class StreetVoiceMusicClient(BaseMusicClient):
     def __init__(self, **kwargs):
         super(StreetVoiceMusicClient, self).__init__(**kwargs)
         self.default_search_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 Edg/121.0.0.0", "Referer": "https://www.streetvoice.cn/", "x-requested-with": "XMLHttpRequest"}
+        if self.default_search_cookies: self.default_search_headers['X-Csrftoken'] = self.default_search_cookies['csrf-token']
         self.default_parse_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 Edg/121.0.0.0", "Referer": "https://www.streetvoice.cn/", "x-requested-with": "XMLHttpRequest"}
+        if self.default_parse_cookies: self.default_parse_headers['X-Csrftoken'] = self.default_parse_cookies['csrf-token']
         self.default_download_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 Edg/121.0.0.0", "Referer": "https://www.streetvoice.cn/", "x-requested-with": "XMLHttpRequest"}
+        if self.default_download_cookies: self.default_download_headers['X-Csrftoken'] = self.default_download_cookies['csrf-token']
         self.default_headers = self.default_search_headers
         self._initsession()
     '''_constructsearchurls'''
