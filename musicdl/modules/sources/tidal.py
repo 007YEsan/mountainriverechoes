@@ -27,7 +27,7 @@ class TIDALMusicClient(BaseMusicClient):
     source = 'TIDALMusicClient'
     def __init__(self, **kwargs):
         super(TIDALMusicClient, self).__init__(**kwargs)
-        assert self.default_search_cookies or self.default_download_cookies or self.default_parse_cookies, f'cookies are not configured, so TIDAL is unavailable, refer to https://musicdl.readthedocs.io/en/latest/Quickstart.html#tidal-high-quality-music-download.'
+        assert self.default_search_cookies or self.default_download_cookies or self.default_parse_cookies, f'cookies are not configured, so TIDAL is unavailable, refer to "https://musicdl.readthedocs.io/en/latest/Clients.html#tidalmusicclient-built-in-premium-account".'
         TIDALMusicClientUtils.SESSION_STORAGE = SessionStorage(**(self.default_search_cookies or self.default_download_cookies or self.default_parse_cookies))
         self.tidal_tv_session = TidalTvSession(TIDALMusicClientUtils.SESSION_STORAGE.client_id, TIDALMusicClientUtils.SESSION_STORAGE.client_secret)
         self.tidal_tv_session.setstorage(TIDALMusicClientUtils.SESSION_STORAGE)

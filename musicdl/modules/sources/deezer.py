@@ -26,9 +26,9 @@ class DeezerMusicClient(BaseMusicClient):
     def __init__(self, **kwargs):
         kwargs['maintain_session'] = True
         super(DeezerMusicClient, self).__init__(**kwargs)
-        if self.default_search_cookies: assert "arl" in self.default_search_cookies, '"arl" should be configured, refer to https://musicdl.readthedocs.io/en/latest/Quickstart.html#deezer-music-download'
-        if self.default_parse_cookies: assert "arl" in self.default_parse_cookies, '"arl" should be configured, refer to https://musicdl.readthedocs.io/en/latest/Quickstart.html#deezer-music-download'
-        if self.default_download_cookies: assert "arl" in self.default_download_cookies, '"arl" should be configured, refer to https://musicdl.readthedocs.io/en/latest/Quickstart.html#deezer-music-download'
+        if self.default_search_cookies: assert "arl" in self.default_search_cookies, '"arl" should be configured, refer to "https://musicdl.readthedocs.io/en/latest/Clients.html#deezermusicclient"'
+        if self.default_parse_cookies: assert "arl" in self.default_parse_cookies, '"arl" should be configured, refer to "https://musicdl.readthedocs.io/en/latest/Clients.html#deezermusicclient"'
+        if self.default_download_cookies: assert "arl" in self.default_download_cookies, '"arl" should be configured, refer to "https://musicdl.readthedocs.io/en/latest/Clients.html#deezermusicclient"'
         self.default_search_headers = {
             'Pragma': 'no-cache', 'Origin': 'https://www.deezer.com', 'Accept-Encoding': 'gzip, deflate, br', 'Accept-Language': 'en-US,en;q=0.9', 'User-Agent': 'Mozilla/5.0 (X11; Linux i686; rv:135.0) Gecko/20100101 Firefox/135.0', 'DNT': '1',
             'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', 'Accept': '*/*', 'Cache-Control': 'no-cache', 'X-Requested-With': 'XMLHttpRequest', 'Connection': 'keep-alive', 'Referer': 'https://www.deezer.com/login', 

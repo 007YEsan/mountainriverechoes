@@ -27,9 +27,9 @@ class SoundCloudMusicClient(BaseMusicClient):
     CLIENT_ID = None
     def __init__(self, **kwargs):
         super(SoundCloudMusicClient, self).__init__(**kwargs)
-        if self.default_search_cookies: assert ("oauth_token" in self.default_search_cookies), '"oauth_token" should be configured, refer to https://musicdl.readthedocs.io/en/latest/Quickstart.html#soundcloud-music-download'
-        if self.default_parse_cookies: assert ("oauth_token" in self.default_parse_cookies), '"oauth_token" should be configured, refer to https://musicdl.readthedocs.io/en/latest/Quickstart.html#soundcloud-music-download'
-        if self.default_download_cookies: assert ("oauth_token" in self.default_download_cookies), '"oauth_token" should be configured, refer to https://musicdl.readthedocs.io/en/latest/Quickstart.html#soundcloud-music-download'
+        if self.default_search_cookies: assert ("oauth_token" in self.default_search_cookies), '"oauth_token" should be configured, refer to "https://musicdl.readthedocs.io/en/latest/Clients.html#soundcloudmusicclient"'
+        if self.default_parse_cookies: assert ("oauth_token" in self.default_parse_cookies), '"oauth_token" should be configured, refer to "https://musicdl.readthedocs.io/en/latest/Clients.html#soundcloudmusicclient"'
+        if self.default_download_cookies: assert ("oauth_token" in self.default_download_cookies), '"oauth_token" should be configured, refer to "https://musicdl.readthedocs.io/en/latest/Clients.html#soundcloudmusicclient"'
         self.default_search_headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36"}
         self.default_parse_headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36"}
         self.default_download_headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36"}
