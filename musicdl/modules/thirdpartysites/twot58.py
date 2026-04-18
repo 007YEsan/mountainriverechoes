@@ -66,8 +66,8 @@ class TwoT58MusicClient(BaseMusicClient):
                     with suppress(Exception): download_url = self.session.head(download_url, allow_redirects=True, headers=headers).url
                     download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
                     song_info = SongInfo(
-                        raw_data={'search': search_result, 'download': {}, 'lyric': {}}, source=self.source, song_name=legalizestring(str(search_result.get("title")).split('-', 2)[0]), singers=legalizestring(str(search_result.get("title")).split('-', 2)[-1]), album='NULL', ext=download_url_status['ext'], 
-                        file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], identifier=song_id, duration_s=None, duration='-:-:-', lyric='NULL', cover_url=None, download_url=download_url_status['download_url'], download_url_status=download_url_status,
+                        raw_data={'search': search_result, 'download': {}, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get("title")), singers='NULL', album='NULL', ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], 
+                        file_size=download_url_status['file_size'], identifier=song_id, duration_s=None, duration='-:-:-', lyric='NULL', cover_url=None, download_url=download_url_status['download_url'], download_url_status=download_url_status,
                     )
                     if song_info.with_valid_download_url and song_info.ext in AudioLinkTester.VALID_AUDIO_EXTS: break
                 if not song_info.with_valid_download_url or song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS: continue
