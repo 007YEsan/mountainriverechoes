@@ -23,7 +23,8 @@ class TuneHubMusicClient(BaseMusicClient):
     ALLOWED_SITES = ['netease', 'qq', 'kuwo', 'kugou', 'migu'][:3] # it seems kugou and migu are useless, recorded in 2026-01-28
     TUNEHUB_API_MUSIC_QUALITIES = ['flac24bit', 'flac', '320k', '128k']
     METING_API_MUSIC_QUALITIES = ['400', '380', '320', '128']
-    REQUEST_API_KEYS = ['dGhfOGYwMGQ4NzA5ZGJhOWQ0NDgwYmExOTE2NjgxNDdlMWI3YjkzNjkyMDkyMGZhNjZm', 'dGhfYWQ0NjM3YTIzNWI2ZjRlODUxNGU2ZThkMjU3Y2I0MjY0ODY2NjYyOTFiZDgxNzc0', 'dGhfZDgzYzY4YjA5NDVlYzYxMjZjNDQxMzkwN2MxYzc3MmI3YmI3ZGUwODU4NWI0N2Y1'][1:]
+    REQUEST_API_KEYS = ['dGhfZDgzYzY4YjA5NDVlYzYxMjZjNDQxMzkwN2MxYzc3MmI3YmI3ZGUwODU4NWI0N2Y1', 'dGhfZmExMzdmMTBjODllYzRjNGJjNjljYmU3MzQzZWM1NzFhZDliZWUxM2EyZTM0NWZj']
+    EXPIRED_REQUEST_API_KEYS = ['dGhfOGYwMGQ4NzA5ZGJhOWQ0NDgwYmExOTE2NjgxNDdlMWI3YjkzNjkyMDkyMGZhNjZm', 'dGhfYWQ0NjM3YTIzNWI2ZjRlODUxNGU2ZThkMjU3Y2I0MjY0ODY2NjYyOTFiZDgxNzc0']
     def __init__(self, **kwargs):
         self.allowed_music_sources = list(set(kwargs.pop('allowed_music_sources', TuneHubMusicClient.ALLOWED_SITES)))
         super(TuneHubMusicClient, self).__init__(**kwargs)
