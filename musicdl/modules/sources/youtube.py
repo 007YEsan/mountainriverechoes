@@ -149,9 +149,8 @@ class YouTubeMusicClient(BaseMusicClient):
         request_overrides, song_id, song_info, instances = request_overrides or {}, search_result['videoId'], SongInfo(source=self.source), []
         transform_search_duration_func = lambda d: "{:02}:{:02}:{:02}".format(*([0] * (3 - len(str(d).split(":"))) + list(map(int, str(d).split(":")))))
         with suppress(Exception): (resp := self.get("https://api.invidious.io/instances.json?sort_by=health", timeout=10, **request_overrides)).raise_for_status(); instances = [inst[1]["uri"] for inst in resp2json(resp=resp) if inst[1]["api"]]
-        if not instances: instances = ["https://invidious.jing.rocks", "https://vid.puffyan.us", "https://inv.tux.pizza"]
         # parse
-        for instance_uri in instances:
+        for instance_uri in (instances or ["https://invidious.jing.rocks", "https://vid.puffyan.us", "https://inv.tux.pizza"]):
             with suppress(Exception): resp = None; (resp := self.get(f"{instance_uri}/api/v1/videos/{song_id}", timeout=10, **request_overrides)).raise_for_status()
             adaptive_formats = (safeextractfromdict((download_result := resp2json(resp=resp)), ['adaptiveFormats'], []) or [])
             if not (audio_streams := [item for item in adaptive_formats if isinstance(item, dict) and str(item.get("type", "") or "").startswith("audio/")]): continue
@@ -167,10 +166,28 @@ class YouTubeMusicClient(BaseMusicClient):
             if song_info.with_valid_download_url and song_info.ext in AudioLinkTester.VALID_AUDIO_EXTS: break
         # return
         return song_info
+    '''_parsewithspotubedlapi'''
+    def _parsewithspotubedlapi(self, search_result: dict, request_overrides: dict = None):
+        # init
+        request_overrides, song_id, song_info = request_overrides or {}, search_result['videoId'], SongInfo(source=self.source)
+        transform_search_duration_func = lambda d: "{:02}:{:02}:{:02}".format(*([0] * (3 - len(str(d).split(":"))) + list(map(int, str(d).split(":")))))
+        headers = {
+            "referer": "https://spotubedl.com/", "sec-ch-ua": '"Not:A-Brand";v="99", "Google Chrome";v="145", "Chromium";v="145"', "sec-ch-ua-mobile": "?0", "sec-ch-ua-platform": '"Windows"', "sec-fetch-dest": "empty", 
+            "sec-fetch-mode": "cors", "sec-fetch-site": "same-origin", "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36"
+        }
+        # parse
+        (resp := self.get(f'https://spotubedl.com/api/download/{song_id}?engine=v1&format=mp3&quality=320', headers=headers, **request_overrides)).raise_for_status()
+        download_url_status: dict = self.audio_link_tester.test(url=(download_result := resp2json(resp=resp))['url'], request_overrides=request_overrides, renew_session=True)
+        song_info = SongInfo(
+            raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('title')), singers=legalizestring(search_result.get('author') or (', '.join([singer.get('name') for singer in (search_result.get('artists') or []) if isinstance(singer, dict) and singer.get('name')]))), album=legalizestring(search_result.get('album')), ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], 
+            identifier=song_id, duration_s=int(float(search_result.get('duration_seconds', 0) or 0)), duration=transform_search_duration_func(search_result.get('duration', '0:00') or '0:00'), lyric=None, cover_url=search_result.get('thumbnail') or safeextractfromdict(search_result, ['thumbnails', -1, 'url'], None), download_url=download_url_status['download_url'], download_url_status=download_url_status, default_download_headers=self.default_download_headers,
+        )
+        # return
+        return song_info
     '''_parsewiththirdpartapis'''
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         if self.default_cookies or request_overrides.get('cookies'): return SongInfo(source=self.source)
-        for parser_func in [self._parsewithmp3youtube, self._parsewithacethinker, self._parsewithclipto, self._parsewithinvidiousapi]:
+        for parser_func in [self._parsewithspotubedlapi, self._parsewithmp3youtube, self._parsewithacethinker, self._parsewithclipto, self._parsewithinvidiousapi]:
             song_info_flac = SongInfo(source=self.source, raw_data={'search': search_result, 'download': {}, 'lyric': {}})
             with suppress(Exception): song_info_flac = parser_func(search_result, request_overrides)
             if song_info_flac.with_valid_download_url and song_info_flac.ext in AudioLinkTester.VALID_AUDIO_EXTS: break
@@ -191,7 +208,7 @@ class YouTubeMusicClient(BaseMusicClient):
                 file_size_bytes=download_url.filesize, file_size=SongInfoUtils.byte2mb(download_url.filesize), identifier=song_id, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, cover_url=search_result.get('thumbnail') or safeextractfromdict(search_result, ['thumbnails', -1, 'url'], None), download_url=download_url, download_url_status={'ok': True}, 
             )
         # compare and select the best
-        song_info = song_info_flac if song_info_flac.with_valid_download_url and (not song_info.with_valid_download_url or song_info_flac.largerthan(song_info)) else song_info
+        song_info = song_info_flac if song_info_flac.with_valid_download_url and (not song_info.with_valid_download_url or song_info_flac.largerthan(song_info) or song_info_flac.file_size in {'NULL'}) else song_info
         if not song_info.with_valid_download_url or song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS: return song_info
         # supplement lyric results
         lyric_result, lyric = LyricSearchClient().search(artist_name=song_info.singers, track_name=song_info.song_name, request_overrides=request_overrides)
