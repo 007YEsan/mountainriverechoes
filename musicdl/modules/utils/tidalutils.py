@@ -1070,8 +1070,7 @@ class TIDALMusicClientUtils:
     def getstreamurlspotisaverapi(song_id, quality: str, request_overrides: dict = None) -> Tuple[StreamUrl, Any]:
         headers, request_overrides = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"}, request_overrides or {}
         for host in ['hifi-one.spotisaver.net', 'hifi-two.spotisaver.net']:
-            with suppress(Exception): data = requests.get(f'https://{host}/track/?id={song_id}&quality={quality}', headers=headers, timeout=10, **request_overrides).json()['data']
-            if locals().get('data') and isinstance(locals().get('data'), dict) and ('trackId' in locals().get('data')): break
+            with suppress(Exception): data = requests.get(f'https://{host}/track/?id={song_id}&quality={quality}', headers=headers, timeout=10, **request_overrides).json()['data']; break
         if "vnd.tidal.bt" in (resp := aigpy.model.dictToModel(data, StreamRespond())).manifestMimeType:
             manifest, ret = json.loads(base64.b64decode(resp.manifest).decode('utf-8')), StreamUrl()
             ret.trackid, ret.soundQuality, ret.codec, ret.encryptionKey, ret.url, ret.urls = resp.trackid, resp.audioQuality, manifest['codecs'], manifest['keyId'] if 'keyId' in manifest else "", manifest['urls'][0], [manifest['urls'][0]]
@@ -1092,8 +1091,7 @@ class TIDALMusicClientUtils:
     def getstreamurlqqdlapi(song_id, quality: str, request_overrides: dict = None) -> Tuple[StreamUrl, Any]:
         headers, request_overrides = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"}, request_overrides or {}
         for host in ['maus.qqdl.site', 'hund.qqdl.site', 'katze.qqdl.site', 'wolf.qqdl.site', 'vogel.qqdl.site']:
-            with suppress(Exception): data = requests.get(f'https://{host}/track/?id={song_id}&quality={quality}', headers=headers, timeout=10, **request_overrides).json()['data']
-            if locals().get('data') and isinstance(locals().get('data'), dict) and ('trackId' in locals().get('data')): break
+            with suppress(Exception): data = requests.get(f'https://{host}/track/?id={song_id}&quality={quality}', headers=headers, timeout=10, **request_overrides).json()['data']; break
         if "vnd.tidal.bt" in (resp := aigpy.model.dictToModel(data, StreamRespond())).manifestMimeType:
             manifest, ret = json.loads(base64.b64decode(resp.manifest).decode('utf-8')), StreamUrl()
             ret.trackid, ret.soundQuality, ret.codec, ret.encryptionKey, ret.url, ret.urls = resp.trackid, resp.audioQuality, manifest['codecs'], manifest['keyId'] if 'keyId' in manifest else "", manifest['urls'][0], [manifest['urls'][0]]
@@ -1122,6 +1120,6 @@ class TIDALMusicClientUtils:
     def downloadstreamwithnm3u8dlre(stream_url: str, download_path: str, silent: bool = False, random_uuid: str = ''):
         (download_path_obj := Path(download_path)).parent.mkdir(parents=True, exist_ok=True)
         log_file_path = os.path.join(user_log_dir(appname='musicdl', appauthor='zcjin'), f"musicdl_{random_uuid}.log")
-        cmd = NM3U8DLREDownloadCommand().build(stream_url, download_path_obj, log_file_path)
+        cmd = NM3U8DLREDownloadCommand().build(stream_url, download_path_obj, log_file_path, auto_select=True, save_pattern=download_path_obj.name)
         ret = subprocess.run(cmd, check=True, capture_output=(True if silent else False), text=True, encoding='utf-8', errors='ignore')
         return (ret.returncode == 0)

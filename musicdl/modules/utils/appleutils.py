@@ -706,7 +706,7 @@ class AppleMusicClientDownloadSongUtils:
     def downloadstreamwithnm3u8dlre(stream_url: str, download_path: str, silent: bool = False, random_uuid: str = ''):
         (download_path_obj := Path(download_path)).parent.mkdir(parents=True, exist_ok=True)
         log_file_path = os.path.join(user_log_dir(appname='musicdl', appauthor='zcjin'), f"musicdl_{random_uuid}.log")
-        cmd = NM3U8DLREDownloadCommand().build(stream_url, download_path_obj, log_file_path)
+        cmd = NM3U8DLREDownloadCommand().build(stream_url, download_path_obj, log_file_path, auto_select=False, save_pattern=None)
         ret = subprocess.run(cmd, check=False, capture_output=(True if silent else False), text=True, encoding='utf-8', errors='ignore')
         return (ret.returncode == 0)
     '''download'''

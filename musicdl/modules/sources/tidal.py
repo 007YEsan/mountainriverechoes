@@ -98,7 +98,7 @@ class TIDALMusicClient(BaseMusicClient):
                 with suppress(Exception): stream_resp = None; download_url, stream_resp = TIDALMusicClientUtils.getstreamurl(song_id, quality=music_quality[1], apply_thirdpart_apis=(not self.tidal_tv_session.isvipaccount(request_overrides=request_overrides)), request_overrides=request_overrides)
                 if not locals().get('download_url') or not locals().get('stream_resp'): continue
                 download_url_status: dict = self.audio_link_tester.test(url=download_url.url, request_overrides=request_overrides, renew_session=True)
-                if download_url_status['ext'] in {'NULL'}: TIDALMusicClientUtils.getexpectedextension(download_url).removeprefix('.')
+                if download_url_status['ext'] in {'NULL'}: download_url_status['ext'] = TIDALMusicClientUtils.getexpectedextension(download_url).removeprefix('.')
                 song_info = SongInfo(
                     raw_data={'search': search_result, 'download': stream_resp, 'lyric': {}, 'quality': music_quality}, source=self.source, song_name=legalizestring(search_result.title), singers=legalizestring(', '.join([str(singer.name) for singer in (search_result.artists or []) if isinstance(singer, Artist)])), album=legalizestring(search_result.album.title), 
                     ext=download_url_status['ext'], file_size_bytes='HLS', file_size='HLS', identifier=search_result.id, duration_s=search_result.duration, duration=SongInfoUtils.seconds2hms(search_result.duration), lyric=None, cover_url=TIDALMusicClientUtils.getcoverurl(search_result.album.cover), download_url=download_url, download_url_status=download_url_status,

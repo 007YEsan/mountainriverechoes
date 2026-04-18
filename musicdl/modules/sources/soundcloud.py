@@ -50,7 +50,7 @@ class SoundCloudMusicClient(BaseMusicClient):
         try:
             keys = SoundCloudMusicClientUtils.getwidevinekeys(song_info.download_url, request_overrides=request_overrides) if str(song_info.raw_data["stream"]["protocol"]).startswith(('ctr-', 'cbc-')) else []
             log_file_path = os.path.join(user_log_dir(appname='musicdl', appauthor='zcjin'), f"musicdl_{sanitize_filename(str(song_info.identifier))}.log")
-            cmd = NM3U8DLREDownloadCommand().build(song_info.download_url, song_info.save_path, log_file_path=log_file_path, mods=({"__add__": [("--key", k) for k in keys]} if keys else None))
+            cmd = NM3U8DLREDownloadCommand().build(song_info.download_url, song_info.save_path, log_file_path=log_file_path, auto_select=True, save_pattern=None, mods=({"__add__": [("--key", k) for k in keys]} if keys else None))
             progress.update(song_progress_id, total=None, description=f"{self.source}._download >>> {song_info.song_name[:15] + '...' if len(song_info.song_name) > 18 else song_info.song_name[:18]} (Downloading)")
             subprocess.run(cmd, check=True, capture_output=self.disable_print, text=True, encoding='utf-8', errors='ignore')
             progress.update(song_progress_id, total=os.path.getsize(song_info.save_path), advance=os.path.getsize(song_info.save_path), description=f"{self.source}._download >>> {song_info.song_name[:15] + '...' if len(song_info.song_name) > 18 else song_info.song_name[:18]} (Success)")
