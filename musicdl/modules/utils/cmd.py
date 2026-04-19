@@ -275,8 +275,8 @@ class NM3U8DLRECommandFactory(FFmpegCommandFactory):
 class NM3U8DLREDownloadCommand(NM3U8DLRECommandFactory):
     '''build'''
     def build(self, stream_url: str, download_path: str | Path, log_file_path: str | Path, ffmpeg_binary_path: Optional[str] = None, auto_select: bool = True, save_pattern: Optional[str] = None, tmp_dir: Optional[str | Path] = None, mods: Optional[ModType] = None) -> list[str]:
-        download_path_obj, ffmpeg_binary_path = Path(download_path), ffmpeg_binary_path or shutil.which("ffmpeg")
-        tmp_dir, log_file_path = Path(tmp_dir) if tmp_dir is not None else download_path_obj.parent, str(log_file_path)
+        download_path_obj, ffmpeg_binary_path = Path(download_path), ffmpeg_binary_path or shutil.which("ffmpeg"); download_path_obj.parent.mkdir(exist_ok=True)
+        tmp_dir, log_file_path = Path(tmp_dir) if tmp_dir is not None else download_path_obj.parent, str(log_file_path); tmp_dir.mkdir(exist_ok=True)
         builder = self.newbuilder().positional(stream_url).flag("--binary-merge").opt("--ffmpeg-binary-path", ffmpeg_binary_path).opt("--save-name", download_path_obj.stem).opt("--save-dir", download_path_obj.parent).opt("--tmp-dir", tmp_dir).opt("--log-file-path", log_file_path)
         auto_select and builder.flag("--auto-select"); save_pattern and builder.opt("--save-pattern", save_pattern)
         self.applymods(builder, mods)
