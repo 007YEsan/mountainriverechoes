@@ -213,7 +213,7 @@ class AudioLinkTester:
     @staticmethod
     def chooseaudioextfromffprobeoutput(codec_name: str | None) -> str:
         if codec_name is None: return ".mka"
-        mapping = {"aac": ".m4a", "mp3": ".mp3", "flac": ".flac", "alac": ".m4a", "opus": ".ogg", "vorbis": ".ogg"}
+        mapping = {"aac": ".m4a", "mp3": ".mp3", "flac": ".flac", "alac": ".m4a", "opus": ".opus", "vorbis": ".ogg", "ac3": ".ac3", "eac3": ".eac3", "wavpack": ".wv"}
         return mapping[codec_name] if (codec_name := codec_name.lower()) in mapping else ".wav" if codec_name.startswith("pcm_") else ".mka"
     '''extractaudiofromvideolossless'''
     @staticmethod
