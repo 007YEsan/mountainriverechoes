@@ -44,14 +44,13 @@ class SoundCloudMusicClient(BaseMusicClient):
     @usedownloadheaderscookies
     def _download(self, song_info: SongInfo, request_overrides: dict = None, downloaded_song_infos: list = [], progress: Progress = None, song_progress_id: int = 0, auto_supplement_song: bool = True):
         # fallback to general music download method
-        if not song_info.raw_data.get('enable_nm3u8dlre', False): return super()._download(song_info=song_info, request_overrides=request_overrides, downloaded_song_infos=downloaded_song_infos, progress=progress, song_progress_id=song_progress_id, auto_supplement_song=auto_supplement_song)
+        if not song_info.download_url_status.get('enable_nm3u8dlre', False): return super()._download(song_info=song_info, request_overrides=request_overrides, downloaded_song_infos=downloaded_song_infos, progress=progress, song_progress_id=song_progress_id, auto_supplement_song=auto_supplement_song)
         # deal with hls streams
         song_info, request_overrides = copy.deepcopy(song_info), copy.deepcopy(request_overrides or {})
         song_info._save_path = sanitize_filepath(song_info.save_path); song_info.work_dir = os.path.dirname(song_info.save_path); IOUtils.touchdir(song_info.work_dir)
         try:
-            keys = SoundCloudMusicClientUtils.getwidevinekeys(song_info.download_url, request_overrides=request_overrides) if str(song_info.raw_data["stream"]["protocol"]).startswith(('ctr-', 'cbc-')) else []
             log_file_path = os.path.join(user_log_dir(appname='musicdl', appauthor='zcjin'), f"musicdl_{sanitize_filename(str(song_info.identifier))}.log")
-            cmd = NM3U8DLREDownloadCommand().build(song_info.download_url, song_info.save_path, log_file_path=log_file_path, auto_select=True, tmp_dir=sanitize_filepath(str(Path(song_info.save_path).parent / str(song_info.identifier))), save_pattern=Path(song_info.save_path).name, mods=({"__add__": [("--key", k) for k in keys]} if keys else None))
+            cmd = NM3U8DLREDownloadCommand().build(song_info.download_url, song_info.save_path, log_file_path=log_file_path, auto_select=True, tmp_dir=sanitize_filepath(str(Path(song_info.save_path).parent / str(song_info.identifier))), save_pattern=Path(song_info.save_path).name, mods=({"__add__": [("--key", k) for k in keys]} if (keys := song_info.download_url_status.get('decrypt_keys')) else None))
             progress.update(song_progress_id, total=None, description=f"{self.source}._download >>> {song_info.song_name[:15] + '...' if len(song_info.song_name) > 18 else song_info.song_name[:18]} (Downloading)")
             subprocess.run(cmd, check=True, capture_output=self.disable_print, text=True, encoding='utf-8', errors='ignore')
             real_save_path = max(Path(song_info.save_path).parent.glob(f"{Path(song_info.save_path).name}*"), key=lambda p: p.stat().st_mtime, default=None)
@@ -103,24 +102,29 @@ class SoundCloudMusicClient(BaseMusicClient):
             with suppress(Exception): resp = None; (resp := self.get(f'https://api-v2.soundcloud.com/tracks/{song_id}/download', params={'client_id': SoundCloudMusicClient.CLIENT_ID}, **request_overrides)).raise_for_status() if search_result.get("downloadable") and search_result.get("has_downloads_left") else None
             streams = [{"is_original": True, "url": original_url, "ext": "orig", "protocol": "http", "snipped": False}] if (original_url := (download_result := resp2json(resp=resp)).get('redirectUri')) and str(original_url).startswith('http') else []
             for transcoding in sorted((safeextractfromdict(search_result, ['media', 'transcodings'], []) or []), key=sort_key_func, reverse=True):
-                if not (download_url := safeextractfromdict(transcoding, ['url'], '')) or not str(download_url).startswith('http'): continue
-                protocol = (safeextractfromdict(transcoding, ['format', 'protocol'], '') or '').lower()
+                # The audio files in the CTR and CBC streams are identical; the only difference is that CTR uses Google Widevine DRM, while CBC uses Apple FairPlay DRM. Obviously, CTR is easier to handle.
+                if not (download_url := safeextractfromdict(transcoding, ['url'], '')) or not str(download_url).startswith('http') or (protocol := (safeextractfromdict(transcoding, ['format', 'protocol'], '') or '').lower()).startswith('cbc-'): continue
                 ext = infer_ext_func((mime_type := (safeextractfromdict(transcoding, ['format', 'mime_type'], '') or '').lower()), (preset := (safeextractfromdict(transcoding, ['preset'], '') or '').lower()))
-                with suppress(Exception): resp = None; (resp := self.get(download_url, params={'client_id': SoundCloudMusicClient.CLIENT_ID}, **request_overrides)).raise_for_status()
-                download_result[str(download_url)] = resp2json(resp=resp); download_url = resp2json(resp=resp).get('url')
-                if not download_url or not str(download_url).startswith('http'): continue
-                streams.append({"is_original": False, "quality": dict(transcoding).get("quality", "sq"), "protocol": protocol, "mime_type": mime_type, "preset": preset, "ext": ext, "snipped": dict(transcoding).get("snipped", False), "url": download_url})
+                params = {'client_id': SoundCloudMusicClient.CLIENT_ID, **({'track_authorization': track_auth} if (track_auth := search_result.get('track_auth')) else {})}
+                with suppress(Exception): resp = None; (resp := self.get(download_url, params=params, **request_overrides)).raise_for_status()
+                download_result[str(download_url)] = resp2json(resp=resp); download_url, license_auth_token = resp2json(resp=resp).get('url'), resp2json(resp=resp).get('licenseAuthToken')
+                if not download_url or not str(download_url).startswith('http') or (protocol.startswith('ctr-') and license_auth_token is None): continue
+                streams.append({"is_original": False, "quality": dict(transcoding).get("quality", "sq"), "protocol": protocol, "mime_type": mime_type, "preset": preset, "ext": ext, "snipped": dict(transcoding).get("snipped", False), "url": download_url, "license_auth_token": license_auth_token})
             with suppress(Exception): duration_in_secs = 0; duration_in_secs = int(float(safeextractfromdict(search_result, ['duration'], 0) or 0) / 1000)
             for stream in sorted(streams, key=sort_key_func, reverse=True):
                 download_url, protocol, ext, is_original = stream["url"], stream["protocol"], stream["ext"], stream.get("is_original", False)
                 if is_original or protocol in {'progressive'}:
-                    download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
+                    (download_url_status := self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)).update(dict(enable_nm3u8dlre=False, decrypt_keys=None))
+                elif str(protocol).startswith('ctr-'):
+                    with suppress(Exception): pssh_b64 = SoundCloudMusicClientUtils.extractpssh(download_url, headers=self.default_headers, request_overrides=request_overrides)
+                    with suppress(Exception): keys = None; keys = SoundCloudMusicClientUtils.getwidevinekeys(pssh_b64, stream['license_auth_token'], headers=self.default_headers, request_overrides=request_overrides)
+                    download_url_status = {'ok': True if keys else False, 'ext': ext, 'file_size_bytes': 'HLS', 'file_size': 'HLS', 'download_url': download_url, 'enable_nm3u8dlre': True, 'decrypt_keys': keys}
                 else:
                     with suppress(Exception): resp = None; (resp := self.get(download_url, allow_redirects=True, **request_overrides)).raise_for_status()
                     if not locals().get('resp') or not hasattr(locals().get('resp'), 'text'): continue
-                    download_url_status = {'ok': True, 'ext': ext, 'file_size_bytes': 'HLS', 'file_size': 'HLS', 'download_url': download_url}
+                    download_url_status = {'ok': True, 'ext': ext, 'file_size_bytes': 'HLS', 'file_size': 'HLS', 'download_url': download_url, 'enable_nm3u8dlre': True, 'decrypt_keys': None}
                 song_info = SongInfo(
-                    raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'stream': stream, 'enable_nm3u8dlre': (False if (is_original or protocol in {'progressive'}) else True)}, source=self.source, song_name=legalizestring(search_result.get('title')), singers=legalizestring(safeextractfromdict(search_result, ['publisher_metadata', 'artist'], None) or safeextractfromdict(search_result, ['user', 'username'], None)), album=legalizestring(safeextractfromdict(search_result, ['publisher_metadata', 'album_title'], None)), 
+                    raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'stream': stream}, source=self.source, song_name=legalizestring(search_result.get('title')), singers=legalizestring(safeextractfromdict(search_result, ['publisher_metadata', 'artist'], None) or safeextractfromdict(search_result, ['user', 'username'], None)), album=legalizestring(safeextractfromdict(search_result, ['publisher_metadata', 'album_title'], None)), 
                     ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], identifier=song_id, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, cover_url=search_result.get('artwork_url'), download_url=download_url_status['download_url'], download_url_status=download_url_status, default_download_headers=self.default_download_headers
                 )
                 if song_info.with_valid_download_url and song_info.ext in AudioLinkTester.VALID_AUDIO_EXTS: break

@@ -281,6 +281,15 @@ class NM3U8DLREDownloadCommand(NM3U8DLRECommandFactory):
         auto_select and builder.flag("--auto-select"); save_pattern and builder.opt("--save-pattern", save_pattern)
         self.applymods(builder, mods)
         return builder.tolist()
+    '''addkeyafterretry'''
+    @staticmethod
+    def addkeyafterretry(key_value: str):
+        if not key_value or not isinstance(key_value, str): return {}
+        def insert_decrypt_key_func(builder: CommandBuilder):
+            builder.remove("--key")
+            if (i := next((i for i, arg in enumerate(builder.args) if arg.key == "--download-retry-count"), None)) is not None: builder.args.insert(i + 1, CmdArg(key="--key", value=str(key_value))); return
+            builder.add("--key", key_value)
+        return insert_decrypt_key_func
 
 
 '''MP4BoxCommandFactory'''

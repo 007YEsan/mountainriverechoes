@@ -45,7 +45,7 @@ class SongInfo:
     episodes: Optional[list[SongInfo]] = None
     # download url related variables
     download_url: Optional[Any] = None
-    download_url_status: Optional[Any] = None
+    download_url_status: Dict[str, Any] = field(default_factory=dict)
     default_download_headers: Dict[str, Any] = field(default_factory=dict)
     default_download_cookies: Dict[str, Any] = field(default_factory=dict)
     downloaded_contents: Optional[Any] = None
