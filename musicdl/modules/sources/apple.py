@@ -154,7 +154,7 @@ class AppleMusicClient(BaseMusicClient):
         playlist_url = self.session.head(playlist_url, allow_redirects=True, **(request_overrides := dict(request_overrides or {}))).url
         playlist_id, song_infos = urlparse(playlist_url).path.strip('/').split('/')[-1].removesuffix('.html').removesuffix('.htm'), []
         if (not (hostname := obtainhostname(url=playlist_url))) or (not hostmatchessuffix(hostname, APPLE_MUSIC_HOSTS)): return song_infos
-        if (not self.default_cookies or 'media-user-token' not in self.default_cookies) and (not self.use_wrapper): raise PermissionError(f'{self.source}.parseplaylist >>> both "media-user-token" and "use_wrapper" are not configured, so musicdl does not have permission to parse Apple Music playlists.')
+        if (not self.default_cookies or 'media-user-token' not in self.default_cookies) and (not self.use_wrapper): self.logger_handle.error(f'{self.source}.parseplaylist >>> both "media-user-token" and "use_wrapper" are not configured, so musicdl does not have permission to parse Apple Music playlists, refer to "https://musicdl.readthedocs.io/en/latest/Clients.html#applemusicclient".'); return song_infos
         self._initapifunctions(mode='parse', request_overrides=request_overrides); self._initsession()
         # get tracks in playlist
         playlist_result = self.apple_music_api.getplaylist(playlist_id, request_overrides=request_overrides)

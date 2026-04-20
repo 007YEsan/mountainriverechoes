@@ -153,7 +153,7 @@ class DeezerMusicClient(BaseMusicClient):
         playlist_url = self.session.head(playlist_url, allow_redirects=True, **(request_overrides := dict(request_overrides or {}))).url
         playlist_id, song_infos = urlparse(playlist_url).path.strip('/').split('/')[-1].removesuffix('.html').removesuffix('.htm'), []
         if (not (hostname := obtainhostname(url=playlist_url))) or (not hostmatchessuffix(hostname, DEEZER_MUSIC_HOSTS)): return song_infos
-        assert self.default_cookies and ('arl' in self.default_cookies), f'{self.source}.parseplaylist >>> cookies should be configured, refer to "https://musicdl.readthedocs.io/en/latest/Clients.html#deezermusicclient".'
+        if not (self.default_cookies and ('arl' in self.default_cookies)): self.logger_handle.error(f'{self.source}.parseplaylist >>> cookies should be configured, refer to "https://musicdl.readthedocs.io/en/latest/Clients.html#deezermusicclient".'); return song_infos
         # get tracks in playlist
         tracks_in_playlist, page, page_size, playlist_result_first = [], 1, 500, {}; self._setauthinfo(request_overrides=request_overrides)
         while True:
