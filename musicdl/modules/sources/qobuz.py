@@ -8,6 +8,7 @@ WeChat Official Account (微信公众号):
 '''
 import os
 import copy
+import time
 import tempfile
 import requests
 from contextlib import suppress
@@ -28,8 +29,8 @@ class QobuzMusicClient(BaseMusicClient):
         if self.default_search_cookies: assert QobuzMusicClientUtils.get_token_func(self.default_search_cookies, "user_auth_token", "X-User-Auth-Token", "x-user-auth-token"), '"x-user-auth-token" should be configured, refer to "https://musicdl.readthedocs.io/en/latest/Clients.html#qobuzmusicclient-built-in-premium-account"'
         if self.default_parse_cookies: assert QobuzMusicClientUtils.get_token_func(self.default_parse_cookies, "user_auth_token", "X-User-Auth-Token", "x-user-auth-token"), '"x-user-auth-token" should be configured, refer to "https://musicdl.readthedocs.io/en/latest/Clients.html#qobuzmusicclient-built-in-premium-account"'
         if self.default_download_cookies: assert QobuzMusicClientUtils.get_token_func(self.default_download_cookies, "user_auth_token", "X-User-Auth-Token", "x-user-auth-token"), '"x-user-auth-token" should be configured, refer to "https://musicdl.readthedocs.io/en/latest/Clients.html#qobuzmusicclient-built-in-premium-account"'
-        self.default_search_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36", "Access-Control-Request-Headers": "x-app-id,x-user-auth-token", "Accept-Language": "en,en-US;q=0.8,ko;q=0.6,zh;q=0.4,zh-CN;q=0.2"}
-        self.default_parse_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36", "Access-Control-Request-Headers": "x-app-id,x-user-auth-token", "Accept-Language": "en,en-US;q=0.8,ko;q=0.6,zh;q=0.4,zh-CN;q=0.2"}
+        self.default_search_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36", "Accept": "application/json"}
+        self.default_parse_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36", "Accept": "application/json"}
         self.default_download_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36"}
         if self.default_search_cookies: self.default_search_headers.update({'X-User-Auth-Token': QobuzMusicClientUtils.get_token_func(self.default_search_cookies, "user_auth_token", "X-User-Auth-Token", "x-user-auth-token")})
         if self.default_parse_cookies: self.default_parse_headers.update({'X-User-Auth-Token': QobuzMusicClientUtils.get_token_func(self.default_parse_cookies, "user_auth_token", "X-User-Auth-Token", "x-user-auth-token")})
@@ -63,11 +64,13 @@ class QobuzMusicClient(BaseMusicClient):
     '''_constructsearchurls'''
     def _constructsearchurls(self, keyword: str, rule: dict = None, request_overrides: dict = None):
         # init
-        rule, request_overrides = rule or {}, request_overrides or {}
-        self.default_headers.update({"X-App-Id": QobuzMusicClientUtils.initappid(self.session, headers=self.default_headers, cookies=self.default_cookies, request_overrides=request_overrides)})
+        rule, request_overrides, timestamp = rule or {}, request_overrides or {}, str(int(time.time()))
+        QobuzMusicClientUtils.initsearchappid(self.session, headers=self.default_headers, cookies=self.default_cookies, request_overrides=request_overrides)
         (default_rule := {'query': keyword, 'offset': 0, 'limit': 10}).update(rule)
         # construct search urls
         search_urls, page_size, count, base_url = [], self.search_size_per_page, 0, 'https://www.qobuz.com/api.json/0.2/catalog/search?'
+        sig = QobuzMusicClientUtils.getrequestsig('catalog/search', default_rule, timestamp, QobuzMusicClientUtils.SEARCH_APP_SECRET)
+        default_rule.update({"app_id": QobuzMusicClientUtils.SEARCH_APP_ID, "request_ts": timestamp, "request_sig": sig})
         while self.search_size_per_source > count:
             (page_rule := copy.deepcopy(default_rule))['limit'] = page_size
             page_rule['offset'] = count
@@ -139,13 +142,13 @@ class QobuzMusicClient(BaseMusicClient):
         song_info = SongInfo(source=self.source, raw_data={'search': search_result, 'download': {}, 'lyric': {}, 'quality': QobuzMusicClientUtils.MUSIC_QUALITIES[-1]})
         request_overrides, song_info_flac = request_overrides or {}, song_info_flac or copy.deepcopy(song_info)
         if (not isinstance(search_result, dict)) or (not (song_id := search_result.get('id'))): return song_info
-        self.default_headers.update({"X-App-Id": QobuzMusicClientUtils.initappid(self.session, headers=self.default_headers, cookies=self.default_cookies, request_overrides=request_overrides)})
+        QobuzMusicClientUtils.initparseappid(self.session, headers=self.default_headers, cookies=self.default_cookies, request_overrides=request_overrides)
         # parse download url based on arguments
         if lossless_quality_is_sufficient and song_info_flac.with_valid_download_url and (song_info_flac.ext in lossless_quality_definitions): song_info = song_info_flac
         else:
             for music_quality in QobuzMusicClientUtils.MUSIC_QUALITIES:
                 if song_info_flac.with_valid_download_url and QobuzMusicClientUtils.MUSIC_QUALITIES.index(music_quality) >= QobuzMusicClientUtils.MUSIC_QUALITIES.index(song_info_flac.raw_data.get('quality', QobuzMusicClientUtils.MUSIC_QUALITIES[-1])): song_info = song_info_flac; break
-                with suppress(Exception): (headers := {'X-Session-Id': (session_data := QobuzMusicClientUtils.startsession(session=self.session, headers=self.default_headers, cookies=self.default_cookies, request_overrides=request_overrides))['session_id']}).update(self.default_headers)
+                with suppress(Exception): (headers := {'X-Session-Id': (session_data := QobuzMusicClientUtils.startsession(session=self.session, headers={**self.default_headers, **{"X-App-Id": QobuzMusicClientUtils.PARSE_APP_ID}}, cookies=self.default_cookies, request_overrides=request_overrides))['session_id']}).update({**self.default_headers, **{"X-App-Id": QobuzMusicClientUtils.PARSE_APP_ID}})
                 if not locals().get('headers') or not hasattr(locals().get('headers'), 'items'): continue
                 with suppress(Exception): download_result = None; download_result = QobuzMusicClientUtils.gettrackinfo(self.session, headers=headers, cookies=self.default_cookies, track_id=song_id, quality=music_quality, request_overrides=request_overrides)
                 if not locals().get('download_result') or not hasattr(locals().get('download_result'), 'items') or not all(download_result.get(k) for k in ['url_template', 'n_segments', 'key']): continue
@@ -170,11 +173,11 @@ class QobuzMusicClient(BaseMusicClient):
     def _search(self, keyword: str = '', search_url: str = '', request_overrides: dict = None, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
         # init
         request_overrides, lossless_quality_is_sufficient = request_overrides or {}, False if QobuzMusicClientUtils.get_token_func(self.default_headers, "X-User-Auth-Token", "x-user-auth-token") else True
-        self.default_headers.update({"X-App-Id": QobuzMusicClientUtils.initappid(self.session, headers=self.default_headers, cookies=self.default_cookies, request_overrides=request_overrides)})
+        QobuzMusicClientUtils.initsearchappid(self.session, headers=self.default_headers, cookies=self.default_cookies, request_overrides=request_overrides)
         # successful
         try:
             # --search results
-            (resp := self.get(search_url, **request_overrides)).raise_for_status()
+            (resp := self.get(search_url, headers={**self.default_headers, **{"X-App-Id": QobuzMusicClientUtils.SEARCH_APP_ID}}, **request_overrides)).raise_for_status()
             for search_result in resp2json(resp)['tracks']['items']:
                 # --init song info
                 song_info = SongInfo(source=self.source, raw_data={'search': search_result, 'download': {}, 'lyric': {}, 'quality': QobuzMusicClientUtils.MUSIC_QUALITIES[-1]})
@@ -203,7 +206,7 @@ class QobuzMusicClient(BaseMusicClient):
         if (not (hostname := obtainhostname(url=playlist_url))) or (not hostmatchessuffix(hostname, QOBUZ_MUSIC_HOSTS)): return song_infos
         # get tracks in playlist
         tracks_in_playlist, page, page_size, playlist_result_first = [], 1, 500, {}
-        self.default_headers.update({"X-App-Id": QobuzMusicClientUtils.initappid(self.session, headers=self.default_headers, cookies=self.default_cookies, request_overrides=request_overrides)})
+        self.default_headers.update({"X-App-Id": QobuzMusicClientUtils.initsearchappid(self.session, headers=self.default_headers, cookies=self.default_cookies, request_overrides=request_overrides)[0]})
         while True:
             with suppress(Exception): (resp := self.get("https://www.qobuz.com/api.json/0.2/playlist/get?", params={"playlist_id": playlist_id, "extra": 'tracks', "offset": (page-1)*page_size, 'limit': page_size}, **request_overrides)).raise_for_status()
             if not locals().get('resp') or not hasattr(locals().get('resp'), 'text') or (not safeextractfromdict((playlist_result := resp2json(resp=resp)), ['tracks', 'items'], [])): break
