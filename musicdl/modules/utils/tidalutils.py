@@ -1009,7 +1009,7 @@ class TIDALMusicClientUtils:
     @staticmethod
     def getstreamurlmonochromeapi(song_id, quality: str, request_overrides: dict = None) -> Tuple[StreamUrl, Any]:
         headers, request_overrides = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"}, request_overrides or {}
-        data = requests.get(f'https://api.monochrome.tf/track/?id={song_id}&quality={quality}', headers=headers, timeout=10, **request_overrides).json()['data']
+        data = requests.get(f'https://frankfurt-2.monochrome.tf/track/?id={song_id}&quality={quality}', headers=headers, timeout=10, **request_overrides).json()['data']
         if "vnd.tidal.bt" in (resp := aigpy.model.dictToModel(data, StreamRespond())).manifestMimeType:
             manifest, ret = json.loads(base64.b64decode(resp.manifest).decode('utf-8')), StreamUrl()
             ret.trackid, ret.soundQuality, ret.codec, ret.encryptionKey, ret.url, ret.urls = resp.trackid, resp.audioQuality, manifest['codecs'], manifest['keyId'] if 'keyId' in manifest else "", manifest['urls'][0], [manifest['urls'][0]]
