@@ -29,6 +29,7 @@ SODA_MUSIC_HOSTS = {"qishui.douyin.com", "music.douyin.com", "www.qishui.com", "
 SPOTIFY_MUSIC_HOSTS = {"open.spotify.com", "spotify.link", "play.spotify.com", "spotify.com"}
 TIDAL_MUSIC_HOSTS = {"tidal.com", "listen.tidal.com", "embed.tidal.com",}
 YANDEX_MUSIC_HOSTS = {"music.yandex.com", "music.yandex.ru", "music.yandex.kz", "music.yandex.by", "music.yandex.uz"}
+FMA_MUSIC_HOSTS = {"freemusicarchive.org"}
 
 
 '''obtainhostname'''

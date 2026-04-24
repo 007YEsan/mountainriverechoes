@@ -1,5 +1,6 @@
 '''initialize'''
 from .qq import QQMusicClient
+from .fma import FMAMusicClient
 from .joox import JooxMusicClient
 from .base import BaseMusicClient
 from .kuwo import KuwoMusicClient
@@ -36,7 +37,7 @@ class MusicClientBuilder(BaseModuleBuilder):
         'NeteaseMusicClient': NeteaseMusicClient,    'QianqianMusicClient': QianqianMusicClient,   'MiguMusicClient': MiguMusicClient,                 'KuwoMusicClient': KuwoMusicClient,               'BilibiliMusicClient': BilibiliMusicClient, 
         # Global Streaming / Indie
         'YouTubeMusicClient': YouTubeMusicClient,    'JooxMusicClient': JooxMusicClient,           'AppleMusicClient': AppleMusicClient,               'JamendoMusicClient': JamendoMusicClient,         'SoundCloudMusicClient': SoundCloudMusicClient, 
-        'DeezerMusicClient': DeezerMusicClient,      'QobuzMusicClient': QobuzMusicClient,         'SpotifyMusicClient': SpotifyMusicClient,           'TIDALMusicClient': TIDALMusicClient,
+        'DeezerMusicClient': DeezerMusicClient,      'QobuzMusicClient': QobuzMusicClient,         'SpotifyMusicClient': SpotifyMusicClient,           'TIDALMusicClient': TIDALMusicClient,             'FMAMusicClient': FMAMusicClient,
         # Audio / Radio
         'XimalayaMusicClient': XimalayaMusicClient,  'LizhiMusicClient': LizhiMusicClient,         'QingtingMusicClient': QingtingMusicClient,         'LRTSMusicClient': LRTSMusicClient,
         # Aggregators / Multi-Source Gateways
