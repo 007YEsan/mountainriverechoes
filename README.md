@@ -65,9 +65,9 @@
 
 # 🎉 What's New
 
+- 2026-04-26: Released musicdl v2.11.2 — added support for JioSaavn, an Indian music streaming platform offering songs, playlists, podcasts, and regional music across multiple Indian languages, including song search, downloading, and playlist parsing.
 - 2026-04-24: Released musicdl v2.11.1 — fix Spotify playlist parsing; add multiple free lossless music sources; add support for music search, playlist parsing, and music downloads from Free Music Archive.
 - 2026-04-16: Released musicdl v2.11.0 — fix all broken music clients; refactor and optimize a large amount of low-performance code, such as file sniffing logic; add more free lossless music download sources; and restructure the documentation to make it clearer and easier to understand.
-- 2026-03-16: Released musicdl v2.10.2 — added multiple shared premium membership APIs for Tidal, Deezer, and Qobuz; added support for multiple lyric search platforms to supplement third-party lyric information for several music platforms supported by musicdl; and made some minor code optimizations.
 
 
 # 🎵 Introduction
