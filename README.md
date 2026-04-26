@@ -106,6 +106,7 @@ If you are a copyright or rights holder and believe that this repository infring
 |                                          | [FMAMusicClient](https://freemusicarchive.org/)                    | [FMA (自由音乐网)](https://freemusicarchive.org/)                            | ✅        | ✅         | [fma.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/fma.py)                             |
 |                                          | [JamendoMusicClient](https://www.jamendo.com/)                     | [简音乐 (欧美流行音乐)](https://www.jamendo.com/)                            | ✅        | ✅         | [jamendo.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/jamendo.py)                     |
 |                                          | [JooxMusicClient](https://www.joox.com/intl)                       | [JOOX (QQ音乐海外版)](https://www.joox.com/intl)                             | ✅        | ✅         | [joox.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/joox.py)                           |
+|                                          | [JioSaavnMusicClient](https://www.jiosaavn.com/)                   | [JioSaavn (印度流媒体平台)](https://www.jiosaavn.com/)                       | ✅        | ✅         | [jiosaavn.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/jiosaavn.py)                   |
 |                                          | [QobuzMusicClient](https://play.qobuz.com/discover)                | [Qobuz (提供CD质量的流媒体平台)](https://play.qobuz.com/discover)            | ✅        | ✅         | [qobuz.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/qobuz.py)                         |
 |                                          | [SoundCloudMusicClient](https://soundcloud.com/discover)           | [SoundCloud (声云)](https://soundcloud.com/discover)                         | ✅        | ✅         | [soundcloud.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/soundcloud.py)               |
 |                                          | [SpotifyMusicClient](https://open.spotify.com/)                    | [Spotify (思播)](https://open.spotify.com/)                                  | ✅        | ✅         | [spotify.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/spotify.py)                     |
@@ -692,7 +693,7 @@ From musicdl v2.9.0 onward, support for playlist parsing and downloading is bein
 AppleMusicClient,      DeezerMusicClient,       FiveSingMusicClient,    JamendoMusicClient,      JooxMusicClient,
 KuwoMusicClient,       KugouMusicClient,        MiguMusicClient,        NeteaseMusicClient,      QQMusicClient,
 QianqianMusicClient,   QobuzMusicClient,        SoundCloudMusicClient,  StreetVoiceMusicClient,  SodaMusicClient,
-SpotifyMusicClient,    TIDALMusicClient,        FMAMusicClient,
+SpotifyMusicClient,    TIDALMusicClient,        FMAMusicClient,         JioSaavnMusicClient,
 ```
 
 You can download a supported playlist directly from the terminal:
@@ -713,6 +714,8 @@ musicdl -p "https://freemusicarchive.org/member/Creative_Commons/cc-20th-anniver
 musicdl -p "https://www.jamendo.com/playlist/500544876/best-of-february-2020" -m JamendoMusicClient
 # Parse and Download Joox Music Playlist
 musicdl -p "https://www.joox.com/hk/playlist/MqgK_LYD3Sb3I9Iziq+8NA==" -m JooxMusicClient
+# Parse and Download JioSaavn Music Playlist
+musicdl -p "https://www.jiosaavn.com/featured/world-music-day-telugu/3sLj61YBHdI_" -m JioSaavnMusicClient
 # Parse and Download Kuwo Music Playlist
 musicdl -p "https://www.kuwo.cn/playlist_detail/2358858706" -m KuwoMusicClient
 # Parse and Download Kugou Music Playlist
