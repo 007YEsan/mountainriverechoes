@@ -22,7 +22,7 @@ from .bilibili import BilibiliMusicClient
 from .jiosaavn import JioSaavnMusicClient
 from .soundcloud import SoundCloudMusicClient
 from .streetvoice import StreetVoiceMusicClient
-from ..audiobooks import XimalayaMusicClient, LizhiMusicClient, QingtingMusicClient, LRTSMusicClient
+from ..audiobooks import XimalayaMusicClient, LizhiMusicClient, QingtingMusicClient, LRTSMusicClient, ITunesMusicClient
 from ..common import GDStudioMusicClient, TuneHubMusicClient, MP3JuiceMusicClient, MyFreeMP3MusicClient, JBSouMusicClient
 from ..thirdpartysites import MituMusicClient, BuguyyMusicClient, YinyuedaoMusicClient, FiveSongMusicClient, FangpiMusicClient, TwoT58MusicClient, ZhuolinMusicClient, HTQYYMusicClient, FLMP3MusicClient, GequbaoMusicClient, JCPOOMusicClient, KKWSMusicClient, GequhaiMusicClient, LivePOOMusicClient
 
@@ -38,7 +38,7 @@ class MusicClientBuilder(BaseModuleBuilder):
         'DeezerMusicClient': DeezerMusicClient,        'QobuzMusicClient': QobuzMusicClient,         'SpotifyMusicClient': SpotifyMusicClient,           'TIDALMusicClient': TIDALMusicClient,             'FMAMusicClient': FMAMusicClient,
         'JioSaavnMusicClient': JioSaavnMusicClient,
         # Audio / Radio
-        'XimalayaMusicClient': XimalayaMusicClient,    'LizhiMusicClient': LizhiMusicClient,         'QingtingMusicClient': QingtingMusicClient,         'LRTSMusicClient': LRTSMusicClient,
+        'XimalayaMusicClient': XimalayaMusicClient,    'LizhiMusicClient': LizhiMusicClient,         'QingtingMusicClient': QingtingMusicClient,         'LRTSMusicClient': LRTSMusicClient,               'ITunesMusicClient': ITunesMusicClient,
         # Aggregators / Multi-Source Gateways
         'MP3JuiceMusicClient': MP3JuiceMusicClient,    'TuneHubMusicClient': TuneHubMusicClient,     'GDStudioMusicClient': GDStudioMusicClient,         'MyFreeMP3MusicClient': MyFreeMP3MusicClient,     'JBSouMusicClient': JBSouMusicClient,
         # Unofficial Download Sites / Scrapers
