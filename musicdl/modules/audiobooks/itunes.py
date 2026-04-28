@@ -6,10 +6,11 @@ Author:
 WeChat Official Account (微信公众号):
     Charles的皮卡丘
 '''
+import re
 import copy
+import xml.etree.ElementTree as ET
 from functools import reduce
 from contextlib import suppress
-import xml.etree.ElementTree as ET
 from rich.progress import Progress
 from urllib.parse import urlencode
 from ..sources import BaseMusicClient
@@ -43,6 +44,7 @@ class ITunesMusicClient(BaseMusicClient):
         return search_urls
     '''_parsebypodcast'''
     def _parsebypodcast(self, search_results, song_infos: list = [], request_overrides: dict = None, progress: Progress = None):
+        to_seconds_func = lambda x: (lambda s: 0 if not s else (lambda p: p[-3]*3600+p[-2]*60+p[-1] if len(p)>=3 else p[0]*60+p[1] if len(p)==2 else p[0] if len(p)==1 else 0)([int(v) for v in re.findall(r'\d+', s.replace('：', ':'))]) if (':' in s or '：' in s) else (lambda h,m,sec,num: (lambda tot: tot if tot>0 else num)(h*3600+m*60+sec))(int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:小时|时|h|hr)', s)) else 0, int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:分钟|分|m|min)', s)) else 0, (int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:秒|s|sec)', s)) else (int(mo.group(1)) if (mo:=re.search(r'(?:分钟|分|m|min)\s*(\d+)\b', s)) else 0)), int(mo.group(0)) if (mo:=re.search(r'\d+', s)) else 0))(str(x).strip().lower())
         element_to_dict_func = lambda element: reduce(lambda item_dict, child: (item_dict.__setitem__("enclosure" if child.tag == "enclosure" else child.tag, child.attrib if child.tag == "enclosure" else child.text) or item_dict), element, {})
         namespaces = {'itunes': 'http://www.itunes.com/dtds/podcast-1.0.dtd', 'dc': 'http://purl.org/dc/elements/1.1/', 'content': 'http://purl.org/rss/1.0/modules/content/'}
         for search_result in search_results['results']:
@@ -65,6 +67,7 @@ class ITunesMusicClient(BaseMusicClient):
                 download_url = enclosure.get('url') if (enclosure := track.find('enclosure')) is not None else None
                 download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
                 with suppress(Exception): duration_in_secs = 0; duration_in_secs = float(track.findtext('itunes:duration', namespaces=namespaces).strip())
+                with suppress(Exception): duration_in_secs = duration_in_secs or to_seconds_func(track.findtext('itunes:duration', namespaces=namespaces).strip())
                 eps_info = SongInfo(
                     raw_data={'search': search_result, 'download': element_to_dict_func(track), 'lyric': {}}, source=self.source, song_name=legalizestring(track.find('title').text.strip() if track.find('title') is not None else f"Episode {track_idx+1} {song_info.song_name}"), singers=legalizestring(track.findtext('dc:creator', namespaces=namespaces) or track.findtext('itunes:author', namespaces=namespaces) or album_info.get('album_author') or song_info.singers), album=legalizestring(album_info.get('album_title') or song_info.song_name), ext=download_url_status['ext'], 
                     file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], identifier=track.findtext('guid') or f'{song_info.identifier}-{track_idx+1}', duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, cover_url=(image_node.get("href") if (image_node := track.find("itunes:image", namespaces=namespaces)) is not None else None) or album_info["album_cover"], download_url=download_url_status['download_url'], download_url_status=download_url_status, 
