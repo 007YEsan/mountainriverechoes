@@ -335,7 +335,7 @@ class NeteaseMusicClient(BaseMusicClient):
     '''_parsewiththirdpartapis'''
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         if (cookies := self.default_cookies or request_overrides.get('cookies')) and (cookies != DEFAULT_COOKIES): return SongInfo(source=self.source, raw_data={'quality': MUSIC_QUALITIES[-1]})
-        for parser_func in [self._parsewithcggapi, self._parsewithxiaoqinapi, self._parsewithrrvennapi, self._parsewithxuanluogeapi, self._parsewithbugpkapi, self._parsewithjfjtapi, self._parsewithznnuapi, self._parsewithcunyuapi, self._parsewithyutangxiaowuapi, self._parsewithnycnmbyfunsapi, self._parsewithceseetapi, self._parsewithxianyuwapi, self._parsewithcyruiapi, self._parsewithtmetuapi]:
+        for parser_func in [self._parsewithcggapi, self._parsewithrrvennapi, self._parsewithxuanluogeapi, self._parsewithbugpkapi, self._parsewithjfjtapi, self._parsewithxiaoqinapi, self._parsewithznnuapi, self._parsewithcunyuapi, self._parsewithyutangxiaowuapi, self._parsewithnycnmbyfunsapi, self._parsewithceseetapi, self._parsewithxianyuwapi, self._parsewithcyruiapi, self._parsewithtmetuapi]:
             song_info_flac = SongInfo(source=self.source, raw_data={'search': search_result, 'download': {}, 'lyric': {}, 'quality': MUSIC_QUALITIES[-1]})
             with suppress(Exception): song_info_flac = parser_func(search_result, request_overrides)
             if song_info_flac.with_valid_download_url and song_info_flac.ext in AudioLinkTester.VALID_AUDIO_EXTS: break
