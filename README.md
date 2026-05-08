@@ -65,9 +65,9 @@
 
 # 🎉 What's New
 
+- 2026-05-09: Released musicdl v2.11.5 — added support for music search and downloads from OpenGameArt ("opengameart.org"), along with multiple VIP account APIs for QQ Music, Kuwo Music, and NetEase Cloud Music.
 - 2026-05-08: Released musicdl v2.11.4 — added a NetEase Cloud Music lossless parsing interface; added a Qobuz lossless music parsing interface; added a common music client that supports JOOX and Qobuz music sources.
 - 2026-04-28: Released musicdl v2.11.3 — added support for searching and downloading a large collection of free audiobooks/audio programs from Apple Podcasts; added a free built-in member account for the Qobuz Music.
-- 2026-04-26: Released musicdl v2.11.2 — introduced support for the JioSaavn music platform, enabling users to easily search for songs, parse entire playlists, and download tracks directly.
 
 
 # 🎵 Introduction
