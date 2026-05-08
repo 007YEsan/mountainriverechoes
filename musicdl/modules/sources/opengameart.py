@@ -56,6 +56,7 @@ class OpenGameArtMusicClient(BaseMusicClient):
         # init
         song_info, request_overrides, song_info_flac = SongInfo(source=self.source), request_overrides or {}, song_info_flac or SongInfo(source=self.source)
         if (not isinstance(search_result, dict)) or (not (page_url := search_result.get('page_url'))): return song_info
+        # some necessary lambda function definitions
         normalize_func = lambda text: re.sub(r"\s+", " ", text or "").strip()
         value_after_func = lambda lines, label: (lambda label_lower: next((lines[i + 1] for i, line in enumerate(lines) if str(line).lower() == label_lower and i + 1 < len(lines)), ""))(str(label).lower())
         block_after_func = lambda lines, label, stop_labels: (lambda label_lower, stop_set: list(dict.fromkeys(line for line in takewhile(lambda line: str(line).lower() == label_lower or str(line).lower() not in stop_set, islice(dropwhile(lambda line: str(line).lower() != label_lower, lines), 1, None)) if str(line).lower() != label_lower and line not in {"*", "Image"})))(str(label).lower(), {str(x).lower() for x in stop_labels})
@@ -64,7 +65,7 @@ class OpenGameArtMusicClient(BaseMusicClient):
         choose_best_file_func = lambda files: None if not files else (lambda audio_files: max(audio_files if audio_files else files, key=file_quality_key_func))([f for f in files if f["ext"] in OpenGameArtMusicClient.AUDIO_EXTS])
         build_file_item_func = lambda file_url, link_text: (lambda parsed: None if "/sites/default/files/" not in parsed.path or "/styles/" in parsed.path else (lambda filename: (lambda ext: None if ext not in OpenGameArtMusicClient.AUDIO_EXTS and ext not in OpenGameArtMusicClient.ARCHIVE_EXTS else (lambda name: {"name": name or filename, "filename": filename, "url": file_url, "ext": ext, "is_transcoded_preview": is_transcoded_preview_func(filename)})(re.sub(r"^Image:\s*", "", normalize_func(link_text) or filename, flags=re.I).strip()))(Path(filename).suffix.lower()))(os.path.basename(unquote(parsed.path))))(urlparse(str(file_url)))
         find_files_func = lambda soup, page_url: (lambda seen: [item for item in chain((build_file_item_func(urljoin(page_url, a["href"]), a.get_text(" ", strip=True)) for a in soup.find_all("a", href=True)), (build_file_item_func(match.group(0), "") for match in re.finditer(r'https?://[^"\']+/sites/default/files/[^"\']+', str(soup)))) if item and not (item["url"] in seen or seen.add(item["url"]))])(set())
-        extract_file_id_from_download_url = lambda download_url: (lambda parsed: hashlib.sha1(f"{parsed.netloc}{parsed.path}".encode("utf-8")).hexdigest()[:12])(urlparse(str(download_url)))
+        extract_file_id_from_download_url_func = lambda download_url: (lambda parsed: hashlib.sha1(f"{parsed.netloc}{parsed.path}".encode("utf-8")).hexdigest()[:12])(urlparse(str(download_url)))
         # parse download url based on arguments
         if lossless_quality_is_sufficient and song_info_flac.with_valid_download_url and (song_info_flac.ext in lossless_quality_definitions): song_info = song_info_flac
         else:
@@ -77,7 +78,7 @@ class OpenGameArtMusicClient(BaseMusicClient):
             download_url_status: dict = self.audio_link_tester.test(url=choose_best_file_func(download_result['files'])['url'], request_overrides=request_overrides, renew_session=True)
             song_info = SongInfo(
                 raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(download_result['song_name']), singers=legalizestring(download_result.get('artist')), album=legalizestring(download_result['collections'][0]), ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], 
-                file_size=download_url_status['file_size'], identifier=extract_file_id_from_download_url(download_url_status['download_url']), duration_s=None, duration='-:-:-', lyric=None, cover_url=None, download_url=download_url_status['download_url'], download_url_status=download_url_status, 
+                file_size=download_url_status['file_size'], identifier=extract_file_id_from_download_url_func(download_url_status['download_url']), duration_s=None, duration='-:-:-', lyric=None, cover_url=None, download_url=download_url_status['download_url'], download_url_status=download_url_status, 
             )
         # return
         return song_info
@@ -85,8 +86,7 @@ class OpenGameArtMusicClient(BaseMusicClient):
     @usesearchheaderscookies
     def _search(self, keyword: str = '', search_url: str = '', request_overrides: dict = None, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
         # init
-        request_overrides, seen = request_overrides or {}, set()
-        normalize_func = lambda text: re.sub(r"\s+", " ", text or "").strip()
+        request_overrides, seen, normalize_func = request_overrides or {}, set(), lambda text: re.sub(r"\s+", " ", text or "").strip()
         find_heading_func: Callable[[BeautifulSoup | Tag, str], Tag | None] = lambda soup, heading_text: next((tag for tag in soup.find_all(["h1", "h2", "h3"]) if normalize_func(tag.get_text(" ", strip=True)).lower() == heading_text.strip().lower()), None)
         # successful
         try:
