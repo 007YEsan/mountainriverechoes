@@ -255,10 +255,27 @@ class QQMusicClient(BaseMusicClient):
         )
         # return
         return song_info
+    '''_parsewithcyapi'''
+    def _parsewithcyapi(self, search_result: dict, request_overrides: dict = None):
+        # init
+        REQUEST_KEYS = ["1ffdf5733f5d538760e63d7e46ba17438d9f7b9dfc18c51be1109386fd74c3a1", "2baf39266d8ef0580aba937245d5bb569fe376f230ff508f1faa0922dc320fe4"]
+        request_overrides, song_id, song_info = request_overrides or {}, search_result.get('mid') or search_result.get('songmid'), SongInfo(source=self.source)
+        if not safeextractfromdict(search_result, ['album', 'title'], None) or search_result.get('albumname'): search_result.update(self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides))
+        # parse
+        (resp := self.get(f'https://cyapi.top/API/qq_music.php', params={"apikey": random.choice(REQUEST_KEYS), "type": "json", "mid": song_id, "quality": "lossless"}, **request_overrides)).raise_for_status()
+        if not (download_url := (download_result := resp2json(resp=resp))['url']) or not str(download_url).startswith('http'): return song_info
+        download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
+        lyric = cleanlrc(safeextractfromdict(download_result, ['lyric', 'text'], '') or 'NULL')
+        song_info = SongInfo(
+            raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(download_result.get('name')), singers=legalizestring(', '.join([singer.get('name') for singer in (download_result.get('artists', []) or []) if isinstance(singer, dict) and singer.get('name')])), album=legalizestring(safeextractfromdict(download_result, ['album', 'name'], None)), ext=download_url_status['ext'], 
+            file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], identifier=song_id, duration_s=extractdurationsecondsfromlrc(lyric), duration=SongInfoUtils.seconds2hms(extractdurationsecondsfromlrc(lyric)), lyric=lyric, cover_url=safeextractfromdict(download_result, ['cover', 'large'], None), download_url=download_url_status['download_url'], download_url_status=download_url_status,
+        )
+        # return
+        return song_info
     '''_parsewiththirdpartapis'''
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         if self.default_cookies or request_overrides.get('cookies'): return SongInfo(source=self.source)
-        for parser_func in [self._parsewithxunhuisiapi, self._parsewithygkingapi, self._parsewithlpzapi, self._parsewithtangapi, self._parsewithxianyuwapi, self._parsewithhuibqapi, self._parsewithxcvtsapi, self._parsewithvkeysapi, self._parsewithnkiapi, self._parsewithluoyueapi]:
+        for parser_func in [self._parsewithxunhuisiapi, self._parsewithygkingapi, self._parsewithlpzapi, self._parsewithtangapi, self._parsewithxianyuwapi, self._parsewithhuibqapi, self._parsewithcyapi, self._parsewithxcvtsapi, self._parsewithvkeysapi, self._parsewithnkiapi, self._parsewithluoyueapi]:
             song_info_flac = SongInfo(source=self.source, raw_data={'search': search_result, 'download': {}, 'lyric': {}})
             with suppress(Exception): song_info_flac = parser_func(search_result, request_overrides)
             if song_info_flac.with_valid_download_url and song_info_flac.ext in AudioLinkTester.VALID_AUDIO_EXTS: break
