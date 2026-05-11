@@ -85,7 +85,7 @@ class KuwoMusicClient(BaseMusicClient):
         for music_quality in MUSIC_QUALITIES:
             resp = next((resp for _ in range(5) if (resp := self.get(f"https://apione.apibyte.cn/kwmusic?key={decrypt_func(random.choice(REQUEST_KEYS))}&action=music_url&music_id={song_id}&quality={music_quality}", timeout=10, **request_overrides)).json()['code'] in {'200', 200} or (time.sleep(1) or False)), None)
             if not (download_url := safeextractfromdict((download_result := resp2json(resp=resp)), ['data', 'url'], '')) or not str(download_url).startswith('http'): continue
-            duration_in_secs = float(int(search_result.get('DURATION') or search_result.get('duration') or 0))
+            duration_in_secs = int(float(search_result.get('DURATION') or search_result.get('duration') or 0))
             download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
             song_info = SongInfo(
                 raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('SONGNAME') or search_result.get('name') or search_result.get('songName')), singers=legalizestring(search_result.get('ARTIST') or search_result.get('artist')), album=legalizestring(search_result.get('ALBUM') or search_result.get('album')), ext=download_url_status['ext'], 
@@ -104,7 +104,7 @@ class KuwoMusicClient(BaseMusicClient):
         # parse
         (resp := self.get(f'https://www.guyuei.com/music/kw.php?', params={'url': f'https://www.kuwo.cn/play_detail/{song_id}', 'yinzhi': 'hns'}, headers=headers, **request_overrides)).raise_for_status()
         if not (download_url := (download_result := resp2json(resp=resp))['url']) or not str(download_url := decrypt_final_url_func(download_url)).startswith('http'): return SongInfo(source=self.source)
-        duration_in_secs = float(int(search_result.get('DURATION') or search_result.get('duration') or 0))
+        duration_in_secs = int(float(search_result.get('DURATION') or search_result.get('duration') or 0))
         download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
         song_info = SongInfo(
             raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('SONGNAME') or search_result.get('name') or search_result.get('songName')), singers=legalizestring(search_result.get('ARTIST') or search_result.get('artist')), album=legalizestring(search_result.get('ALBUM') or search_result.get('album')), ext=download_url_status['ext'], 
@@ -121,7 +121,7 @@ class KuwoMusicClient(BaseMusicClient):
         for music_quality in MUSIC_QUALITIES:
             with suppress(Exception): (resp := self.get(f"http://music.nxinxz.com/kw.php?id={song_id}&level={music_quality}&type=json", **request_overrides)).raise_for_status()
             if not (download_url := safeextractfromdict((download_result := resp2json(resp=resp)), ['data', 'url'], '')) or not str(download_url).startswith('http'): continue
-            duration_in_secs = float(int(search_result.get('DURATION') or search_result.get('duration') or 0))
+            duration_in_secs = int(float(search_result.get('DURATION') or search_result.get('duration') or 0))
             download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
             song_info = SongInfo(
                 raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('SONGNAME') or search_result.get('name') or search_result.get('songName')), singers=legalizestring(search_result.get('ARTIST') or search_result.get('artist')), album=legalizestring(search_result.get('ALBUM') or search_result.get('album')), ext=download_url_status['ext'], 
@@ -139,7 +139,7 @@ class KuwoMusicClient(BaseMusicClient):
         for music_quality in MUSIC_QUALITIES:
             with suppress(Exception): (resp := self.get(f"https://musicapi.haitangw.net/music/kw.php?id={song_id}&level={music_quality}&type=json", **request_overrides)).raise_for_status()
             if not (download_url := safeextractfromdict((download_result := resp2json(resp=resp)), ['data', 'url'], '')) or not str(download_url).startswith('http'): continue
-            duration_in_secs = float(int(search_result.get('DURATION') or search_result.get('duration') or 0))
+            duration_in_secs = int(float(search_result.get('DURATION') or search_result.get('duration') or 0))
             download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
             song_info = SongInfo(
                 raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('SONGNAME') or search_result.get('name') or search_result.get('songName')), singers=legalizestring(search_result.get('ARTIST') or search_result.get('artist')), album=legalizestring(search_result.get('ALBUM') or search_result.get('album')), ext=download_url_status['ext'], 
@@ -190,7 +190,7 @@ class KuwoMusicClient(BaseMusicClient):
                 with suppress(Exception): (resp := self.get(f"http://mobi.kuwo.cn/mobi.s?f=kuwo&q={KuwoMusicClientUtils.encryptquery(query)}", headers={"user-agent": "okhttp/3.10.0"}, **request_overrides)).raise_for_status()
                 if not locals().get('resp') or not hasattr(locals().get('resp'), 'text'): continue
                 if not (download_url := re.search(r'http[^\s$\"]+', (download_result := resp.text))) or not ((download_url := download_url.group(0)).startswith('http')): continue
-                duration_in_secs = float(int(search_result.get('DURATION') or search_result.get('duration') or 0))
+                duration_in_secs = int(float(search_result.get('DURATION') or search_result.get('duration') or 0))
                 download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True); del resp
                 song_info = SongInfo(
                     raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('SONGNAME') or search_result.get('name') or search_result.get('songName')), singers=legalizestring(search_result.get('ARTIST') or search_result.get('artist')), album=legalizestring(search_result.get('ALBUM') or search_result.get('album')), ext=download_url_status['ext'], 

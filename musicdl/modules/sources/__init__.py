@@ -11,6 +11,7 @@ from .apple import AppleMusicClient
 from .kugou import KugouMusicClient
 from .qobuz import QobuzMusicClient
 from .deezer import DeezerMusicClient
+from .bodian import BodianMusicClient
 from ..utils import BaseModuleBuilder
 from .spotify import SpotifyMusicClient
 from .netease import NeteaseMusicClient
@@ -34,6 +35,7 @@ class MusicClientBuilder(BaseModuleBuilder):
         # Platforms in Greater China
         'QQMusicClient': QQMusicClient,                'KugouMusicClient': KugouMusicClient,               'StreetVoiceMusicClient': StreetVoiceMusicClient,   'SodaMusicClient': SodaMusicClient,               'FiveSingMusicClient': FiveSingMusicClient, 
         'NeteaseMusicClient': NeteaseMusicClient,      'QianqianMusicClient': QianqianMusicClient,         'MiguMusicClient': MiguMusicClient,                 'KuwoMusicClient': KuwoMusicClient,               'BilibiliMusicClient': BilibiliMusicClient, 
+        'BodianMusicClient': BodianMusicClient,
         # Global Streaming / Indie
         'YouTubeMusicClient': YouTubeMusicClient,      'JooxMusicClient': JooxMusicClient,                 'AppleMusicClient': AppleMusicClient,               'JamendoMusicClient': JamendoMusicClient,         'SoundCloudMusicClient': SoundCloudMusicClient, 
         'DeezerMusicClient': DeezerMusicClient,        'QobuzMusicClient': QobuzMusicClient,               'SpotifyMusicClient': SpotifyMusicClient,           'TIDALMusicClient': TIDALMusicClient,             'FMAMusicClient': FMAMusicClient,
