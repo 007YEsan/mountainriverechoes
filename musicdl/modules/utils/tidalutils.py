@@ -989,7 +989,7 @@ class TIDALMusicClientUtils:
     @staticmethod
     def getstreamurlsquidapi(song_id, quality: str, request_overrides: dict = None) -> Tuple[StreamUrl, Any]:
         headers, request_overrides = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"}, request_overrides or {}
-        for host in ['triton.squid.wtf', 'tidal.squid.wtf']:
+        for host in ['triton.squid.wtf', 'tidal.squid.wtf', 'kraken.squid.wtf', 'zeus.squid.wtf', 'aether.squid.wtf', 'phoenix.squid.wtf', 'shiva.squid.wtf', 'chaos.squid.wtf']:
             with suppress(Exception): data = requests.get(f'https://{host}/track/?id={song_id}&quality={quality}', headers=headers, timeout=10, **request_overrides).json()['data']
             if locals().get('data') and isinstance(locals().get('data'), dict) and ('trackId' in locals().get('data')): break
         if "vnd.tidal.bt" in (resp := aigpy.model.dictToModel(data, StreamRespond())).manifestMimeType:
@@ -1011,7 +1011,7 @@ class TIDALMusicClientUtils:
     @staticmethod
     def getstreamurlmonochromeapi(song_id, quality: str, request_overrides: dict = None) -> Tuple[StreamUrl, Any]:
         headers, request_overrides = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"}, request_overrides or {}
-        for host in ['frankfurt-2.monochrome.tf', 'arran.monochrome.tf', 'api.monochrome.tf', 'eu-central.monochrome.tf', 'us-west.monochrome.tf', 'monochrome-api.samidy.com']:
+        for host in ['frankfurt-2.monochrome.tf', 'arran.monochrome.tf', 'api.monochrome.tf', 'eu-central.monochrome.tf', 'us-west.monochrome.tf', 'monochrome-api.samidy.com', 'jakarta.monochrome.tf', 'california.monochrome.tf', 'london.monochrome.tf', 'singapore.monochrome.tf', 'ohio.monochrome.tf', 'oregon.monochrome.tf', 'virginia.monochrome.tf', 'frankfurt.monochrome.tf', 'tokyo.monochrome.tf']:
             with suppress(Exception): data = requests.get(f'https://{host}/track/?id={song_id}&quality={quality}', headers=headers, timeout=10, **request_overrides).json()['data']
             if locals().get('data') and isinstance(locals().get('data'), dict) and ('trackId' in locals().get('data')): break
         if "vnd.tidal.bt" in (resp := aigpy.model.dictToModel(data, StreamRespond())).manifestMimeType:
@@ -1033,7 +1033,7 @@ class TIDALMusicClientUtils:
     @staticmethod
     def getstreamurlbinimumapi(song_id, quality: str, request_overrides: dict = None) -> Tuple[StreamUrl, Any]:
         headers, request_overrides = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"}, request_overrides or {}
-        for host in ['tidal-api.binimum.org', 'music.binimum.org']:
+        for host in ['tidal-api.binimum.org', 'music.binimum.org', 'tidal-api-2.binimum.org']:
             with suppress(Exception): data = requests.get(f'https://{host}/track/?id={song_id}&quality={quality}', headers=headers, timeout=10, **request_overrides).json()['data']
             if locals().get('data') and isinstance(locals().get('data'), dict) and ('trackId' in locals().get('data')): break
         if "vnd.tidal.bt" in (resp := aigpy.model.dictToModel(data, StreamRespond())).manifestMimeType:
