@@ -7,6 +7,7 @@ WeChat Official Account (微信公众号):
     Charles的皮卡丘
 '''
 import os
+import uuid
 import copy
 import requests
 from pathlib import Path
@@ -14,7 +15,7 @@ from contextlib import suppress
 from .base import BaseMusicClient
 from pathvalidate import sanitize_filepath
 from ..utils.hosts import DEEZER_MUSIC_HOSTS
-from urllib.parse import urlencode, urlparse
+from urllib.parse import urlencode, urlparse, urljoin
 from ..utils.deezerutils import DeezerMusicClientUtils
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
 from ..utils import legalizestring, resp2json, usesearchheaderscookies, usedownloadheaderscookies, safeextractfromdict, extractdurationsecondsfromlrc, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo, AudioLinkTester, SongInfoUtils, LyricSearchClient, IOUtils
@@ -87,10 +88,29 @@ class DeezerMusicClient(BaseMusicClient):
         )
         # return
         return song_info
+    '''_parsewithdeemixerapi'''
+    def _parsewithdeemixerapi(self, search_result: dict, request_overrides: dict = None):
+        # init
+        request_overrides, song_id, headers = request_overrides or {}, str(search_result.get('id') or search_result.get('SNG_ID')), {"Content-Type": "application/json", "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36", "Referer": "https://deemixer.com/", "Origin": "https://deemixer.com"}
+        # parse
+        download_result, MUSIC_QUALITIES = self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides), ['FLAC', '320', '128']
+        for music_quality in MUSIC_QUALITIES:
+            payload = {"temp_id": str(uuid.uuid4()), "link": f"https://www.deezer.com/track/{song_id}", "bitrate": music_quality}
+            (resp := requests.post("https://deemixer.com/process", json=payload, headers=headers, timeout=10, **request_overrides)).raise_for_status()
+            download_result['track_details'] = resp2json(resp=resp); download_url = urljoin('https://deemixer.com/', safeextractfromdict(download_result['track_details'], ['download_url'], ''))
+            with suppress(Exception): duration_in_secs = 0; duration_in_secs = float(safeextractfromdict(download_result, ['results', 'DURATION'], 0) or download_result.get('duration', 0) or 0)
+            download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
+            song_info = SongInfo(
+                raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'id': song_id}, source=self.source, song_name=legalizestring(safeextractfromdict(download_result, ['results', 'SNG_TITLE'], None) or download_result.get('title')), singers=legalizestring(safeextractfromdict(download_result, ['results', 'ART_NAME'], None) or safeextractfromdict(download_result, ['artist', 'name'], None)), album=legalizestring(safeextractfromdict(download_result, ['results', 'ALB_TITLE'], None) or safeextractfromdict(download_result, ['album', 'title'], None)), 
+                ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], identifier=str(song_id), duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, cover_url=DeezerMusicClientUtils.getcoverurl(safeextractfromdict(download_result, ['results', 'ALB_PICTURE'], None)) or safeextractfromdict(download_result, ['album', 'cover_xl'], None), download_url=download_url_status['download_url'], download_url_status=download_url_status, 
+            )
+            if song_info.with_valid_download_url and song_info.ext in AudioLinkTester.VALID_AUDIO_EXTS: break
+        # return
+        return song_info
     '''_parsewiththirdpartapis'''
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         if self.default_cookies: return SongInfo(source=self.source)
-        for parser_func in [self._parsewithzarzapi]:
+        for parser_func in [self._parsewithdeemixerapi, self._parsewithzarzapi]:
             song_info_flac = SongInfo(source=self.source, raw_data={'search': search_result, 'download': {}, 'lyric': {}})
             with suppress(Exception): song_info_flac = parser_func(search_result, request_overrides)
             if song_info_flac.with_valid_download_url and song_info_flac.ext in AudioLinkTester.VALID_AUDIO_EXTS: break
