@@ -399,7 +399,7 @@ class SpotubeSecureClient:
         track_meta, full_meta = self.gettrackmetadata(spotify_id, request_overrides), self.getfullmetadata(spotify_id, request_overrides)
         for video_id in self.extractyoutubevideocandidates(track_meta, full_meta):
             if (flag_url := SpotubeSecureClient.extractflagurl((download_info := self.getdownloadinfobyvideoid(video_id, engine=engine, fmt=fmt, quality=quality, request_overrides=request_overrides)))):
-                return {"spotify_id": spotify_id, "video_id": video_id, "download_info": download_info, "flag": flag_url}
+                return {"spotify_id": spotify_id, "video_id": video_id, "download_info": download_info, "flag": flag_url, "track_meta": track_meta}
             if isinstance((data := download_info.get("data")), dict) and data.get("error"): last_error = data.get("error"); continue
             last_error = download_info
         raise RuntimeError(f"Failed to get a download link for all candidate YouTube IDs. Last error: {last_error}")
