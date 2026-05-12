@@ -11,6 +11,7 @@ import copy
 import base64
 import random
 from typing import Any
+from bs4 import BeautifulSoup
 from ytmusicapi import YTMusic
 from contextlib import suppress
 from .base import BaseMusicClient
@@ -242,10 +243,30 @@ class YouTubeMusicClient(BaseMusicClient):
         )
         # return
         return song_info
+    '''_parsewithyt1dapi'''
+    def _parsewithyt1dapi(self, search_result: dict, request_overrides: dict = None):
+        # init
+        request_overrides, song_id, song_info = request_overrides or {}, search_result['videoId'], SongInfo(source=self.source)
+        transform_search_duration_func = lambda d: "{:02}:{:02}:{:02}".format(*([0] * (3 - len(str(d).split(":"))) + list(map(int, str(d).split(":")))))
+        headers, session = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36", "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8", "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7"}, self.session
+        # parse
+        (resp := session.get("https://yt1d.io/youtube-to-mp380lN/", headers=headers, timeout=10, **request_overrides)).raise_for_status()
+        nonce = BeautifulSoup(resp.text, 'lxml').find('input', {'name': 'yt1_nonce'}).get('value')
+        payload = {"yt1_nonce": nonce, "_wp_http_referer": "/youtube-to-mp380lN/", "yt_video_url": f'https://www.youtube.com/watch?v={song_id}'}
+        headers.update({"Origin": "https://yt1d.io", "Referer": "https://yt1d.io/youtube-to-mp380lN/", "Content-Type": "application/x-www-form-urlencoded"})
+        (resp := session.post("https://yt1d.io/results/", data=payload, headers=headers, timeout=15, **request_overrides)).raise_for_status()
+        download_url = BeautifulSoup(resp.text, 'lxml').find('button', {'class': 'yt1-download-btn', 'data-mode': 'audio'})['data-audio-url']
+        download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
+        song_info = SongInfo(
+            raw_data={'search': search_result, 'download': str(resp.text), 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('title')), singers=legalizestring(search_result.get('author') or (', '.join([singer.get('name') for singer in (search_result.get('artists') or []) if isinstance(singer, dict) and singer.get('name')]))), album=legalizestring(search_result.get('album')), ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], 
+            file_size=download_url_status['file_size'], identifier=song_id, duration_s=int(float(search_result.get('duration_seconds', 0) or 0)), duration=transform_search_duration_func(search_result.get('duration', '0:00') or '0:00'), lyric=None, cover_url=search_result.get('thumbnail') or safeextractfromdict(search_result, ['thumbnails', -1, 'url'], None), download_url=download_url_status['download_url'], download_url_status=download_url_status, 
+        )
+        # return
+        return song_info
     '''_parsewiththirdpartapis'''
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         if self.default_cookies or request_overrides.get('cookies'): return SongInfo(source=self.source)
-        for parser_func in [self._parsewithy2mateapi, self._parsewithgzmp3api, self._parsewithspotubedlapi, self._parsewithmp3youtube, self._parsewithcobaltapi, self._parsewithacethinker, self._parsewithclipto, self._parsewithinvidiousapi]:
+        for parser_func in [self._parsewithy2mateapi, self._parsewithgzmp3api, self._parsewithspotubedlapi, self._parsewithmp3youtube, self._parsewithcobaltapi, self._parsewithyt1dapi, self._parsewithacethinker, self._parsewithclipto, self._parsewithinvidiousapi]:
             song_info_flac = SongInfo(source=self.source, raw_data={'search': search_result, 'download': {}, 'lyric': {}})
             with suppress(Exception): song_info_flac = parser_func(search_result, request_overrides)
             if song_info_flac.with_valid_download_url and song_info_flac.ext in AudioLinkTester.VALID_AUDIO_EXTS: break
