@@ -196,7 +196,7 @@ class DeezerMusicClient(BaseMusicClient):
             tracks_in_playlist.extend(tracks_per_page); page += 1; del resp
             if not playlist_result_first: playlist_result_first = copy.deepcopy(playlist_result)
             if (float(safeextractfromdict(playlist_result, ['results', 'DATA', 'NB_SONG'], 0)) <= len(tracks_in_playlist)): break
-        tracks_in_playlist = list({d["SNG_ID"]: d for d in tracks_in_playlist}.values())
+        tracks_in_playlist = list({d["SNG_ID"]: d for d in tracks_in_playlist}.values()) if 'SNG_ID' in tracks_in_playlist[0] else list({d["id"]: d for d in tracks_in_playlist}.values())
         # parse track by track in playlist
         with Progress(TextColumn("{task.description}"), BarColumn(bar_width=None), MofNCompleteColumn(), TimeRemainingColumn(), refresh_per_second=10) as main_process_context:
             main_progress_id = main_process_context.add_task(f"{len(tracks_in_playlist)} Songs Found in Playlist {playlist_id} >>> Completed (0/{len(tracks_in_playlist)}) SongInfo", total=len(tracks_in_playlist))
