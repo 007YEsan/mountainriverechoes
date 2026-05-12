@@ -25,8 +25,8 @@ class YouTubeMusicClient(BaseMusicClient):
     source = 'YouTubeMusicClient'
     def __init__(self, **kwargs):
         super(YouTubeMusicClient, self).__init__(**kwargs)
-        self.default_search_headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"}
-        self.default_download_headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"}
+        self.default_search_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"}
+        self.default_download_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"}
         self.default_headers = self.default_search_headers
         self._initsession()
     '''_download'''
@@ -71,7 +71,7 @@ class YouTubeMusicClient(BaseMusicClient):
         # init
         request_overrides, song_id, song_info = request_overrides or {}, search_result['videoId'], SongInfo(source=self.source)
         # parse
-        headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36", "content-type": "application/json", "origin": "https://www.clipto.com", "referer": "https://www.clipto.com/media-downloader/"}
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36", "content-type": "application/json", "origin": "https://www.clipto.com", "referer": "https://www.clipto.com/media-downloader/"}
         (resp := self.post('https://www.clipto.com/api/youtube', json={"url": f"https://www.youtube.com/watch?v={song_id}"}, headers=headers, **request_overrides)).raise_for_status()
         medias: list[dict[str, Any]] = (download_result := resp2json(resp=resp))['medias']
         medias = [dr for dr in medias if isinstance(dr, dict) and (dr.get('type') in ('audio',) or 'audio' in dr.get('mimeType'))]
@@ -116,7 +116,7 @@ class YouTubeMusicClient(BaseMusicClient):
         request_overrides, song_id, song_info = request_overrides or {}, search_result['videoId'], SongInfo(source=self.source)
         (resp := self.get('https://www.acethinker.ai/downloader/api/get_csrf_token.php', **request_overrides)).raise_for_status()
         # parse
-        headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36", "accept": "application/json, text/plain, */*", "referer": "https://www.acethinker.ai/freemp3finder", "x-csrf-token": resp2json(resp=resp)['token']}
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36", "accept": "application/json, text/plain, */*", "referer": "https://www.acethinker.ai/freemp3finder", "x-csrf-token": resp2json(resp=resp)['token']}
         (resp := self.get(f'https://www.acethinker.ai/downloader/api/dlapinewv2.php?url=https://www.youtube.com/watch?v={song_id}', headers=headers, **request_overrides)).raise_for_status()
         medias: list[dict[str, Any]] = (download_result := resp2json(resp=resp)['res_data'])['formats']
         medias = [a for a in medias if isinstance(a, dict) and str(a.get('vcodec')).lower() in {"", "none"}]
@@ -174,7 +174,7 @@ class YouTubeMusicClient(BaseMusicClient):
         transform_search_duration_func = lambda d: "{:02}:{:02}:{:02}".format(*([0] * (3 - len(str(d).split(":"))) + list(map(int, str(d).split(":")))))
         headers = {
             "referer": "https://spotubedl.com/", "sec-ch-ua": '"Not:A-Brand";v="99", "Google Chrome";v="145", "Chromium";v="145"', "sec-ch-ua-mobile": "?0", "sec-ch-ua-platform": '"Windows"', "sec-fetch-dest": "empty", 
-            "sec-fetch-mode": "cors", "sec-fetch-site": "same-origin", "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36"
+            "sec-fetch-mode": "cors", "sec-fetch-site": "same-origin", "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36"
         }
         # parse
         (resp := self.get(f'https://spotubedl.com/api/download/{song_id}?engine=v1&format=mp3&quality=320', headers=headers, **request_overrides)).raise_for_status()
@@ -193,7 +193,7 @@ class YouTubeMusicClient(BaseMusicClient):
         request_overrides, song_id, song_info = request_overrides or {}, search_result['videoId'], SongInfo(source=self.source)
         transform_search_duration_func = lambda d: "{:02}:{:02}:{:02}".format(*([0] * (3 - len(str(d).split(":"))) + list(map(int, str(d).split(":")))))
         key_url, converter_url = "https://cnv.cx/v2/sanity/key", "https://cnv.cx/v2/converter"
-        base_headers = {"origin": "https://frame.y2meta-uk.com", "referer": "https://frame.y2meta-uk.com/", "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36"}
+        base_headers = {"origin": "https://frame.y2meta-uk.com", "referer": "https://frame.y2meta-uk.com/", "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36"}
         # parse
         (resp := self.get(key_url, headers=base_headers, **request_overrides)).raise_for_status()
         (converter_headers := base_headers.copy())["key"] = (download_result := resp2json(resp=resp)).get("key")
@@ -215,7 +215,7 @@ class YouTubeMusicClient(BaseMusicClient):
         # init
         request_overrides, song_id, song_info = request_overrides or {}, search_result['videoId'], SongInfo(source=self.source)
         transform_search_duration_func = lambda d: "{:02}:{:02}:{:02}".format(*([0] * (3 - len(str(d).split(":"))) + list(map(int, str(d).split(":")))))
-        headers = {"origin": "https://www.gzmp3.com", "referer": "https://www.gzmp3.com/", "content-type": "application/x-www-form-urlencoded", "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36"}
+        headers = {"origin": "https://www.gzmp3.com", "referer": "https://www.gzmp3.com/", "content-type": "application/x-www-form-urlencoded", "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36"}
         # parse
         (resp := self.post("https://www.gzmp3.com/prepare.php", headers=headers, data={"url": f"https://www.youtube.com/watch?v={song_id}", "format": "mp3"}, **request_overrides)).raise_for_status()
         (resp := self.get((download_url := f"https://www.gzmp3.com/download.php?file={(download_result := resp2json(resp=resp))['file']}"), headers=headers, **request_overrides)).raise_for_status()
@@ -227,10 +227,25 @@ class YouTubeMusicClient(BaseMusicClient):
         )
         # return
         return song_info
+    '''_parsewithcobaltapi'''
+    def _parsewithcobaltapi(self, search_result: dict, request_overrides: dict = None):
+        # init
+        request_overrides, song_id, song_info = request_overrides or {}, search_result['videoId'], SongInfo(source=self.source)
+        transform_search_duration_func = lambda d: "{:02}:{:02}:{:02}".format(*([0] * (3 - len(str(d).split(":"))) + list(map(int, str(d).split(":")))))
+        headers, payload = {"User-Agent": "SpotiFLAC-Mobile/1.0", "Content-Type": "application/json", "Accept": "application/json"}, {"url": f"https://www.youtube.com/watch?v={song_id}", "downloadMode": "audio", "audioFormat": "best"}
+        # parse
+        (resp := self.post("https://api.zarz.moe/v1/dl/cobalt", json=payload, headers=headers, timeout=10, **request_overrides)).raise_for_status()
+        download_url_status: dict = self.audio_link_tester.test(url=(download_result := resp2json(resp=resp))['url'], request_overrides=request_overrides, renew_session=True)
+        song_info = SongInfo(
+            raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('title')), singers=legalizestring(search_result.get('author') or (', '.join([singer.get('name') for singer in (search_result.get('artists') or []) if isinstance(singer, dict) and singer.get('name')]))), album=legalizestring(search_result.get('album')), ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], 
+            file_size=download_url_status['file_size'], identifier=song_id, duration_s=int(float(search_result.get('duration_seconds', 0) or 0)), duration=transform_search_duration_func(search_result.get('duration', '0:00') or '0:00'), lyric=None, cover_url=search_result.get('thumbnail') or safeextractfromdict(search_result, ['thumbnails', -1, 'url'], None), download_url=download_url_status['download_url'], download_url_status=download_url_status, 
+        )
+        # return
+        return song_info
     '''_parsewiththirdpartapis'''
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         if self.default_cookies or request_overrides.get('cookies'): return SongInfo(source=self.source)
-        for parser_func in [self._parsewithy2mateapi, self._parsewithgzmp3api, self._parsewithspotubedlapi, self._parsewithmp3youtube, self._parsewithinvidiousapi, self._parsewithacethinker, self._parsewithclipto]:
+        for parser_func in [self._parsewithy2mateapi, self._parsewithgzmp3api, self._parsewithspotubedlapi, self._parsewithmp3youtube, self._parsewithcobaltapi, self._parsewithacethinker, self._parsewithclipto, self._parsewithinvidiousapi]:
             song_info_flac = SongInfo(source=self.source, raw_data={'search': search_result, 'download': {}, 'lyric': {}})
             with suppress(Exception): song_info_flac = parser_func(search_result, request_overrides)
             if song_info_flac.with_valid_download_url and song_info_flac.ext in AudioLinkTester.VALID_AUDIO_EXTS: break
