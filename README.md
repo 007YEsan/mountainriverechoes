@@ -65,9 +65,9 @@
 
 # 🎉 What's New
 
+- 2026-05-13: Released musicdl v2.11.7 — fix some broken third-party APIs for Qobuz, Deezer, YouTube, and Spotify, and add multiple new parsing APIs that include VIP accounts.
 - 2026-05-11: Released musicdl v2.11.6 — added support for Bodian Music, including search, download, and playlist parsing features; fixed multiple lossless music API endpoints; added several new lossless music API endpoints; Tidal now downloads in FLAC format by default.
 - 2026-05-09: Released musicdl v2.11.5 — added support for music search and downloads from OpenGameArt ("opengameart.org"), along with multiple VIP account APIs for QQ Music, Kuwo Music, and NetEase Cloud Music.
-- 2026-05-08: Released musicdl v2.11.4 — added a NetEase Cloud Music lossless parsing interface; added a Qobuz lossless music parsing interface; added a common music client that supports JOOX and Qobuz music sources.
 
 
 # 🎵 Introduction
