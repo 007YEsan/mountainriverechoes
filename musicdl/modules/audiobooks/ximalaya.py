@@ -86,12 +86,29 @@ class XimalayaMusicClient(BaseMusicClient):
             if song_info.with_valid_download_url and (song_info.ext in AudioLinkTester.VALID_AUDIO_EXTS): break
         # return
         return song_info
+    '''_parsewithofficialapiv2'''
+    def _parsewithofficialapiv2(self, search_result: dict, request_overrides: dict = None):
+        # init
+        request_overrides, song_id, song_info = request_overrides or {}, search_result.get('id') or search_result.get('trackId'), SongInfo(source=self.source)
+        AUDIO_QUALITY_KEYS = ["playUrl64", "playPathAacv164", "playUrl32", "downloadUrl", "playPathAacv224", "downloadAacUrl"]
+        # parse
+        (resp := self.get(f"https://mobile.ximalaya.com/v1/track/baseInfo?trackId={song_id}&device=pc", **request_overrides)).raise_for_status()
+        for audio_quality in AUDIO_QUALITY_KEYS:
+            if not (download_url := (download_result := resp2json(resp=resp)).get(audio_quality)) or not str(download_url).startswith('http'): continue
+            download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
+            song_info = SongInfo(
+                raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(download_result.get('title')), singers=legalizestring(safeextractfromdict(download_result, ['userInfo', 'nickname'], None)), album=legalizestring(download_result.get('albumTitle')), ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], 
+                file_size=download_url_status['file_size'], identifier=song_id, duration_s=int(float(download_result.get('duration', 0) or 0)), duration=SongInfoUtils.seconds2hms(download_result.get('duration', 0) or 0), lyric=None, cover_url=download_result.get('coverLarge') or download_result.get('coverMiddle'), download_url=download_url_status['download_url'], download_url_status=download_url_status, 
+            )
+            if song_info.with_valid_download_url and (song_info.ext in AudioLinkTester.VALID_AUDIO_EXTS): break
+        # return
+        return song_info
     '''_parsebytrack'''
     def _parsebytrack(self, search_results, song_infos: list = [], request_overrides: dict = None, progress: Progress = None):
         for search_result in search_results['response']['docs']:
             if (not isinstance(search_result, dict)) or (not (song_id := search_result.get('id'))): continue
             song_info = SongInfo(source=self.source, raw_data={'search': search_result, 'download': {}, 'lyric': {}}, identifier=song_id)
-            for parser in [self._parsewithcggapi, self._parsewithofficialapiv1]:
+            for parser in [self._parsewithcggapi, self._parsewithofficialapiv1, self._parsewithofficialapiv2]:
                 with suppress(Exception): song_info = parser(search_result=search_result, request_overrides=dict(request_overrides or {}))
                 if song_info.with_valid_download_url and (song_info.ext in AudioLinkTester.VALID_AUDIO_EXTS): break
             if not song_info.with_valid_download_url or song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS: continue
@@ -120,7 +137,7 @@ class XimalayaMusicClient(BaseMusicClient):
             for track_idx, track in enumerate(tracks):
                 if track_idx > 0: progress.advance(download_album_pid, 1); progress.update(download_album_pid, description=f"{self.source}._parsebyalbum >>> ({track_idx}/{len(tracks)}) episodes completed in album {album_id}")
                 eps_info = SongInfo(source=self.source, raw_data={'search': track, 'download': {}, 'lyric': {}})
-                for parser in [self._parsewithcggapi, self._parsewithofficialapiv1]:
+                for parser in [self._parsewithcggapi, self._parsewithofficialapiv1, self._parsewithofficialapiv2]:
                     with suppress(Exception): eps_info = parser(search_result=track, request_overrides=request_overrides)
                     if eps_info.with_valid_download_url and (eps_info.ext in AudioLinkTester.VALID_AUDIO_EXTS): break
                 if not eps_info.with_valid_download_url or eps_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS: continue
