@@ -57,21 +57,18 @@ class KuwoMusicClient(BaseMusicClient):
     '''_parsewithcggapi'''
     def _parsewithcggapi(self, search_result: dict, request_overrides: dict = None):
         # init
-        curl_cffi, request_overrides, song_id = optionalimport('curl_cffi'), request_overrides or {}, str(search_result.get('MUSICRID') or search_result.get('musicrid')).removeprefix('MUSIC_')
-        MUSIC_QUALITIES = ["acc", "wma", "ogg", "standard", "exhigh", "ape", "lossless", "hires", "zp", "hifi", "sur", "jymaster"][::-1][3:]
+        curl_cffi, request_overrides, song_id, song_info = optionalimport('curl_cffi'), request_overrides or {}, str(search_result.get('MUSICRID') or search_result.get('musicrid')).removeprefix('MUSIC_'), SongInfo(source=self.source)
         if TYPE_CHECKING and curl_cffi is not None: import curl_cffi as curl_cffi
         # parse
-        for music_quality in MUSIC_QUALITIES:
-            with suppress(Exception): (resp := curl_cffi.requests.get(f"https://kw-api.cenguigui.cn/?id={song_id}&type=song&level={music_quality}&format=json", timeout=10, impersonate="chrome131", verify=False, **request_overrides)).raise_for_status()
-            if not locals().get('resp') or not hasattr(locals().get('resp'), 'text'): (resp := self.get(f"https://kw-api.cenguigui.cn/?id={song_id}&type=song&level={music_quality}&format=json", timeout=10, **request_overrides)).raise_for_status()
-            if not (download_url := safeextractfromdict((download_result := resp2json(resp=resp)), ['data', 'url'], '')) or not str(download_url).startswith('http'): continue
-            duration_in_secs = int(float(safeextractfromdict(download_result, ['data', 'duration'], 0) or 0))
-            download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
-            song_info = SongInfo(
-                raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(download_result, ['data', 'name'], None)), singers=legalizestring(safeextractfromdict(download_result, ['data', 'artist'], None)), album=legalizestring(safeextractfromdict(download_result, ['data', 'album'], None)), ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], 
-                file_size=download_url_status['file_size'], identifier=song_id, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=cleanlrc(safeextractfromdict(download_result, ['data', 'lyric'], '')), cover_url=safeextractfromdict(download_result, ['data', 'pic'], None), download_url=download_url_status['download_url'], download_url_status=download_url_status, 
-            )
-            if song_info.with_valid_download_url and song_info.ext in AudioLinkTester.VALID_AUDIO_EXTS: break
+        with suppress(Exception): (resp := curl_cffi.requests.get(f"https://kw-api.cenguigui.cn/?id={song_id}&type=song&level=lossless&format=json", timeout=10, impersonate="chrome131", verify=False, **request_overrides)).raise_for_status()
+        if not locals().get('resp') or not hasattr(locals().get('resp'), 'text'): (resp := self.get(f"https://kw-api.cenguigui.cn/?id={song_id}&type=song&level=lossless&format=json", timeout=10, **request_overrides)).raise_for_status()
+        if not (download_url := safeextractfromdict((download_result := resp2json(resp=resp)), ['data', 'url'], '')) or not str(download_url).startswith('http'): return song_info
+        duration_in_secs = int(float(safeextractfromdict(download_result, ['data', 'duration'], 0) or 0))
+        download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
+        song_info = SongInfo(
+            raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(download_result, ['data', 'name'], None)), singers=legalizestring(safeextractfromdict(download_result, ['data', 'artist'], None)), album=legalizestring(safeextractfromdict(download_result, ['data', 'album'], None)), ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], 
+            file_size=download_url_status['file_size'], identifier=song_id, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=cleanlrc(safeextractfromdict(download_result, ['data', 'lyric'], '')), cover_url=safeextractfromdict(download_result, ['data', 'pic'], None), download_url=download_url_status['download_url'], download_url_status=download_url_status, 
+        )
         # return
         return song_info
     '''_parsewithyyy001api'''
