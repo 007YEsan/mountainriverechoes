@@ -150,7 +150,7 @@ class KuwoMusicClient(BaseMusicClient):
         if not (search_result.get('SONGNAME') or search_result.get('name') or search_result.get('songName')): search_result.update(self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides))
         # parse
         for music_quality in MUSIC_QUALITIES:
-            with suppress(Exception): (resp := self.get(f"http://music.nxinxz.com/kw.php?id={song_id}&level={music_quality}&type=json", **request_overrides)).raise_for_status()
+            (resp := self.get(f"http://music.nxinxz.com/kw.php?id={song_id}&level={music_quality}&type=json", **request_overrides)).raise_for_status()
             if not (download_url := safeextractfromdict((download_result := resp2json(resp=resp)), ['data', 'url'], '')) or not str(download_url).startswith('http'): continue
             duration_in_secs = int(float(search_result.get('DURATION') or search_result.get('duration') or 0))
             download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
@@ -168,7 +168,7 @@ class KuwoMusicClient(BaseMusicClient):
         if not (search_result.get('SONGNAME') or search_result.get('name') or search_result.get('songName')): search_result.update(self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides))
         # parse
         for music_quality in MUSIC_QUALITIES:
-            with suppress(Exception): (resp := self.get(f"https://musicapi.haitangw.net/music/kw.php?id={song_id}&level={music_quality}&type=json", **request_overrides)).raise_for_status()
+            (resp := self.get(f"https://musicapi.haitangw.net/music/kw.php?id={song_id}&level={music_quality}&type=json", **request_overrides)).raise_for_status()
             if not (download_url := safeextractfromdict((download_result := resp2json(resp=resp)), ['data', 'url'], '')) or not str(download_url).startswith('http'): continue
             duration_in_secs = int(float(search_result.get('DURATION') or search_result.get('duration') or 0))
             download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
