@@ -16,7 +16,7 @@ from contextlib import suppress
 from rich.progress import Progress
 from ..sources import BaseMusicClient
 from urllib.parse import quote, urljoin
-from ..utils import legalizestring, resp2json, usesearchheaderscookies, cleanlrc, SongInfo, AudioLinkTester, SongInfoUtils
+from ..utils import legalizestring, resp2json, usesearchheaderscookies, cleanlrc, SongInfo, AudioLinkTester, SongInfoUtils, LyricSearchClient
 
 
 '''GDStudioMusicClient'''
@@ -26,13 +26,13 @@ class GDStudioMusicClient(BaseMusicClient):
     SUPPORTED_SITES = ['netease', 'kuwo', 'joox', 'bilibili', 'apple', 'spotify', 'tidal', 'qobuz', 'ytmusic', 'tencent'] # 'kugou', 'ximalaya', 'migu'
     SITE_TO_API_MAPPER = {
         'netease': 'https://music.gdstudio.xyz/api.php', 'tencent': 'https://music.gdstudio.xyz/api.php', 'tidal': 'https://music.gdstudio.xyz/api.php', 'spotify': 'https://music.gdstudio.xyz/api.php', 'kuwo': 'https://music.gdstudio.xyz/api.php', 'bilibili': 'https://music.gdstudio.xyz/api.php', 'apple': 'https://music.gdstudio.xyz/api.php', 
-        'migu': 'https://music-api-cn.gdstudio.xyz/api.php', 'kugou': 'https://music-api-cn.gdstudio.xyz/api.php', 'ximalaya': 'https://music-api-cn.gdstudio.xyz/api.php', 'joox': 'https://music-api-hk.gdstudio.xyz/api.php', 'qobuz': 'https://music-api-us.gdstudio.xyz/api.php', 'ytmusic': 'https://music-api-us.gdstudio.xyz/api.php',
+        'migu': 'https://music-api-cn.gdstudio.xyz/api.php', 'kugou': 'https://music-api-cn.gdstudio.xyz/api.php', 'ximalaya': 'https://music-api-cn.gdstudio.xyz/api.php', 'joox': 'https://music-api-hk.gdstudio.xyz/api.php', 'qobuz': 'https://music.gdstudio.xyz/api.php', 'ytmusic': 'https://music.gdstudio.xyz/api.php',
     }
     def __init__(self, **kwargs):
         self.allowed_music_sources = list(set(kwargs.pop('allowed_music_sources', GDStudioMusicClient.SUPPORTED_SITES[:-2])))
         super(GDStudioMusicClient, self).__init__(**kwargs)
-        self.default_search_headers = {'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36'}
-        self.default_download_headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36'}
+        self.default_search_headers = {'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Origin': 'https://music.gdstudio.xyz'}
+        self.default_download_headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36'}
         self.default_headers = self.default_search_headers
         self._initsession()
     '''_yieldcallback'''
@@ -107,10 +107,7 @@ class GDStudioMusicClient(BaseMusicClient):
                     lyric = cleanlrc(lyric_result.get('lyric') or "") or cleanlrc(lyric_result.get('tlyric') or "") or 'NULL'
                 except:
                     lyric_result, lyric = dict(), 'NULL'
-                if not lyric or lyric in {'NULL', 'null', 'None', 'none'} or '歌词获取失败' in lyric:
-                    params = {'artist_name': song_info.singers, 'track_name': song_info.song_name, 'album_name': song_info.album, 'duration': SongInfoUtils.estimatedurationwithfilelink(song_info.download_url, headers=self.default_download_headers, request_overrides=request_overrides)}
-                    song_info.duration_s, song_info.duration = params['duration'], SongInfoUtils.seconds2hms(params['duration'])
-                    with suppress(Exception): (resp := self.get(f'https://lrclib.net/api/get?', params=params, timeout=10, **request_overrides)).raise_for_status(); lyric_result = resp2json(resp=resp); lyric = cleanlrc(lyric_result.get('syncedLyrics') or "") or 'NULL'
+                if not lyric or lyric in {'NULL', 'null', 'None', 'none'} or '歌词获取失败' in lyric: lyric_result, lyric = LyricSearchClient().search(artist_name=song_info.singers, track_name=song_info.song_name, request_overrides=request_overrides)
                 song_info.raw_data['lyric'] = lyric_result if lyric_result else song_info.raw_data['lyric']
                 song_info.lyric = lyric if (lyric and (lyric not in {'NULL'})) else song_info.lyric
                 # --cover results
