@@ -375,6 +375,25 @@ class NeteaseMusicClient(BaseMusicClient):
             if song_info.with_valid_download_url and song_info.ext in AudioLinkTester.VALID_AUDIO_EXTS: break
         # return
         return song_info
+    '''_parsewithxunjinluapi'''
+    def _parsewithxunjinluapi(self, search_result: dict, request_overrides: dict = None):
+        # init
+        REQUEST_KEYS = ['charlespikachuc2tfNzQzMjk5ZmNhZGUyNDliMmU1ODYzOGQzODRjYWJkYmQ=']
+        decrypt_func, request_overrides, song_id = lambda t: base64.b64decode(str(t)[14:].encode('utf-8')).decode('utf-8'), request_overrides or {}, search_result['id']
+        to_seconds_func = lambda x: (lambda s: 0 if not s else (lambda p: p[-3]*3600+p[-2]*60+p[-1] if len(p)>=3 else p[0]*60+p[1] if len(p)==2 else p[0] if len(p)==1 else 0)([int(v) for v in re.findall(r'\d+', s.replace('：', ':'))]) if (':' in s or '：' in s) else (lambda h,m,sec,num: (lambda tot: tot if tot>0 else num)(h*3600+m*60+sec))(int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:小时|时|h|hr)', s)) else 0, int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:分钟|分|m|min)', s)) else 0, (int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:秒|s|sec)', s)) else (int(mo.group(1)) if (mo:=re.search(r'(?:分钟|分|m|min)\s*(\d+)\b', s)) else 0)), int(mo.group(0)) if (mo:=re.search(r'\d+', s)) else 0))(str(x).strip().lower())
+        # parse
+        for music_quality in MUSIC_QUALITIES:
+            (resp := self.get(f'https://api.xunjinlu.fun/apis/wymusic?action=song&id={song_id}&key={decrypt_func(random.choice(REQUEST_KEYS))}&level={music_quality}', timeout=10, **request_overrides)).raise_for_status(); download_result = resp2json(resp=resp)
+            if not (download_url := safeextractfromdict((download_result := resp2json(resp=resp)), ['data', 'data', 'url', 'url'], '')) or not str(download_url).startswith('http'): continue
+            download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
+            duration_in_secs = to_seconds_func(safeextractfromdict(download_result, ['data', 'data', 'info', 'duration'], '0:00') or '0:00')
+            song_info = SongInfo(
+                raw_data={'search': search_result, 'download': download_result, 'lyric': {}, 'quality': music_quality}, source=self.source, song_name=legalizestring(safeextractfromdict(download_result, ['data', 'data', 'info', 'name'], None)), singers=legalizestring(str(safeextractfromdict(download_result, ['data', 'data', 'info', 'singer'], None) or '').replace('/', ', ')), album=legalizestring(safeextractfromdict(download_result, ['data', 'data', 'info', 'album'], None)), ext=download_url_status['ext'], 
+                file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], identifier=song_id, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=cleanlrc(safeextractfromdict(download_result, ['data', 'data', 'lyric', 'lrc'], '') or ''), cover_url=safeextractfromdict(download_result, ['data', 'data', 'info', 'picimg'], None), download_url=download_url_status['download_url'], download_url_status=download_url_status, 
+            )
+            if song_info.with_valid_download_url and song_info.ext in AudioLinkTester.VALID_AUDIO_EXTS: break
+        # return
+        return song_info
     '''_parsewithmanshuoapi'''
     def _parsewithmanshuoapi(self, search_result: dict, request_overrides: dict = None):
         # init
@@ -511,7 +530,7 @@ class NeteaseMusicClient(BaseMusicClient):
     '''_parsewiththirdpartapis'''
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         if (cookies := self.default_cookies or request_overrides.get('cookies')) and (cookies != DEFAULT_COOKIES): return SongInfo(source=self.source, raw_data={'quality': MUSIC_QUALITIES[-1]})
-        for parser_func in [self._parsewithxiaoqinapi, self._parsewithcggapi, self._parsewithxingmianapi, self._parsewithkangqiovoapi, self._parsewithhaitangwapi, self._parsewithznnuapi, self._parsewithbugpkapi, self._parsewithxuanluogeapi, self._parsewithguyueiapi, self._parsewithjfjtapi, self._parsewithlblbapi, self._parsewithcunyuapi, self._parsewithqjqqapi, self._parsewithyutangxiaowuapi, self._parsewithxiaotapi, self._parsewithgdstudioapi, self._parsewithxcvtsapi, self._parsewithnycnmbyfunsapi, self._parsewithceseetapi, self._parsewithxianyuwapi, self._parsewithrrvennapi, self._parsewithcyruiapi, self._parsewithtmetuapi, self._parsewithmanshuoapi]:
+        for parser_func in [self._parsewithxiaoqinapi, self._parsewithcggapi, self._parsewithxingmianapi, self._parsewithkangqiovoapi, self._parsewithhaitangwapi, self._parsewithznnuapi, self._parsewithbugpkapi, self._parsewithxunjinluapi, self._parsewithxuanluogeapi, self._parsewithguyueiapi, self._parsewithjfjtapi, self._parsewithlblbapi, self._parsewithcunyuapi, self._parsewithqjqqapi, self._parsewithyutangxiaowuapi, self._parsewithxiaotapi, self._parsewithgdstudioapi, self._parsewithxcvtsapi, self._parsewithnycnmbyfunsapi, self._parsewithceseetapi, self._parsewithxianyuwapi, self._parsewithrrvennapi, self._parsewithcyruiapi, self._parsewithtmetuapi, self._parsewithmanshuoapi]:
             song_info_flac = SongInfo(source=self.source, raw_data={'search': search_result, 'download': {}, 'lyric': {}, 'quality': MUSIC_QUALITIES[-1]})
             with suppress(Exception): song_info_flac = parser_func(search_result, request_overrides)
             if song_info_flac.with_valid_download_url and song_info_flac.ext in AudioLinkTester.VALID_AUDIO_EXTS: break
