@@ -13,7 +13,7 @@ from contextlib import suppress
 from types import SimpleNamespace
 from .base import BaseMusicClient
 from ..utils.hosts import APPLE_MUSIC_HOSTS
-from urllib.parse import urlencode, urlparse
+from urllib.parse import urlencode, urlparse, parse_qs
 from pathvalidate import sanitize_filepath, sanitize_filename
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
 from ..utils.appleutils import AppleMusicClientDownloadSongUtils, AppleMusicClientAPIUtils, AppleMusicClientItunesApiUtils, DownloadItem, SongCodec, RemuxMode
@@ -126,11 +126,15 @@ class AppleMusicClient(BaseMusicClient):
     def _search(self, keyword: str = '', search_url: str = '', request_overrides: dict = None, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
         # init
         request_overrides = request_overrides or {}
+        page_no = int(float(parse_qs(urlparse(url=search_url).query, keep_blank_values=True).get('offset')[0]) / self.search_size_per_page) + 1
         # successful
         try:
             # --search results
             (resp := self.get(search_url, **request_overrides)).raise_for_status()
-            for song_key, search_result in dict(resp2json(resp)['resources']['songs']).items():
+            task_id = progress.add_task(f"{self.source}._search >>> Start to process the 0th search result on page {page_no}", total=self.search_size_per_page if self.strict_limit_search_size_per_page else len(resp2json(resp)['resources']['songs']), completed=0)
+            for search_result_idx, (song_key, search_result) in enumerate(dict(resp2json(resp)['resources']['songs']).items()):
+                # --update progress
+                progress.update(task_id, description=f'{self.source}._search >>> Start to process the {search_result_idx+1}th search result on page {page_no}', completed=(len(song_infos) + 1) if self.strict_limit_search_size_per_page else (search_result_idx + 1))
                 # --init song info
                 song_info, search_result['song_key'] = SongInfo(source=self.source, raw_data={'search': search_result, 'download': {}, 'lyric': {}}), song_key
                 # --parse with official apis
