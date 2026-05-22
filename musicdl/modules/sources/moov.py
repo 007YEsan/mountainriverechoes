@@ -193,7 +193,7 @@ class MOOVMusicClient(BaseMusicClient):
                 self.logger_handle.warning(f'Fail to parse song id {song_info.identifier} >>> {song_info.album} {song_info.song_name} {song_info.singers} {song_info.download_url}', disable_print=self.disable_print)
             main_process_context.advance(main_progress_id, 1); main_process_context.update(main_progress_id, description=f"{len(tracks_in_playlist)} Songs Found in Playlist {playlist_id} >>> Completed ({idx+1}/{len(tracks_in_playlist)}) SongInfo")
         # post processing
-        playlist_name = legalizestring(safeextractfromdict(playlist_result, ['dataObject', 'modules', 0, 'chiName'], None) or safeextractfromdict(playlist_result, ['dataObject', 'modules', 0, 'engName'], None) or f"playlist-{playlist_id}")
+        playlist_name = legalizestring(safeextractfromdict(playlist_result, ['dataObject', 'modules', 0, 'chiName'], None) or safeextractfromdict(playlist_result, ['dataObject', 'modules', 0, 'engName'], None) or safeextractfromdict(playlist_result, ['dataObject', 'chiTitle', 0], None) or safeextractfromdict(playlist_result, ['dataObject', 'engTitle', 0], None) or f"playlist-{playlist_id}")
         song_infos, work_dir = self._removeduplicates(song_infos=song_infos), self._constructuniqueworkdir(keyword=playlist_name)
         for song_info in song_infos:
             song_info.work_dir, episodes = work_dir, song_info.episodes if isinstance(song_info.episodes, list) else []
