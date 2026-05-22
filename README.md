@@ -65,7 +65,7 @@
 
 # 🎉 What's New
 
-- 2026-05-22: Released musicdl v2.12.0 — added and fixed third-party API support for VIP accounts across multiple platforms; optimized third-party API calls on certain platforms when member-account cookies are not configured; added support for music search, playlist parsing, and downloads on MOOV Music; added support for music search and downloads on Alger Music.
+- 2026-05-22: Released musicdl v2.12.0 — improved third-party API support across multiple platforms, including VIP-account handling and cookie-free fallback calls; added music search, playlist parsing, and download support for MOOV Music, plus search and downloads for Alger Music.
 - 2026-05-16: Released musicdl v2.11.10 — emergency fix for Migu Music becoming invalid issues, ensuring access to at least 320 kbps files and restoring lossless audio via member cookies.
 - 2026-05-15: Released musicdl v2.11.9 — optimized some third-party interfaces; added multiple API endpoints with member-quality audio for supported music platforms (kuwo, netease, kugou).
 
