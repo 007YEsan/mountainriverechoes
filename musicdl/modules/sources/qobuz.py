@@ -264,7 +264,7 @@ class QobuzMusicClient(BaseMusicClient):
     '''_parsewiththirdpartapis'''
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         if QobuzMusicClientUtils.get_token_func(self.default_headers, "X-User-Auth-Token", "x-user-auth-token"): return SongInfo(source=self.source, raw_data={'quality': QobuzMusicClientUtils.MUSIC_QUALITIES[-1]})
-        for parser_func in [self._parsewithmonochromeapi, self._parsewithgdstudioxyzapi, self._parsewithgdstudioorgapi, self._parsewithmusicdlapi, self._parsewithsquidapi, self._parsewithzarzapi, self._parsewithwjheapi, self._parsewithdabmusicapi, self._parsewithdabyeetsuapi]:
+        for parser_func in [self._parsewithmonochromeapi, self._parsewithmusicdlapi, self._parsewithsquidapi, self._parsewithzarzapi, self._parsewithgdstudioxyzapi, self._parsewithgdstudioorgapi, self._parsewithwjheapi, self._parsewithdabmusicapi, self._parsewithdabyeetsuapi]:
             song_info_flac = SongInfo(source=self.source, raw_data={'search': search_result, 'download': {}, 'lyric': {}, 'quality': QobuzMusicClientUtils.MUSIC_QUALITIES[-1]})
             with suppress(Exception): song_info_flac = parser_func(search_result, request_overrides)
             if song_info_flac.with_valid_download_url and song_info_flac.ext in AudioLinkTester.VALID_AUDIO_EXTS: break
@@ -307,11 +307,15 @@ class QobuzMusicClient(BaseMusicClient):
         # init
         request_overrides, lossless_quality_is_sufficient = request_overrides or {}, False if QobuzMusicClientUtils.get_token_func(self.default_headers, "X-User-Auth-Token", "x-user-auth-token") else True
         QobuzMusicClientUtils.initsearchappid(self.session, headers=self.default_headers, cookies=self.default_cookies, request_overrides=request_overrides)
+        page_no = int(float(parse_qs(urlparse(url=search_url).query, keep_blank_values=True).get('offset')[0]) / self.search_size_per_page) + 1
         # successful
         try:
             # --search results
             (resp := self.get(search_url, headers={**self.default_headers, **{"X-App-Id": QobuzMusicClientUtils.SEARCH_APP_ID}}, **request_overrides)).raise_for_status()
-            for search_result in resp2json(resp)['tracks']['items']:
+            task_id = progress.add_task(f"{self.source}._search >>> Start to process the 0th search result on page {page_no}", total=self.search_size_per_page if self.strict_limit_search_size_per_page else len(resp2json(resp)['tracks']['items']), completed=0)
+            for search_result_idx, search_result in enumerate(resp2json(resp)['tracks']['items']):
+                # --update progress
+                progress.update(task_id, description=f'{self.source}._search >>> Start to process the {search_result_idx+1}th search result on page {page_no}', completed=(len(song_infos) + 1) if self.strict_limit_search_size_per_page else (search_result_idx + 1))
                 # --init song info
                 song_info = SongInfo(source=self.source, raw_data={'search': search_result, 'download': {}, 'lyric': {}, 'quality': QobuzMusicClientUtils.MUSIC_QUALITIES[-1]})
                 # --parse with third part apis
