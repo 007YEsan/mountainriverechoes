@@ -65,9 +65,9 @@
 
 # 🎉 What's New
 
+- 2026-05-22: Released musicdl v2.12.0 — added and fixed third-party API support for VIP accounts across multiple platforms; optimized third-party API calls on certain platforms when member-account cookies are not configured; added support for music search, playlist parsing, and downloads on MOOV Music; added support for music search and downloads on Alger Music.
 - 2026-05-16: Released musicdl v2.11.10 — emergency fix for Migu Music becoming invalid issues, ensuring access to at least 320 kbps files and restoring lossless audio via member cookies.
 - 2026-05-15: Released musicdl v2.11.9 — optimized some third-party interfaces; added multiple API endpoints with member-quality audio for supported music platforms (kuwo, netease, kugou).
-- 2026-05-14: Released musicdl v2.11.8 — added support for music search and downloads from the Suno site, as well as playlist parsing and downloading; added multiple third-party parsing APIs for the Ximalaya and Qobuz.
 
 
 # 🎵 Introduction
@@ -97,6 +97,7 @@ If you are a copyright or rights holder and believe that this repository infring
 |                                          | [KugouMusicClient](http://www.kugou.com/)                          | [酷狗音乐](http://www.kugou.com/)                                            | ✅        | ✅         | [kugou.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/kugou.py)                         |
 |                                          | [KuwoMusicClient](http://www.kuwo.cn/)                             | [酷我音乐](http://www.kuwo.cn/)                                              | ✅        | ✅         | [kuwo.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/kuwo.py)                           |
 |                                          | [MiguMusicClient](https://music.migu.cn/v5/#/musicLibrary)         | [咪咕音乐](https://music.migu.cn/v5/#/musicLibrary)                          | ✅        | ✅         | [migu.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/migu.py)                           |
+|                                          | [MOOVMusicClient](https://moov.hk/)                                | [摩音符](https://moov.hk/)                                                   | ✅        | ✅         | [moov.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/moov.py)                           |
 |                                          | [NeteaseMusicClient](https://music.163.com/)                       | [网易云音乐](https://music.163.com/)                                         | ✅        | ✅         | [netease.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/netease.py)                     |
 |                                          | [QianqianMusicClient](http://music.taihe.com/)                     | [千千音乐](http://music.taihe.com/)                                          | ✅        | ✅         | [qianqian.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/qianqian.py)                   |
 |                                          | [QQMusicClient](https://y.qq.com/)                                 | [QQ音乐](https://y.qq.com/)                                                  | ✅        | ✅         | [qq.py](https://github.com/CharlesPikachu/musicdl/blob/master/musicdl/modules/sources/qq.py)                               |
@@ -700,7 +701,7 @@ AppleMusicClient,      DeezerMusicClient,       FiveSingMusicClient,    JamendoM
 KuwoMusicClient,       KugouMusicClient,        MiguMusicClient,        NeteaseMusicClient,      QQMusicClient,
 QianqianMusicClient,   QobuzMusicClient,        SoundCloudMusicClient,  StreetVoiceMusicClient,  SodaMusicClient,
 SpotifyMusicClient,    TIDALMusicClient,        FMAMusicClient,         JioSaavnMusicClient,     BodianMusicClient,
-SunoMusicClient,
+SunoMusicClient,       MOOVMusicClient,
 ```
 
 You can download a supported playlist directly from the terminal:
@@ -731,6 +732,8 @@ musicdl -p "https://www.kuwo.cn/playlist_detail/2358858706" -m KuwoMusicClient
 musicdl -p "https://www.kugou.com/yy/special/single/3280341.html" -m KugouMusicClient
 # Parse and Download Migu Music Playlist
 musicdl -p "https://music.migu.cn/v5/#/playlist?playlistId=228114498&playlistType=ordinary" -m MiguMusicClient
+# Parse and Download MOOV Music Playlist
+musicdl -p "https://moov.hk/?utm_source=ios&utm_medium=copylink&utm_campaign=sharing_UPL-6742190#/playlist/PP1000000965" -m MOOVMusicClient -i "{'MOOVMusicClient': {'default_parse_cookies': your_vip_cookies_with_str_or_dict_format}}"
 # Parse and Download NetEase Music Playlist
 musicdl -p "https://music.163.com/#/playlist?id=3039971654" -m NeteaseMusicClient
 # Parse and Download QQ Music Playlist
