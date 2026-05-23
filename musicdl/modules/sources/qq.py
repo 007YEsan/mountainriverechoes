@@ -46,7 +46,7 @@ class QQMusicClient(BaseMusicClient):
             (page_rule := copy.deepcopy(default_rule))['num_per_page'] = page_size
             page_rule['page_num'] = int(count // page_size) + 1
             payload = QQMusicClientUtils.buildrequestdata(params=page_rule, module="music.search.SearchCgiService", method="DoSearchForQQMusicMobile", credential=Credential().fromcookiesdict(self.default_cookies or request_overrides.get('cookies', {})))
-            search_urls.append({'url': base_url, 'data': json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")})
+            search_urls.append({'url': base_url, 'data': json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8"), 'page_no': int(count // page_size) + 1})
             if self.use_encrypted_endpoint: search_urls[-1]['params'] = {"sign": QQMusicClientUtils.sign(payload)}
             count += page_size
         # return
@@ -335,12 +335,15 @@ class QQMusicClient(BaseMusicClient):
     def _search(self, keyword: str = '', search_url: dict = {}, request_overrides: dict = None, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
         # init
         request_overrides, lossless_quality_is_sufficient = request_overrides or {}, False if self.default_cookies or request_overrides.get('cookies') else True
-        search_meta = copy.deepcopy(search_url); search_url = search_meta.pop('url')
+        search_meta = copy.deepcopy(search_url); search_url, page_no = search_meta.pop('url'), search_meta.pop('page_no')
         # successful
         try:
             # --search results
             (resp := self.post(search_url, **search_meta, **request_overrides)).raise_for_status()
-            for search_result in resp2json(resp)['music.search.SearchCgiService.DoSearchForQQMusicMobile']['data']['body']['item_song']:
+            task_id = progress.add_task(f"{self.source}._search >>> Start to process the 0th search result on page {page_no}", total=None, completed=0)
+            for search_result_idx, search_result in enumerate(resp2json(resp)['music.search.SearchCgiService.DoSearchForQQMusicMobile']['data']['body']['item_song']):
+                # --update progress
+                progress.update(task_id, description=f'{self.source}._search >>> Start to process the {search_result_idx+1}th search result on page {page_no}', completed=search_result_idx+1, total=search_result_idx+1)
                 # --init song info
                 song_info = SongInfo(source=self.source, raw_data={'search': search_result, 'download': {}, 'lyric': {}})
                 # --parse with third part apis

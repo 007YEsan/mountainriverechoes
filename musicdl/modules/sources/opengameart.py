@@ -17,8 +17,8 @@ from .base import BaseMusicClient
 from rich.progress import Progress
 from bs4 import BeautifulSoup, Tag
 from itertools import dropwhile, islice, takewhile, chain
-from urllib.parse import urlencode, urljoin, urlparse, unquote
 from ..utils import legalizestring, usesearchheaderscookies, SongInfo
+from urllib.parse import urlencode, urljoin, urlparse, unquote, parse_qs
 
 
 '''OpenGameArtMusicClient'''
@@ -88,12 +88,16 @@ class OpenGameArtMusicClient(BaseMusicClient):
         # init
         request_overrides, seen, normalize_func = request_overrides or {}, set(), lambda text: re.sub(r"\s+", " ", text or "").strip()
         find_heading_func: Callable[[BeautifulSoup | Tag, str], Tag | None] = lambda soup, heading_text: next((tag for tag in soup.find_all(["h1", "h2", "h3"]) if normalize_func(tag.get_text(" ", strip=True)).lower() == heading_text.strip().lower()), None)
+        page_no = int(float(parse_qs(urlparse(url=search_url).query, keep_blank_values=True).get('page')[0])) + 1
         # successful
         try:
             # --search results
             (resp := self.get(search_url, **request_overrides)).raise_for_status()
+            task_id = progress.add_task(f"{self.source}._search >>> Start to process the 0th search result on page {page_no}", total=None, completed=0)
             search_result_tags: list[BeautifulSoup | Tag] = find_heading_func(BeautifulSoup(resp.text, 'lxml'), "Search Art").find_all_next()
-            for search_result_tag in search_result_tags:
+            for search_result_idx, search_result_tag in enumerate(search_result_tags):
+                # --update progress
+                progress.update(task_id, description=f'{self.source}._search >>> Start to process the {search_result_idx+1}th search result on page {page_no}', completed=search_result_idx+1, total=search_result_idx+1)
                 # --invalid search tags
                 if search_result_tag.name in {"h1", "h2", "h3"} and normalize_func(search_result_tag.get_text(" ", strip=True)).lower() in {"pages", "chat with us!", "active forum topics - (view more)"}: break
                 if search_result_tag.name != "a" or not search_result_tag.get("href") or not (title := normalize_func(search_result_tag.get_text(" ", strip=True))) or title.lower() in {"image", "preview", "first", "previous", "next", "last", "log in", "register", "read more"}: continue
