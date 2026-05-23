@@ -16,7 +16,7 @@ from .base import BaseMusicClient
 from ..utils.hosts import FMA_MUSIC_HOSTS
 from pathvalidate import sanitize_filepath
 from bs4 import BeautifulSoup, NavigableString, Tag
-from urllib.parse import urlencode, urlparse, urljoin, urlsplit, urlunsplit
+from urllib.parse import urlencode, urlparse, urljoin, urlsplit, urlunsplit, parse_qs
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
 from ..utils import legalizestring, usesearchheaderscookies, safeextractfromdict, useparseheaderscookies, obtainhostname, hostmatchessuffix, cookies2string, SongInfo, AudioLinkTester, LyricSearchClient, IOUtils, SongInfoUtils
 
@@ -82,12 +82,15 @@ class FMAMusicClient(BaseMusicClient):
     @usesearchheaderscookies
     def _search(self, keyword: str = '', search_url: str = '', request_overrides: dict = None, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
         # init
-        request_overrides = request_overrides or {}
+        request_overrides, page_no = request_overrides or {}, int(float(parse_qs(urlparse(url=search_url).query, keep_blank_values=True).get('page')[0]))
         # successful
         try:
             # --search results
             (resp := self.get(search_url, **request_overrides)).raise_for_status()
-            for search_result_item in BeautifulSoup(resp.text, "lxml").select(".play-item[data-track-info]"):
+            task_id = progress.add_task(f"{self.source}._search >>> Start to process the 0th search result on page {page_no}", total=self.search_size_per_page if self.strict_limit_search_size_per_page else len(BeautifulSoup(resp.text, "lxml").select(".play-item[data-track-info]")), completed=0)
+            for search_result_idx, search_result_item in enumerate(BeautifulSoup(resp.text, "lxml").select(".play-item[data-track-info]")):
+                # --update progress
+                progress.update(task_id, description=f'{self.source}._search >>> Start to process the {search_result_idx+1}th search result on page {page_no}', completed=(len(song_infos) + 1) if self.strict_limit_search_size_per_page else (search_result_idx + 1))
                 # --init song info
                 with suppress(Exception): search_result = None; search_result = json_repair.loads(search_result_item["data-track-info"])
                 if not search_result or not isinstance(search_result, dict) or not search_result.get('id'): continue
