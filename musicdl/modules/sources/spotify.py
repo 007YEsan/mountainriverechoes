@@ -41,7 +41,7 @@ class SpotifyMusicClient(BaseMusicClient):
         # construct search urls
         search_urls, page_size, count = [], self.search_size_per_page, 0
         while self.search_size_per_source > count:
-            search_urls.append({'api': SpotifyMusicClientSearchUtils.searchbykeyword, 'inputs': {'session': copy.deepcopy(self.session), 'query': keyword, 'limit': page_size, 'offset': count, 'rule': copy.deepcopy(rule), 'request_overrides': request_overrides}})
+            search_urls.append({'api': SpotifyMusicClientSearchUtils.searchbykeyword, 'inputs': {'session': copy.deepcopy(self.session), 'query': keyword, 'limit': page_size, 'offset': count, 'rule': copy.deepcopy(rule), 'request_overrides': request_overrides}, 'page_no': int(count / page_size) + 1})
             count += page_size
         # return
         return search_urls
@@ -228,12 +228,15 @@ class SpotifyMusicClient(BaseMusicClient):
     @usesearchheaderscookies
     def _search(self, keyword: str = '', search_url: dict = '', request_overrides: dict = None, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
         # init
-        request_overrides, search_api, search_api_inputs = request_overrides or {}, search_url['api'], search_url['inputs']
+        request_overrides, search_api, search_api_inputs, page_no = request_overrides or {}, search_url['api'], search_url['inputs'], search_url['page_no']
         lossless_quality_is_sufficient = False if self.default_cookies or request_overrides.get('cookies') else True
         # successful
         try:
             # --search results
-            for search_result in safeextractfromdict((search_resp := search_api(**search_api_inputs)), ['data', 'searchV2', 'tracksV2', 'items'], []) or safeextractfromdict(search_resp, ['data', 'searchV2', 'tracks', 'items'], []):
+            task_id = progress.add_task(f"{self.source}._search >>> Start to process the 0th search result on page {page_no}", total=None, completed=0)
+            for search_result_idx, search_result in enumerate(safeextractfromdict((search_resp := search_api(**search_api_inputs)), ['data', 'searchV2', 'tracksV2', 'items'], []) or safeextractfromdict(search_resp, ['data', 'searchV2', 'tracks', 'items'], [])):
+                # --update progress
+                progress.update(task_id, description=f'{self.source}._search >>> Start to process the {search_result_idx+1}th search result on page {page_no}', completed=search_result_idx+1, total=search_result_idx+1)
                 # --init song info
                 song_info = SongInfo(source=self.source, raw_data={'search': search_result, 'download': {}, 'lyric': {}})
                 search_result['id'] = safeextractfromdict(search_result, ['item', 'data', 'id'], None) or str(safeextractfromdict(search_result, ['item', 'data', 'uri'], '')).removeprefix('spotify:track:')
