@@ -57,14 +57,14 @@ class GDStudioMusicClient(BaseMusicClient):
         # construct search urls
         search_urls, page_size = [], self.search_size_per_page
         make_base_rule_func = lambda source, page: {**copy.deepcopy(default_rule), 'source': source, 'pages': str(page), 'count': str(page_size), 's': self._yieldcrc32(keyword)}
-        make_post_req_func = lambda api_url, rule: {'url': api_url, 'data': rule, 'params': {'callback': self._yieldcallback()}, 'method': 'post'}
-        make_get_req_func = lambda api_url, rule: {'url': api_url, 'params': {**rule, 'callback': self._yieldcallback(), '_': str(int(time.time() * 1000))}, 'method': 'get'}
+        make_post_req_func = lambda api_url, rule, page_no: {'page_no': page_no, 'url': api_url, 'data': rule, 'params': {'callback': self._yieldcallback()}, 'method': 'post'}
+        make_get_req_func = lambda api_url, rule, page_no: {'page_no': page_no, 'url': api_url, 'params': {**rule, 'callback': self._yieldcallback(), '_': str(int(time.time() * 1000))}, 'method': 'get'}
         for source in GDStudioMusicClient.SUPPORTED_SITES:
             if source not in allowed_music_sources: continue
             is_post, count = (api_url := GDStudioMusicClient.SITE_TO_API_MAPPER[source]) in {'https://music.gdstudio.xyz/api.php'}, 0
             while self.search_size_per_source > count:
-                rule = make_base_rule_func(source, str(int(count // page_size) + 1))
-                search_urls.append(make_post_req_func(api_url, rule) if is_post else make_get_req_func(api_url, rule))
+                rule = make_base_rule_func(source, (page_no := str(int(count // page_size) + 1)))
+                search_urls.append(make_post_req_func(api_url, rule, page_no) if is_post else make_get_req_func(api_url, rule, page_no))
                 count += page_size
         # return
         return search_urls
@@ -73,12 +73,15 @@ class GDStudioMusicClient(BaseMusicClient):
     def _search(self, keyword: str = '', search_url: dict = None, request_overrides: dict = None, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
         # init
         request_overrides, search_meta = copy.deepcopy(request_overrides or {}), copy.deepcopy(search_url)
-        self.default_headers, search_url, method = copy.deepcopy(self.default_headers), search_meta.pop('url'), search_meta.pop('method')
+        self.default_headers, search_url, method, page_no = copy.deepcopy(self.default_headers), search_meta.pop('url'), search_meta.pop('method'), search_meta.pop('page_no')
         # successful
         try:
             # --search results
             resp: requests.Response = getattr(self, method)(search_url, **search_meta, **request_overrides)
-            for search_result in json_repair.loads(resp.text[resp.text.index('(')+1: resp.text.rindex(')')]):
+            task_id = progress.add_task(f"{self.source}._search >>> Start to process the 0th search result on page {page_no}", total=None, completed=0)
+            for search_result_idx, search_result in enumerate(json_repair.loads(resp.text[resp.text.index('(')+1: resp.text.rindex(')')])):
+                # --update progress
+                progress.update(task_id, description=f"{self.source}.{search_result['source']}._search >>> Start to process the {search_result_idx+1}th search result on page {page_no}", completed=search_result_idx+1, total=search_result_idx+1)
                 # --download results
                 if (not isinstance(search_result, dict)) or ('id' not in search_result) or ('url_id' not in search_result) or ('source' not in search_result): continue
                 song_info, song_id, params = SongInfo(source=self.source, root_source=search_result['source']), search_result['id'], {'callback': self._yieldcallback()}
