@@ -76,13 +76,14 @@ class TuneHubMusicClient(BaseMusicClient):
             search_results = search_url['search_api'](**search_url['rule']) if isinstance(search_url, dict) else resp2json(self.get(search_url, **request_overrides))
             task_id = progress.add_task(f"{self.source}._search >>> Start to process the 0th search result on page {page_no}", total=None, completed=0)
             for search_result_idx, search_result in enumerate(search_results):
-                # --update progress
-                progress.update(task_id, description=f'{self.source}._search >>> Start to process the {search_result_idx+1}th search result on page {page_no}', completed=search_result_idx+1, total=search_result_idx+1)
-                # --download results
+                # --init song info
                 if not isinstance(search_result, dict) or ('id' not in search_result and 'url' not in search_result): continue
                 if 'id' not in search_result: search_result['id'] = parse_qs(urlparse(str(search_result['url'])).query, keep_blank_values=True).get('id')[0]
                 if 'source' not in search_result: search_result['source'] = parse_qs(urlparse(str(search_result['url'])).query, keep_blank_values=True).get('server')[0]
                 song_info = SongInfo(source=self.source, root_source=search_result['source'], raw_data={'search': search_result, 'download': {}, 'lyric': {}})
+                # --update progress
+                progress.update(task_id, description=f"{self.source}.{search_result['source']}._search >>> Start to process the {search_result_idx+1}th search result on page {page_no}", completed=search_result_idx+1, total=search_result_idx+1)
+                # --download results
                 tunehub_to_meting_server_mapper = {'netease': 'netease', 'qq': 'tencent', 'kuwo': 'kuwo', 'kugou': 'kugou', 'migu': 'migu'}
                 if search_result['source'] in {'netease'}:
                     for br in TuneHubMusicClient.METING_API_MUSIC_QUALITIES:
