@@ -47,12 +47,15 @@ class JBSouMusicClient(BaseMusicClient):
     @usesearchheaderscookies
     def _search(self, keyword: str = '', search_url: dict = None, request_overrides: dict = None, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
         # init
-        request_overrides, base_url, source = request_overrides or {}, "https://www.jbsou.cn/", search_url['data']['type']
+        request_overrides, base_url, source, page_no = request_overrides or {}, "https://www.jbsou.cn/", search_url['data']['type'], search_url['data']['page']
         # successful
         try:
             # --search results
             (resp := self.post(**search_url, **request_overrides)).raise_for_status()
-            for search_result in resp2json(resp)['data']:
+            task_id = progress.add_task(f"{self.source}._search >>> Start to process the 0th search result on page {page_no}", total=None, completed=0)
+            for search_result_idx, search_result in enumerate(resp2json(resp)['data']):
+                # --update progress
+                progress.update(task_id, description=f'{self.source}.{source}._search >>> Start to process the {search_result_idx+1}th search result on page {page_no}', completed=search_result_idx+1, total=search_result_idx+1)
                 # --download results
                 if not isinstance(search_result, dict) or ('songid' not in search_result) or ('url' not in search_result): continue
                 search_result['source'], song_info, download_url = source, SongInfo(source=self.source, root_source=source), urljoin(base_url, search_result['url'])
