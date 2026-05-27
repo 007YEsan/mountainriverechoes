@@ -65,9 +65,9 @@
 
 # 🎉 What's New
 
+- 2026-05-27: Released musicdl v2.12.4 — optimize the third-party NetEase Cloud Music lossless audio API to avoid returning preview clips; add several lossless music APIs for netease music client.
 - 2026-05-25: Released musicdl v2.12.3 — added multiple lossless music APIs; optimized the search interface for common music clients and added message prompts to make the search process feel more natural.
 - 2026-05-24: Released musicdl v2.12.2 — added multiple high-quality lossless music sources; fixed all invalid third-party music platforms in the supported list; added progress bars to the search process for all third-party music platforms, making the search experience appear smoother and more natural.
-- 2026-05-23: Released musicdl v2.12.1 — for users in mainland China, Kuwo Music song downloads now support higher audio quality; added several member-only interfaces; optimized the search interface for some supported platforms so that it no longer appears frozen while waiting for search results.
 
 
 # 🎵 Introduction
