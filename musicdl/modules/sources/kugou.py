@@ -104,7 +104,7 @@ class KugouMusicClient(BaseMusicClient):
         }
         # parse
         for music_quality in MUSIC_QUALITIES:
-            (resp := self.get(f"http://api.liuyunidc.cn/baimusic/musicurl.php?source=kg&musicId={file_hash}&quality={music_quality}", headers=headers, timeout=10, **request_overrides)).raise_for_status()
+            (resp := self.get(f"http://api.liuyunidc.cn/baimusic/musicurl.php?source=kg&musicId={file_hash}&quality={music_quality}&card=BAI-153B4JE4I40HSG40H1FP", headers=headers, timeout=10, **request_overrides)).raise_for_status()
             if not (download_url := safeextractfromdict((download_result := resp2json(resp=resp)), ['url'], None)) or not str(download_url).startswith('http'): break
             with suppress(Exception): duration_in_secs = 0; duration_in_secs = float(search_result.get('duration', 0) or search_result.get('Duration', 0) or 0) or (float(search_result.get('timelen', 0) or 0) / 1000)
             download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
