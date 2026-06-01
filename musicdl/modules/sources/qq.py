@@ -106,9 +106,9 @@ class QQMusicClient(BaseMusicClient):
         }
         request_overrides, song_id = request_overrides or {}, search_result.get('mid') or search_result.get('songmid')
         if not safeextractfromdict(search_result, ['album', 'title'], None) or search_result.get('albumname'): search_result.update(self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides))
-        # parse
+        # parse (the card id should be applied by yourselves, each card can be used for 1 day)
         for music_quality in MUSIC_QUALITIES:
-            (resp := self.get(f"http://api.liuyunidc.cn/baimusic/musicurl.php?source=tx&musicId={song_id}&quality={music_quality}", headers=headers, timeout=10, **request_overrides)).raise_for_status()
+            (resp := self.get(f"http://api.liuyunidc.cn/baimusic/musicurl.php?source=tx&musicId={song_id}&quality={music_quality}&card=BAI-153B4JE4I40HSG40H1FP", headers=headers, timeout=10, **request_overrides)).raise_for_status()
             if not (download_url := safeextractfromdict((download_result := resp2json(resp=resp)), ['url'], None)) or not str(download_url).startswith('http'): break
             download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
             song_info = SongInfo(
@@ -312,8 +312,12 @@ class QQMusicClient(BaseMusicClient):
         return song_info
     '''_parsewiththirdpartapis'''
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
-        if self.default_cookies or request_overrides.get('cookies'): return SongInfo(source=self.source)
-        for parser_func in [self._parsewithxcvtsapi, self._parsewithnkiapi, self._parsewithxianyuwapi, self._parsewithtangapi, self._parsewith317akapi, self._parsewithcyapi, self._parsewithxunhuisiapi, self._parsewithlxmusicapi, self._parsewithliuyunidcapi, self._parsewithlpzapi, self._parsewithvkeysapi, self._parsewithygkingapi, self._parsewithluoyueapi]:
+        if self.default_cookies or (request_overrides := request_overrides or {}).get('cookies'): return SongInfo(source=self.source)
+        l1_parser_funcs = [self._parsewithxcvtsapi, self._parsewithliuyunidcapi, ] # svip
+        l2_parser_funcs = [self._parsewithnkiapi, self._parsewithxianyuwapi, self._parsewithtangapi, self._parsewith317akapi, ] # vip
+        l3_parser_funcs = [self._parsewithcyapi, self._parsewithxunhuisiapi, self._parsewithlxmusicapi, ] # vip account but only mp3 or m4a files can be requested
+        l4_parser_funcs = [self._parsewithvkeysapi, self._parsewithlpzapi, self._parsewithygkingapi, self._parsewithluoyueapi, ] # invalid or unstable accounts
+        for parser_func in (l1_parser_funcs + l2_parser_funcs + l3_parser_funcs + l4_parser_funcs):
             song_info_flac = SongInfo(source=self.source, raw_data={'search': search_result, 'download': {}, 'lyric': {}})
             with suppress(Exception): song_info_flac = parser_func(search_result, request_overrides)
             if song_info_flac.with_valid_download_url and song_info_flac.ext in AudioLinkTester.VALID_AUDIO_EXTS: break
