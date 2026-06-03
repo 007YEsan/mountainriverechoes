@@ -87,6 +87,22 @@ Access to paid, subscription, or otherwise restricted content must be obtained t
 If you are a copyright or rights holder and believe that this repository infringes your rights, please contact me with sufficient detail (*e.g.*, relevant URLs and proof of ownership), and I will promptly investigate and take appropriate action, which may include removal of the referenced material.
 
 
+# 🤝 Sponsored
+
+<p align="left">
+  <a href="https://doloffer.com/friend/ggEF7lIf">
+    <img src="./.github/sponsors/doloffer-logo.png" alt="DolOffer" width="180" />
+  </a>
+</p>
+
+<p>
+  <a href="https://doloffer.com/friend/ggEF7lIf"><strong>DolOffer</strong></a>
+  —— 一站式数字订阅充值平台，优惠价提供 Apple Music、Spotify、GPT 会员充值服务，正版订阅，售后无忧。
+  访问 <a href="https://doloffer.com/friend/ggEF7lIf">专属链接</a>，
+  使用优惠码 <code>AI8888</code> 享 9 折优惠。
+</p>
+
+
 # 🎧 Supported Music Client
 
 | Category                                 | MusicClient (EN)                                                   | MusicClient (CN)                                                             | 🔎 Search | ⬇️ Download | Code Snippet                                                                                                               |
