@@ -102,15 +102,17 @@ class QQMusicClient(BaseMusicClient):
     def _parsewithliuyunidcapi(self, search_result: dict, request_overrides: dict = None):
         # init
         MUSIC_QUALITIES, headers = ["master", "atmos_plus", "atmos", "flac", "320k", "128k"], {
-            "accept": "*/*", "accept-encoding": "gzip, deflate", "accept-language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7", "referer": "http://api.liuyunidc.cn/baimusic/",
-            "host": "api.liuyunidc.cn", "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36",
+            "Accept": "application/json", "Referer": "http://api.liuyunidc.cn/baimusic/", "Host": "api.liuyunidc.cn", 
         }
         request_overrides, song_id = request_overrides or {}, search_result.get('mid') or search_result.get('songmid')
+        key = requests.get('https://github.com/CharlesPikachu/musicdl/releases/download/keys/baimusic.txt', **request_overrides).text.strip()
         if not safeextractfromdict(search_result, ['album', 'title'], None) or search_result.get('albumname'): search_result.update(self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides))
         # parse (the card id should be applied by yourselves, each card can be used for 1 day)
         for music_quality in MUSIC_QUALITIES[:4]:
-            (resp := requests.get(f"http://api.liuyunidc.cn/baimusic/musicurl.php?source=tx&musicId={song_id}&quality={music_quality}&card=BAI-I4ZNTO52MQOVMLBJ9GF8", headers=headers, timeout=10, **request_overrides)).raise_for_status()
-            if not (download_url := safeextractfromdict((download_result := resp2json(resp=resp)), ['url'], None)) or not str(download_url).startswith('http'): break
+            params = {"source": "tx", "musicId": song_id, "quality": music_quality, "card": key}
+            (resp := requests.get("https://api.liuyunidc.cn/baimusic/musicurl.php", headers=headers, params=params, timeout=10, **request_overrides)).raise_for_status()
+            if not (download_url := safeextractfromdict((download_result := resp2json(resp=resp)), ['url'], None)) or not str(download_url).startswith('http'): continue
             download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
             song_info = SongInfo(
                 raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('title') or search_result.get('songname')), singers=legalizestring(', '.join([singer.get('name') for singer in (search_result.get('singer', []) or []) if isinstance(singer, dict) and singer.get('name')])), album=legalizestring(safeextractfromdict(search_result, ['album', 'title'], None) or search_result.get('albumname')), ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], 
