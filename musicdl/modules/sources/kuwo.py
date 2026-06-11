@@ -247,7 +247,7 @@ class KuwoMusicClient(BaseMusicClient):
     '''_parsewiththirdpartapis'''
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         if self.default_cookies or request_overrides.get('cookies'): return SongInfo(source=self.source)
-        l1_parser_funcs = [self._parsewithliuyunidcapi, self._parsewithccwuapi, ][:-1] # svip
+        l1_parser_funcs = [self._parsewithliuyunidcapi, self._parsewithccwuapi, ][:0] # svip
         l2_parser_funcs = [self._parsewithcggapi, self._parsewithyyy001api, self._parsewithlxmusicapi, self._parsewithnxinxzapi, self._parsewithhaitangwapi, ] # vip
         l3_parser_funcs = [self._parsewithguyueiapi, self._parsewithgdstudioapi, self._parsewithceseetapi, ][:0] # invalid or unstable accounts
         for parser_func in (l1_parser_funcs + l2_parser_funcs + l3_parser_funcs):

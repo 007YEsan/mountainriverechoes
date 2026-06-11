@@ -108,7 +108,7 @@ class NeteaseMusicClient(BaseMusicClient):
         to_seconds_func = lambda x: (lambda s: 0 if not s else (lambda p: p[-3]*3600+p[-2]*60+p[-1] if len(p)>=3 else p[0]*60+p[1] if len(p)==2 else p[0] if len(p)==1 else 0)([int(v) for v in re.findall(r'\d+', s.replace('：', ':'))]) if (':' in s or '：' in s) else (lambda h,m,sec,num: (lambda tot: tot if tot>0 else num)(h*3600+m*60+sec))(int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:小时|时|h|hr)', s)) else 0, int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:分钟|分|m|min)', s)) else 0, (int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:秒|s|sec)', s)) else (int(mo.group(1)) if (mo:=re.search(r'(?:分钟|分|m|min)\s*(\d+)\b', s)) else 0)), int(mo.group(0)) if (mo:=re.search(r'\d+', s)) else 0))(str(x).strip().lower())
         # parse
         for music_quality in MUSIC_QUALITIES:
-            resp = retry_call_func(lambda: (lambda r: (r.raise_for_status(), r)[1])(requests.get(url=f"https://api-v2.cenguigui.cn/api/netease/music_v1.php?id={song_id}&type=json&level={music_quality}", headers=headers, timeout=10, **request_overrides)), 5)
+            resp = retry_call_func(lambda: (lambda r: (r.raise_for_status(), r)[1])(requests.get(url=f"https://api-v2.cenguigui.cn/api/netease/music_v1.php?id={song_id}&type=json&level={music_quality}", headers=headers, timeout=10, **request_overrides)), 3)
             if (not (download_url := safeextractfromdict((download_result := resp2json(resp=resp)), ['data', 'url'], '')) or not str(download_url).startswith('http')): break
             download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
             duration_in_secs = to_seconds_func(safeextractfromdict(download_result, ['data', 'duration'], '') or '')
