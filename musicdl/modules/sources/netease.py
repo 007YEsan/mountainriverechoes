@@ -582,7 +582,7 @@ class NeteaseMusicClient(BaseMusicClient):
     '''_parsewiththirdpartapis'''
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         if (cookies := self.default_cookies or (request_overrides := request_overrides or {}).get('cookies')) and (cookies != DEFAULT_COOKIES): return SongInfo(source=self.source, raw_data={'quality': MUSIC_QUALITIES[-1]})
-        l1_parser_funcs = [self._parsewithcggapi, self._parsewithbileizhenapi, self._parsewithxuanluogeapi, self._parsewithznnuapi, self._parsewithkangqiovoapi, self._parsewithxiaoqinapi, self._parsewithbugpkapi, self._parsewithrrvennapi, self._parsewithxingmianapi, self._parsewithhaitangwapi, self._parsewithguyueiapi] # svip
+        l1_parser_funcs = [self._parsewithcggapi, self._parsewithbugpkapi, self._parsewithrrvennapi, self._parsewithbileizhenapi, self._parsewithxuanluogeapi, self._parsewithznnuapi, self._parsewithkangqiovoapi, self._parsewithxiaoqinapi, self._parsewithxingmianapi, self._parsewithhaitangwapi, self._parsewithguyueiapi] # svip
         l2_parser_funcs = [self._parsewithvincentzyu233api, self._parsewithjfjtapi] # svip account but some qualities are missing
         l3_parser_funcs = [self._parsewithnanorockyapi, self._parsewithmanshuoapi, self._parsewithcunyuapi, self._parsewithqjqqapi, self._parsewithyutangxiaowuapi, self._parsewithrxtoolapi, self._parsewithxiaotapi, self._parsewithgdstudioapi, self._parsewithbyfunsapi, self._parsewithxcvtsapi, self._parsewithceseetapi, self._parsewithxianyuwapi] # vip
         l4_parser_funcs = [self._parsewithxunjinluapi, self._parsewithlblbapi] # invalid account or some unstable accounts
