@@ -99,7 +99,7 @@ class KugouMusicClient(BaseMusicClient):
     '''_parsewithliuyunidcapi'''
     def _parsewithliuyunidcapi(self, search_result: dict, request_overrides: dict = None) -> "SongInfo":
         # init
-        request_overrides, file_hash, MUSIC_QUALITIES = request_overrides or {}, search_result.get('hash') or search_result.get('FileHash'), ['clear', 'atmos', 'flac24bit', 'flac', '320k', '128k']
+        request_overrides, file_hash, MUSIC_QUALITIES = request_overrides or {}, search_result.get('hash') or search_result.get('FileHash'), ['clear', 'atmos', 'flac24bit', 'flac', '320k', '128k'][:-1]
         if not (search_result.get('duration') or search_result.get('Duration') or search_result.get('timelen')): search_result.update(self._getsongmetainfo(song_id=file_hash, request_overrides=request_overrides))
         headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36", "Accept": "application/json", "Referer": "http://yibaizhongzhuanapi.liuyunidc.cn/baimusic/", "Host": "yibaizhongzhuanapi.liuyunidc.cn"}
         key = requests.get('https://github.com/CharlesPikachu/musicdl/releases/download/keys/baimusic.txt', **request_overrides).text.strip()

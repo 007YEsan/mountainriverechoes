@@ -206,7 +206,7 @@ class KuwoMusicClient(BaseMusicClient):
     '''_parsewithliuyunidcapi'''
     def _parsewithliuyunidcapi(self, search_result: dict, request_overrides: dict = None):
         # init
-        request_overrides, song_id, MUSIC_QUALITIES, RC4_KEY = request_overrides or {}, str(search_result.get('MUSICRID') or search_result.get('musicrid')).removeprefix('MUSIC_'), ['master', 'atmos_plus', 'atmos', 'flac', '320k'], b"yeelion666"
+        request_overrides, song_id, MUSIC_QUALITIES, RC4_KEY = request_overrides or {}, str(search_result.get('MUSICRID') or search_result.get('musicrid')).removeprefix('MUSIC_'), ['master', 'atmos_plus', 'atmos', 'flac', '320k'][:-1], b"yeelion666"
         if not (search_result.get('SONGNAME') or search_result.get('name') or search_result.get('songName')): search_result.update(self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides))
         swap_func = lambda s, i, j: (lambda t: (s.__setitem__(i, s[j]), s.__setitem__(j, t), s)[-1])(s[i])
         rc4_crypt_func = lambda data, key=RC4_KEY: (lambda s: bytes(reduce(lambda st, byte: (lambda s, i, j, out: (lambda ni, nj: (swap_func(s, ni, nj), out.append(byte ^ s[(s[ni] + s[nj]) % 256]), (s, ni, nj, out))[-1])((i + 1) % 256, (j + s[(i + 1) % 256]) % 256))(*st), data, (s, 0, 0, bytearray()))[3]))(reduce(lambda st, idx: (lambda s, j: (lambda nj: (swap_func(s, idx, nj), (s, nj))[-1])((j + s[idx] + key[idx % len(key)]) % 256))(*st), range(256), (list(range(256)), 0))[0])

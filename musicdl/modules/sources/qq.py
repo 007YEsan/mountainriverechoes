@@ -100,7 +100,7 @@ class QQMusicClient(BaseMusicClient):
     '''_parsewithliuyunidcapi'''
     def _parsewithliuyunidcapi(self, search_result: dict, request_overrides: dict = None):
         # init
-        MUSIC_QUALITIES, headers = ["master", "atmos_plus", "atmos", "flac", "320k", "128k"], {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36", "Accept": "application/json", "Referer": "http://api.liuyunidc.cn/baimusic/", "Host": "api.liuyunidc.cn"}
+        MUSIC_QUALITIES, headers = ["master", "atmos_plus", "atmos", "flac", "320k", "128k"][:-2], {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36", "Accept": "application/json", "Referer": "http://api.liuyunidc.cn/baimusic/", "Host": "api.liuyunidc.cn"}
         request_overrides, song_id = request_overrides or {}, search_result.get('mid') or search_result.get('songmid')
         key = requests.get('https://github.com/CharlesPikachu/musicdl/releases/download/keys/baimusic.txt', **request_overrides).text.strip()
         if not safeextractfromdict(search_result, ['album', 'title'], None) or search_result.get('albumname'): search_result.update(self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides))
