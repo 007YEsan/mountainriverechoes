@@ -10,9 +10,13 @@ import os
 import re
 import copy
 import time
+import json
 import base64
 import random
+import hashlib
 import requests
+import websocket
+import urllib.parse
 from typing import Any
 from bs4 import BeautifulSoup
 from ytmusicapi import YTMusic
@@ -285,10 +289,49 @@ class YouTubeMusicClient(BaseMusicClient):
         song_info.cover_url = song_info.cover_url[-1]['url'] if isinstance(song_info.cover_url, (list, tuple)) else song_info.cover_url
         # return
         return song_info
+    '''_parsewithruvsapi'''
+    def _parsewithruvsapi(self, search_result: dict, request_overrides: dict = None):
+        # init
+        request_overrides, song_id, song_info = request_overrides or {}, search_result['videoId'], SongInfo(source=self.source)
+        to_seconds_func = lambda x: (lambda s: 0 if not s else (lambda p: p[-3]*3600+p[-2]*60+p[-1] if len(p)>=3 else p[0]*60+p[1] if len(p)==2 else p[0] if len(p)==1 else 0)([int(v) for v in re.findall(r'\d+', s.replace('：', ':'))]) if (':' in s or '：' in s) else (lambda h,m,sec,num: (lambda tot: tot if tot>0 else num)(h*3600+m*60+sec))(int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:小时|时|h|hr)', s)) else 0, int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:分钟|分|m|min)', s)) else 0, (int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:秒|s|sec)', s)) else (int(mo.group(1)) if (mo:=re.search(r'(?:分钟|分|m|min)\s*(\d+)\b', s)) else 0)), int(mo.group(0)) if (mo:=re.search(r'\d+', s)) else 0))(str(x).strip().lower())
+        song_url, api_url, ws_url, amp_host = f"https://www.youtube.com/watch?v={song_id}", "https://www.ruvs.in/_p5v7c/_o7sr", "wss://amp3.cc/ws", "amp4.cc"
+        base_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36", "Accept": "*/*", "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7", "Origin": "https://www.ruvs.in", "Referer": "https://www.ruvs.in/"}
+        if not search_result.get('title'): search_result.update(self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides))
+        # parse
+        download_result = {}; (resp := requests.get(api_url, headers=base_headers, params={"action": "captcha"}, **request_overrides)).raise_for_status()
+        download_result['captcha'] = resp2json(resp=resp); cap = download_result['captcha']; maxnumber = int(cap.get('maxnumber') or 80000)
+        number = next((n for n in range(maxnumber + 1) if hashlib.sha256(str(cap['salt'] + str(n)).encode('utf-8')).hexdigest() == cap['challenge']), None)
+        altcha_payload = {"algorithm": cap.get("algorithm", "SHA-256"), "challenge": cap["challenge"], "number": number, "salt": cap["salt"], "signature": cap["signature"], "took": 0}
+        altcha = base64.b64encode(json.dumps(altcha_payload, separators=(',', ':')).encode('utf-8')).decode('utf-8')
+        download_result['altcha'] = altcha_payload; (resp := requests.get(api_url, headers=base_headers, params={"action": "token", "format": "mp3"}, **request_overrides)).raise_for_status()
+        download_result['token'] = resp2json(resp=resp); token = download_result['token']['token']
+        payload = {"url": song_url, "format": "mp3", "quality": "320k", "playlist": "false", "service": "youtube", "altcha": altcha, "_token": token}
+        (resp := requests.post(api_url, headers=base_headers, params={"action": "convert"}, files={k: (None, str(v)) for k, v in payload.items()}, **request_overrides)).raise_for_status()
+        download_result['convert'] = resp2json(resp=resp); session_id = download_result['convert']['message']
+        ws = websocket.create_connection(ws_url, timeout=request_overrides.get('timeout', 90), origin="https://www.ruvs.in", subprotocols=["json"], header=[f"User-Agent: {base_headers['User-Agent']}"])
+        ws.send(session_id); file_msg = None
+        while True:
+            msg: dict = json.loads(ws.recv()); download_result.setdefault('websocket_messages', []).append(msg)
+            if msg.get('event') == 'error': raise RuntimeError(f"ruvs websocket error: {msg}")
+            if msg.get('event') == 'file' and msg.get('done'): file_msg = msg; break
+        ws.close(); filename = file_msg['file']; worker = file_msg.get('worker') or ''; encoded_filename = urllib.parse.quote(filename, safe="-_.!~*'()")
+        download_url = f"https://{worker}{amp_host}/{session_id}/{encoded_filename}" if worker and '.' in worker else f"https://{amp_host}/dl/{worker}/{session_id}/{encoded_filename}"
+        download_result['download_url'] = download_url; download_headers = {"User-Agent": base_headers["User-Agent"], "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8", "Accept-Language": base_headers["Accept-Language"], "Referer": "https://www.ruvs.in/"}
+        (resp := requests.get(download_url, headers=download_headers, **request_overrides)).raise_for_status()
+        download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
+        if download_url_status.get('file_size') in {'NULL', None}: download_url_status['file_size_bytes'] = len(resp.content); download_url_status['file_size'] = SongInfoUtils.byte2mb(len(resp.content))
+        duration_in_secs = int(float(search_result.get('duration_seconds', 0) or 0)) or to_seconds_func(search_result.get('duration') or search_result.get('length') or '0:00')
+        song_info = SongInfo(
+            raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('title')), singers=legalizestring(search_result.get('author') or (', '.join([singer.get('name') for singer in (search_result.get('artists') or []) if isinstance(singer, dict) and singer.get('name')]))), album=legalizestring(safeextractfromdict(search_result, ['album', 'name'], None) or search_result.get('album')), ext=download_url_status['ext'], 
+            file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], identifier=song_id, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, cover_url=search_result.get('thumbnail') or safeextractfromdict(search_result, ['thumbnails', -1, 'url'], None), download_url=download_url_status['download_url'], download_url_status=download_url_status, downloaded_contents=resp.content, 
+        )
+        song_info.cover_url = song_info.cover_url[-1]['url'] if isinstance(song_info.cover_url, (list, tuple)) else song_info.cover_url
+        # return
+        return song_info
     '''_parsewiththirdpartapis'''
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         if self.default_cookies or request_overrides.get('cookies'): return SongInfo(source=self.source)
-        for parser_func in [self._parsewithy2mateapi, self._parsewithmediaytmp3api, self._parsewithmp3youtube, self._parsewithspotubedlapi, self._parsewithy2matenuapi, self._parsewithacethinker, self._parsewithyt1dapi]:
+        for parser_func in [self._parsewithy2mateapi, self._parsewithmediaytmp3api, self._parsewithruvsapi, self._parsewithmp3youtube, self._parsewithspotubedlapi, self._parsewithy2matenuapi, self._parsewithacethinker, self._parsewithyt1dapi]:
             song_info_flac = SongInfo(source=self.source, raw_data={'search': search_result, 'download': {}, 'lyric': {}})
             with suppress(Exception): song_info_flac = parser_func(search_result, request_overrides)
             if song_info_flac.with_valid_download_url and song_info_flac.ext in AudioLinkTester.VALID_AUDIO_EXTS: break
