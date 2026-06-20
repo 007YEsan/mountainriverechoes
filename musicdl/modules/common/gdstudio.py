@@ -26,9 +26,9 @@ class GDStudioMusicClient(BaseMusicClient):
     TIME_URL = "https://music.gdstudio.xyz/time"
     API_URL = "https://music.gdstudio.xyz/api.php"
     MUSIC_QUALITIES = [999, 740, 320, 192, 128]
-    SUPPORTED_SITES = ['netease', 'joox', 'bilibili', 'apple', 'spotify', 'tidal', 'qobuz', 'ytmusic', 'kuwo', 'tencent']
+    SUPPORTED_SITES = ['netease', 'joox', 'spotify', 'tidal', 'qobuz', 'bilibili', 'ytmusic', 'kuwo', 'apple', 'tencent']
     def __init__(self, **kwargs):
-        self.allowed_music_sources = list(set(kwargs.pop('allowed_music_sources', GDStudioMusicClient.SUPPORTED_SITES[:-2])))
+        self.allowed_music_sources = list(set(kwargs.pop('allowed_music_sources', GDStudioMusicClient.SUPPORTED_SITES[:-5])))
         super(GDStudioMusicClient, self).__init__(**kwargs)
         self.default_search_headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36", "Origin": "https://music.gdstudio.xyz",
@@ -139,6 +139,7 @@ class GDStudioMusicClient(BaseMusicClient):
                 # --download results
                 if (not isinstance(search_result, dict)) or (not (song_id := search_result.get('id'))) or (not (song_url_id := search_result.get('url_id'))) or (not (root_source := search_result.get('source'))): continue
                 with suppress(Exception): download_result = {}; download_result = self._getsongurl(song_url_id, source=root_source, br=(br := GDStudioMusicClient.MUSIC_QUALITIES[0]), request_overrides=request_overrides)
+                if not download_result.get('url') or download_result.get('size') in {0, '0'} or download_result.get('br') in {-1, '-1'}: continue
                 download_url = urljoin(GDStudioMusicClient.BASE_URL, download_url) if not str((download_url := download_result.get('url'))).startswith('http') else download_url
                 download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
                 if not download_url_status['ok']: download_url_status: dict = self.audio_link_tester.test(url=f'https://music-proxy.gdstudio.org/{download_url}', request_overrides=request_overrides, renew_session=True)
@@ -146,6 +147,7 @@ class GDStudioMusicClient(BaseMusicClient):
                     raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('name')), singers=legalizestring(', '.join(search_result.get('artist') or [])), album=legalizestring(search_result.get('album')), ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], 
                     identifier=song_id, duration_s=safeextractfromdict(search_result, ['extra_data', 'duration'], None), duration=SongInfoUtils.seconds2hms(safeextractfromdict(search_result, ['extra_data', 'duration'], None)), lyric=None, cover_url=None, download_url=download_url_status['download_url'], download_url_status=download_url_status, root_source=root_source,
                 )
+                with suppress(Exception): song_info.duration_s, song_info.duration = (song_info.duration_s / 1000, SongInfoUtils.seconds2hms(song_info.duration_s / 1000)) if (root_source in {'spotify'}) else (song_info.duration_s, song_info.duration)
                 song_info.ext = 'm4a' if song_info.ext in {'m4s', 'mp4'} else song_info.ext
                 if not song_info.with_valid_download_url or song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS: continue
                 # --cover results
