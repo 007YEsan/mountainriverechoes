@@ -190,7 +190,8 @@ class YouTubeMusicClient(BaseMusicClient):
         add_params_func, ts_func = lambda url, params: (lambda parts, query: urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode({**query, **params}), parts.fragment)))(urlsplit(url), dict(parse_qsl(urlsplit(str(url)).query, keep_blank_values=True))), lambda: str(int(time.time() * 1000))
         strip_params_func = lambda url: (lambda parts, query: urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode({k: v for k, v in query.items() if k not in {'v', 'f', '_'}}), parts.fragment)))(urlsplit(url), dict(parse_qsl(urlsplit(str(url)).query, keep_blank_values=True)))
         auth_url, init_url = "https://eta.etacloud.org/api/v1/auth", "https://eta.etacloud.org/api/v1/init"
-        base_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36", "Accept": "*/*", "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7", "Origin": "https://v3.y2mate.nu", "Referer": "https://v3.y2mate.nu/"}
+        base_url = requests.get('https://y2mate.cc', headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"}, allow_redirects=True, **request_overrides).url
+        base_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36", "Accept": "*/*", "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7", "Origin": base_url, "Referer": base_url}
         if not search_result.get('title'): search_result.update(self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides))
         # parse
         # --auth
@@ -268,13 +269,18 @@ class YouTubeMusicClient(BaseMusicClient):
         download_result, payload = {}, {"url": song_url, "os": "windows", "output": {"type": "audio", "format": "mp3",}, "audio": {"bitrate": "320k"}}
         converter_headers = base_headers.copy(); converter_headers["Content-Type"] = "application/json"
         (resp := requests.post(converter_url, headers=converter_headers, json=payload, **request_overrides)).raise_for_status()
-        download_result['converter'] = resp2json(resp=resp); status_url = download_result['converter']['statusUrl']
+        download_result['converter'] = resp2json(resp=resp); status_url = download_result['converter'].get('statusUrl')
+        if not status_url: raise RuntimeError(f"MediaYTMP3 converter response has no statusUrl: {download_result['converter']}")
         # --poll status
-        for _ in range(60):
+        for _ in range(120):
             (resp := requests.get(status_url, headers=base_headers, **request_overrides)).raise_for_status(); download_result['status'] = resp2json(resp=resp)
-            if download_result['status'].get('status') == 'completed': break
+            if download_result['status'].get('status') == 'completed' and download_result['status'].get('downloadUrl'): break
+            if download_result['status'].get('status') in {'failed', 'error', 'blocked'}: raise RuntimeError(f"MediaYTMP3 convert failed: {download_result['status']}")
             time.sleep(1)
-        download_url = download_result['status']['downloadUrl']; download_result['download_url'] = download_url
+        else:
+            raise TimeoutError(f"MediaYTMP3 convert timeout: {download_result.get('status')}")
+        download_url = download_result['status'].get('downloadUrl'); download_result['download_url'] = download_url
+        if not download_url: raise RuntimeError(f"MediaYTMP3 status response has no downloadUrl: {download_result['status']}")
         # --download
         download_headers = {"User-Agent": base_headers["User-Agent"], "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8", "Accept-Language": base_headers["Accept-Language"], "Referer": "https://media.ytmp3.gg/"}
         (resp := requests.get(download_url, headers=download_headers, **request_overrides)).raise_for_status()
@@ -331,7 +337,10 @@ class YouTubeMusicClient(BaseMusicClient):
     '''_parsewiththirdpartapis'''
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         if self.default_cookies or request_overrides.get('cookies'): return SongInfo(source=self.source)
-        for parser_func in [self._parsewithy2mateapi, self._parsewithmediaytmp3api, self._parsewithruvsapi, self._parsewithmp3youtube, self._parsewithspotubedlapi, self._parsewithy2matenuapi, self._parsewithacethinker, self._parsewithyt1dapi]:
+        useful_320k_parser_funcs = [self._parsewithy2mateapi, self._parsewithspotubedlapi, self._parsewithmp3youtube, self._parsewithmediaytmp3api, ]
+        lower_quality_parser_funcs = [self._parsewithy2matenuapi, self._parsewithacethinker, self._parsewithyt1dapi, ]
+        useless_parser_funcs = [self._parsewithruvsapi, ][:0]
+        for parser_func in (useful_320k_parser_funcs + lower_quality_parser_funcs + useless_parser_funcs):
             song_info_flac = SongInfo(source=self.source, raw_data={'search': search_result, 'download': {}, 'lyric': {}})
             with suppress(Exception): song_info_flac = parser_func(search_result, request_overrides)
             if song_info_flac.with_valid_download_url and song_info_flac.ext in AudioLinkTester.VALID_AUDIO_EXTS: break
