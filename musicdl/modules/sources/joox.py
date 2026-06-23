@@ -8,9 +8,6 @@ WeChat Official Account (微信公众号):
 '''
 import os
 import copy
-import hmac
-import time
-import json
 import base64
 import hashlib
 import json_repair
@@ -19,72 +16,48 @@ from contextlib import suppress
 from .base import BaseMusicClient
 from pathvalidate import sanitize_filepath
 from ..utils.hosts import JOOX_MUSIC_HOSTS
-from urllib.parse import urlencode, urlparse, parse_qs
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from urllib.parse import urlencode, urlparse, parse_qs, quote
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
-from ..utils import legalizestring, resp2json, usesearchheaderscookies, safeextractfromdict, extractdurationsecondsfromlrc, cookies2string, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo, AudioLinkTester, LyricSearchClient, IOUtils, SongInfoUtils
+from ..utils import legalizestring, resp2json, usesearchheaderscookies, safeextractfromdict, extractdurationsecondsfromlrc, useparseheaderscookies, obtainhostname, hostmatchessuffix, cleanlrc, SongInfo, AudioLinkTester, LyricSearchClient, IOUtils, SongInfoUtils
 
 
 '''JooxMusicClient'''
 class JooxMusicClient(BaseMusicClient):
     source = 'JooxMusicClient'
-    FUZZY_MUSIC_QUALITIES = [
-        "master_tapeUrl", "master_tapeURL", "master_tape_url", "masterTapeUrl", "masterTapeURL", "rMasterTapeUrl", "rMasterTapeURL", "hiresUrl", "hiresURL", "hires_url", "hiResUrl", "hiResURL", "rHiresUrl", "rHiResUrl", "flacUrl", "flacURL", "flac_url", "rFlacUrl", "rflacUrl", "rFLACUrl", "apeUrl", "apeURL", "ape_url", "rApeUrl", "rapeUrl", "stereo_atmosUrl", "stereo_atmosURL", "stereo_atmos_url", "stereoAtmosUrl", "stereoAtmosURL", "atmosUrl", "atmosURL", "atmos_url", "rStereoAtmosUrl", "rAtmosUrl", "dolby448Url", "dolby448URL", "dolby448_url", "rDolby448Url", "rDolby448URL", "dolby256Url", "dolby256URL", "dolby256_url", "rDolby256Url", "rDolby256URL", "r320Url", "r320url", "r320_url", "320Url", "320URL", "320_url", "url320", "mp3320Url", "mp3_320_url", "highUrl", "high_url", "r320oggUrl", "r320OggUrl", "r320OggURL", "r320_ogg_url", "320oggUrl", "320OggUrl", "ogg320Url", "ogg_320_url", "r192oggUrl", 
-        "r192OggUrl", "r192OggURL", "r192_ogg_url", "192oggUrl", "192OggUrl", "ogg192Url", "ogg_192_url", "r192k_mnacUrl", "r192k_mnacURL", "r192k_mnac_url", "r192kMnacUrl", "r192kMnacURL", "192k_mnacUrl", "192kMnacUrl", "mnac192Url", "mnac_192_url", "r192mnacUrl", "r192Url", "r192url", "r192_url", "192Url", "192URL", "192_url", "url192", "m4a192Url", "aac192Url", "aac_192_url", "mp3Url", "r128Url", "r128url", "r128_url", "128Url", "128URL", "128_url", "url128", "m4a128Url", "aac128Url", "mp3128Url", "m4aUrl", "r96Url", "r96url", "r96_url", "96Url", "96URL", "96_url", "url96", "r48Url", "r48url", "r48_url", "48Url", "48URL", "48_url", "url48", "r24Url", "r24url", "r24_url", "24Url", "24URL", "24_url", "url24", "lowUrl", "low_url", "previewUrl", "preview_url", "refrainUrl", "refrainURL", "refrain_url", "chorusUrl", "chorus_url", "clipUrl", "clip_url", "snippetUrl", "snippet_url", "trialUrl", "trial_url",
-    ]
-    MUSIC_QUALITIES = [('r320Url', '320'), ('r192Url', '192'), ('mp3Url', '128'), ('m4aUrl', '96')]
+    SALT = "Jo0x@t3Nc3nT"
     def __init__(self, **kwargs):
         super(JooxMusicClient, self).__init__(**kwargs)
-        self.default_search_headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36", "cookie": "wmid=142420656; user_type=1; country=id; session_key=2a5d97d05dc8fe238150184eaf3519ad;", "x-forwarded-for": "36.73.34.109"}
-        self.default_parse_headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36", "cookie": "wmid=142420656; user_type=1; country=id; session_key=2a5d97d05dc8fe238150184eaf3519ad;", "x-forwarded-for": "36.73.34.109"}
-        self.default_download_headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36"}
-        if self.default_search_cookies: self.default_search_headers['cookie'] = cookies2string(self.default_search_cookies)
-        if self.default_parse_cookies: self.default_parse_headers['cookie'] = cookies2string(self.default_parse_cookies)
-        if self.default_download_cookies: self.default_download_headers['cookie'] = cookies2string(self.default_download_cookies)
+        self.auth_info = self.default_search_cookies or self.default_parse_cookies or self.default_download_cookies
+        if self.default_search_cookies: self.default_search_cookies = self.default_search_cookies.get('cookies') or {}
+        if self.default_parse_cookies: self.default_parse_cookies = self.default_parse_cookies.get('cookies') or {}
+        if self.default_download_cookies: self.default_download_cookies = self.default_download_cookies.get('cookies') or {}
+        self.default_search_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36", "Accept": "application/json, text/plain, */*", "Origin": "https://www.joox.com", "Referer": "https://www.joox.com/"}
+        self.default_parse_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36", "Accept": "application/json, text/plain, */*", "Origin": "https://www.joox.com", "Referer": "https://www.joox.com/"}
+        self.default_download_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",}
         self.default_headers = self.default_search_headers
         self._initsession()
+    '''makesecret'''
+    @staticmethod
+    def makesecret(params: dict) -> str:
+        enc_func = lambda v: quote(str(v), safe="!*'()")
+        qs = "&".join(f"{k}={enc_func(v)}" for k, v in params.items())
+        return hashlib.md5((JooxMusicClient.SALT + qs).encode()).hexdigest()
     '''_constructsearchurls'''
     def _constructsearchurls(self, keyword: str, rule: dict = None, request_overrides: dict = None):
         # init
         rule, request_overrides = rule or {}, request_overrides or {}
-        (default_rule := {'country': 'hk', 'lang': 'zh_TW', 'key': keyword, 'type': '0'}).update(rule)
+        (default_rule := {'country': self.auth_info.get('country', 'hk'), 'lang': 'zh_TW', 'key': keyword, 'type': '0'}).update(rule)
         # construct search urls
         base_url = 'https://cache.api.joox.com/openjoox/v2/search_type?'
         search_urls = [base_url + urlencode(copy.deepcopy(default_rule))]
         self.search_size_per_page = self.search_size_per_source
         # return
         return search_urls
-    '''_parsewithliuyunidcapi'''
-    def _parsewithliuyunidcapi(self, search_result: dict, lang: str = 'zh_TW', country: str = 'hk', request_overrides: dict = None) -> "SongInfo":
-        # init
-        request_overrides, song_id, MUSIC_QUALITIES = request_overrides or {}, search_result.get('id'), ['master', 'atmos', 'hires', 'flac', '320k']
-        headers = {
-            "accept": "*/*", "accept-encoding": "gzip, deflate", "accept-language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7", "referer": "http://api.liuyunidc.cn/baimusic/",
-            "host": "api.liuyunidc.cn", "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36",
-        }
-        secret_key, api_url = "jooxsecret123456jooxsecret123456", "http://api.liuyunidc.cn/baimusic/jooxalljxapi.php"
-        sign_func = lambda mid, quality, ts: hmac.new(secret_key.encode("utf-8"), f"{mid}:{quality}:{ts}".encode("utf-8"), hashlib.sha256).hexdigest()
-        decrypt_resp_func = lambda encrypted: (lambda raw: json.loads(AESGCM(secret_key.encode("utf-8")).decrypt(raw[:12], raw[28:] + raw[12:28], None).decode("utf-8")))(base64.b64decode(encrypted))
-        # parse
-        (resp := self.get('https://api.joox.com/web-fcgi-bin/web_get_songinfo', params={'songid': song_id, 'lang': lang, 'country': country}, **request_overrides)).raise_for_status()
-        (download_result := json_repair.loads(resp.text.removeprefix('MusicInfoCallback(')[:-1]))
-        for music_quality in MUSIC_QUALITIES:
-            params = {"mid": download_result.get('songmid'), "q": music_quality, "ts": (ts := int(time.time())), "sign": sign_func(download_result.get('songmid'), music_quality, ts)}
-            (resp := self.get(api_url, params=params, headers=headers, timeout=10, **request_overrides)).raise_for_status()
-            download_result['download_info'] = decrypt_resp_func(resp2json(resp=resp)["encrypted"])
-            if not (download_url := safeextractfromdict(download_result['download_info'], ['url'], None)) or not str(download_url).startswith('http'): continue
-            download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
-            song_info = SongInfo(
-                raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('name')), singers=legalizestring(', '.join([singer.get('name') for singer in (search_result.get('artist_list', []) or []) if isinstance(singer, dict) and singer.get('name')])), album=legalizestring(search_result.get('album_name')), ext=download_url_status['ext'], 
-                file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], identifier=song_id, duration_s=int(float(download_result.get('minterval') or 0)), duration=SongInfoUtils.seconds2hms(download_result.get('minterval')), lyric=None, cover_url=download_result.get('imgSrc'), download_url=download_url_status['download_url'], download_url_status=download_url_status, 
-            )
-            if song_info.with_valid_download_url and song_info.ext in AudioLinkTester.VALID_AUDIO_EXTS: break
-        # return
-        return song_info
     '''_parsewiththirdpartapis'''
     def _parsewiththirdpartapis(self, search_result: dict, lang: str = 'zh_TW', country: str = 'hk', request_overrides: dict = None):
-        if self.default_cookies: return SongInfo(source=self.source)
-        for parser_func in [self._parsewithliuyunidcapi]:
+        if self.default_cookies: return SongInfo(source=self.source, raw_data={'search': search_result, 'download': {}, 'lyric': {}})
+        song_info_flac = SongInfo(source=self.source, raw_data={'search': search_result, 'download': {}, 'lyric': {}})
+        for parser_func in []:
             song_info_flac = SongInfo(source=self.source, raw_data={'search': search_result, 'download': {}, 'lyric': {}})
             with suppress(Exception): song_info_flac = parser_func(search_result, lang, country, request_overrides)
             if song_info_flac.with_valid_download_url and song_info_flac.ext in AudioLinkTester.VALID_AUDIO_EXTS: break
@@ -97,13 +70,16 @@ class JooxMusicClient(BaseMusicClient):
         # parse download url based on arguments
         if lossless_quality_is_sufficient and song_info_flac.with_valid_download_url and (song_info_flac.ext in lossless_quality_definitions): song_info = song_info_flac
         else:
-            (resp := self.get('https://api.joox.com/web-fcgi-bin/web_get_songinfo', params={'songid': song_id, 'lang': lang, 'country': country}, **request_overrides)).raise_for_status()
-            for candidate_result in [{'quality': fmq, 'url': download_result.get(fmq)} for fmq in JooxMusicClient.FUZZY_MUSIC_QUALITIES if (download_result := json_repair.loads(resp.text.removeprefix('MusicInfoCallback(')[:-1])).get(fmq)]:
-                if not (download_url := candidate_result.get('url')) or not (str(download_url).startswith('http')): continue
+            params = {"country": country, "lang": lang, "lyric": 1, "fs": 1, "im": 0, "uid": self.auth_info.get('wmid', '142420656'), "usk": self.auth_info.get('session_key', '2a5d97d05dc8fe238150184eaf3519ad'), "id": song_id}
+            secret, api_url, path_id = JooxMusicClient.makesecret(params), "https://cache.api.joox.com/openjoox2/v1/track", str(song_id).replace("/", "_")
+            del params["id"]; params["secret"] = secret; song_api_url = f"{api_url}/{path_id}"
+            (resp := self.get(song_api_url, params=params, timeout=20, **request_overrides)).raise_for_status()
+            for download_url in ((safeextractfromdict(download_result := resp2json(resp=resp), ['play_url_list'], []) or []) + [download_result.get('refrain_url')]):
+                if not download_url or not (str(download_url).startswith('http')): continue
                 download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
                 song_info = SongInfo(
-                    raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('name')), singers=legalizestring(', '.join([singer.get('name') for singer in (search_result.get('artist_list', []) or []) if isinstance(singer, dict) and singer.get('name')])), album=legalizestring(search_result.get('album_name')), ext=download_url_status['ext'], 
-                    file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], identifier=song_id, duration_s=int(float(download_result.get('minterval') or 0)), duration=SongInfoUtils.seconds2hms(download_result.get('minterval')), lyric=None, cover_url=download_result.get('imgSrc'), download_url=download_url_status['download_url'], download_url_status=download_url_status, 
+                    raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(download_result.get('name')), singers=legalizestring(', '.join([singer.get('name') for singer in (download_result.get('artist_list', []) or []) if isinstance(singer, dict) and singer.get('name')])), album=legalizestring(download_result.get('album_name')), ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], 
+                    file_size=download_url_status['file_size'], identifier=song_id, duration_s=int(float(download_result.get('play_duration') or 0)), duration=SongInfoUtils.seconds2hms(download_result.get('play_duration')), lyric=cleanlrc(base64.b64decode(download_result.get('lrc_content') or '').decode('utf-8')), cover_url=safeextractfromdict(download_result, ['images', 0, 'url'], None), download_url=download_url_status['download_url'], download_url_status=download_url_status, 
                 )
                 if song_info.with_valid_download_url and song_info.ext in AudioLinkTester.VALID_AUDIO_EXTS: break
         if not song_info.with_valid_download_url or song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS: return song_info
@@ -154,7 +130,7 @@ class JooxMusicClient(BaseMusicClient):
     @useparseheaderscookies
     def parseplaylist(self, playlist_url: str, request_overrides: dict = None):
         # init
-        playlist_url, lang, country = self.session.head(playlist_url, allow_redirects=True, **(request_overrides := dict(request_overrides or {}))).url, 'zh_TW', 'hk'
+        playlist_url, lang, country = self.session.head(playlist_url, allow_redirects=True, **(request_overrides := dict(request_overrides or {}))).url, 'zh_TW', self.auth_info.get('country', 'hk')
         playlist_id, song_infos = urlparse(playlist_url).path.strip('/').split('/')[-1].removesuffix('.html').removesuffix('.htm'), []
         if (not (hostname := obtainhostname(url=playlist_url))) or (not hostmatchessuffix(hostname, JOOX_MUSIC_HOSTS)): return song_infos
         # get tracks in playlist
