@@ -148,7 +148,7 @@ class QobuzMusicClient(BaseMusicClient):
         # parse
         (resp := requests.post(f"https://qobuz-tidal-eclipse.cyrusna29.workers.dev/generate", json={"quality": "HIRES"}, headers=headers, timeout=10, **request_overrides)).raise_for_status()
         api_url = f"https://qobuz-tidal-eclipse.cyrusna29.workers.dev/u/{resp2json(resp=resp)['token']}/stream/{song_id}"
-        (resp := self.get(api_url, headers=headers, timeout=10, **request_overrides)).raise_for_status()
+        (resp := requests.get(api_url, headers=headers, timeout=10, **request_overrides)).raise_for_status()
         download_url = safeextractfromdict((download_result := resp2json(resp=resp)), ['url'], '')
         real_music_quality = real_music_quality[0] if isinstance((real_music_quality := parse_qs(urlparse(str(download_url)).query, keep_blank_values=True).get('fmt') or QobuzMusicClientUtils.MUSIC_QUALITIES[0]), list) else real_music_quality
         download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
