@@ -34,9 +34,9 @@ class JooxMusicClient(BaseMusicClient):
         if self.default_search_cookies: self.default_search_cookies = self.default_search_cookies.get('cookies') or {}
         if self.default_parse_cookies: self.default_parse_cookies = self.default_parse_cookies.get('cookies') or {}
         if self.default_download_cookies: self.default_download_cookies = self.default_download_cookies.get('cookies') or {}
-        self.default_search_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36", "Accept": "application/json, text/plain, */*", "Origin": "https://www.joox.com", "Referer": "https://www.joox.com/"}
-        self.default_parse_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36", "Accept": "application/json, text/plain, */*", "Origin": "https://www.joox.com", "Referer": "https://www.joox.com/"}
-        self.default_download_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",}
+        self.default_search_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36", "Accept": "application/json, text/plain, */*", "Origin": "https://www.joox.com", "Referer": "https://www.joox.com/", "x-forwarded-for": "36.73.34.109"}
+        self.default_parse_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36", "Accept": "application/json, text/plain, */*", "Origin": "https://www.joox.com", "Referer": "https://www.joox.com/", "x-forwarded-for": "36.73.34.109"}
+        self.default_download_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36", "x-forwarded-for": "36.73.34.109"}
         self.default_headers = self.default_search_headers
         self._initsession()
     '''makesecret'''
