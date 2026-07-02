@@ -264,7 +264,7 @@ class KuwoMusicClient(BaseMusicClient):
         # h5 api
         headers = {"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1", "Referer": f"https://m.kuwo.cn/yinyue/{song_id}", "Accept": "application/json, text/plain, */*"}
         with suppress(Exception): (resp := self.get("https://m.kuwo.cn/newh5/singles/songinfoandlrc", headers=headers, params={"musicId": song_id}, **request_overrides)).raise_for_status()
-        if (song_detail := (safeextractfromdict(resp2json(resp=resp), ['data', 'songinfo'], {}) or {})): return song_detail
+        if (song_detail := (safeextractfromdict(resp2json(resp=resp), ['data', 'songinfo'], {}) or {})) and song_detail.get('album') and song_detail.get('duration'): return song_detail
         # fallback to parse html page
         headers, resp = {"Referer": "https://www.kuwo.cn/", "Accept-Language": "zh-CN,zh;q=0.9"}, None
         with suppress(Exception): (resp := self.get(f"https://www.kuwo.cn/play_detail/{song_id}", headers=headers, **request_overrides)).raise_for_status()
