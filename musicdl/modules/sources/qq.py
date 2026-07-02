@@ -78,7 +78,7 @@ class QQMusicClient(BaseMusicClient):
     '''_parsewithxcvtsapi'''
     def _parsewithxcvtsapi(self, search_result: dict, request_overrides: dict = None):
         # init
-        REQUEST_KEYS, decrypt_func = ['Nzg5OTMzNDRiOWJmMTEwNTY1NTU5OTAwOWNkYmEzZDI=', 'Y2U3NzhlYjBkMTg1OGVkZmI0YjIwNzFhMTE1ZjFlZGY='], lambda t: base64.b64decode(str(t).encode('utf-8')).decode('utf-8')
+        REQUEST_KEYS, decrypt_func = ['charlespikachuNzg5OTMzNDRiOWJmMTEwNTY1NTU5OTAwOWNkYmEzZDI=', 'charlespikachuY2U3NzhlYjBkMTg1OGVkZmI0YjIwNzFhMTE1ZjFlZGY='], lambda t: base64.b64decode(str(t)[14:].encode('utf-8')).decode('utf-8')
         MUSIC_QUALITIES = ["臻品母带", "臻品全景声", "臻品2.0", "SQ无损", "HQ高品质", "中品质", "普通", "低品质", "试听"]
         request_overrides, song_id, headers = request_overrides or {}, search_result.get('mid') or search_result.get('songmid'), {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36",}
         if not safeextractfromdict(search_result, ['album', 'title'], None) or search_result.get('albumname'): search_result.update(self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides))
@@ -106,7 +106,7 @@ class QQMusicClient(BaseMusicClient):
         REQUEST_KEYS, decrypt_func = ['charlespikachuWk83NlFKQ0lINVBQSUNKT09YVUg='], lambda t: base64.b64decode(str(t)[14:].encode('utf-8')).decode('utf-8')
         # parse
         for music_quality in MUSIC_QUALITIES:
-            (resp := requests.get(f"https://api.317ak.cn/api/yinyue/qqyinyue?ckey={decrypt_func(random.choice(REQUEST_KEYS))}&i={song_id}&br={music_quality}&type=json&lrc=1", headers=headers, timeout=10, **request_overrides)).raise_for_status()
+            (resp := requests.get(f"https://api.317ak.com/api/yinyue/qqyinyue?ckey={decrypt_func(random.choice(REQUEST_KEYS))}&i={song_id}&br={music_quality}&type=json&lrc=1", headers=headers, timeout=10, **request_overrides)).raise_for_status()
             if not (download_url := safeextractfromdict((download_result := resp2json(resp=resp)), ['url'], None)) or not str(download_url).startswith('http'): break
             download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
             song_info = SongInfo(
