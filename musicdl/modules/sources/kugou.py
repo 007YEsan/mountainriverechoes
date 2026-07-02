@@ -101,7 +101,7 @@ class KugouMusicClient(BaseMusicClient):
         REQUEST_KEYS, decrypt_func = ['charlespikachuUE9WTUhLSklYOEE3SUdIMkZNMVA=', 'charlespikachuWE1VS0lBSjNQOExQWDNQOTcxS1U=', 'charlespikachuN0tUSTUyVDdWTE9EUjZTVDM3UFQ='], lambda t: base64.b64decode(str(t)[14:].encode('utf-8')).decode('utf-8')
         # parse
         for music_quality in MUSIC_QUALITIES:
-            (resp := requests.get(f"https://api.317ak.cn/api/yinyue/kugou?ckey={decrypt_func(random.choice(REQUEST_KEYS))}&i={file_hash}&br={music_quality}&type=json&lrc=1", headers=headers, timeout=10, verify=False, **request_overrides)).raise_for_status()
+            (resp := requests.get(f"https://api.317ak.com/api/yinyue/kugou?ckey={decrypt_func(random.choice(REQUEST_KEYS))}&i={file_hash}&br={music_quality}&type=json&lrc=1", headers=headers, timeout=10, verify=False, **request_overrides)).raise_for_status()
             if not (download_url := safeextractfromdict((download_result := resp2json(resp=resp)), ['url'], None)) or not str(download_url).startswith('http'): break
             with suppress(Exception): duration_in_secs = 0; duration_in_secs = float(search_result.get('duration', 0) or search_result.get('Duration', 0) or 0) or (float(search_result.get('timelen', 0) or 0) / 1000)
             download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
@@ -142,9 +142,9 @@ class KugouMusicClient(BaseMusicClient):
     '''_parsewiththirdpartapis'''
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         if self.default_cookies or request_overrides.get('cookies'): return SongInfo(source=self.source)
-        l1_parser_funcs = [self._parsewithcocodownloaderapi, self._parsewithhaitangwapi, ] # svip
+        l1_parser_funcs = [self._parsewith317akapi, self._parsewithcocodownloaderapi, self._parsewithhaitangwapi, ] # svip
         l2_parser_funcs = [self._parsewithjbsouapi, ] # vip
-        l3_parser_funcs = [self._parsewith317akapi, ] # invalid or unstable accounts
+        l3_parser_funcs = [] # invalid or unstable accounts
         for parser_func in (l1_parser_funcs + l2_parser_funcs + l3_parser_funcs):
             song_info_flac = SongInfo(source=self.source, raw_data={'search': search_result, 'download': {}, 'lyric': {}})
             with suppress(Exception): song_info_flac = parser_func(search_result, request_overrides)
