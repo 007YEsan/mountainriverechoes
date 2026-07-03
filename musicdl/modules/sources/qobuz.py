@@ -136,7 +136,7 @@ class QobuzMusicClient(BaseMusicClient):
     def _parsewitharcodapi(self, search_result: dict, request_overrides: dict = None):
         # init
         request_overrides, song_id, country = request_overrides or {}, str(search_result['id']), None
-        decrypt_func, accounts = lambda t: base64.b64decode(str(t)[14:].encode('utf-8')).decode('utf-8'), [('charlespikachuZzIwODJieXAxaUBsbm92aWMuY29t', 'charlespikachucmFuZG9tOTk5'), ]
+        decrypt_func, accounts = lambda t: base64.b64decode(str(t)[14:].encode('utf-8')).decode('utf-8'), [('charlespikachuZzIwODJieXAxaUBsbm92aWMuY29t', 'charlespikachucmFuZG9tOTk5'), ('charlespikachucGlrYWNodUBsaW5zaGl5b3UuY29t', 'charlespikachucGlrYTk5OTY2Ng==')]
         email, password = random.choice(accounts); email, password = decrypt_func(email), decrypt_func(password)
         # parse
         QobuzMusicClient.arcod_client.login(email=email, password=password, request_overrides=request_overrides)
