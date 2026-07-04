@@ -18,9 +18,9 @@ import websocket
 from bs4 import BeautifulSoup
 from contextlib import suppress
 from .base import BaseMusicClient
-from urllib.parse import urlparse, quote
 from pathvalidate import sanitize_filepath
 from ..utils.hosts import SPOTIFY_MUSIC_HOSTS
+from urllib.parse import urlparse, quote, urlunparse, urlencode, parse_qsl
 from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn, MofNCompleteColumn
 from ..utils.spotifyutils import SpotifyMusicClientPlaylistUtils, SpotifyMusicClientSearchUtils, SpotubeSecureClient
 from ..utils import legalizestring, resp2json, usesearchheaderscookies, safeextractfromdict, useparseheaderscookies, obtainhostname, hostmatchessuffix, extractdurationsecondsfromlrc, SongInfo, AudioLinkTester, LyricSearchClient, IOUtils, SongInfoUtils, RandomIPGenerator
@@ -138,6 +138,7 @@ class SpotifyMusicClient(BaseMusicClient):
         # init
         request_overrides, song_id, headers = request_overrides or {}, str(search_result['id']), {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/149.0.0.0 Safari/537.36", "Referer": "https://savemytracks.com/", "Origin": "https://savemytracks.com"}
         session = requests.Session(); session.headers.update((headers := RandomIPGenerator().addrandomipv4toheaders(headers=headers)))
+        add_query_func = lambda url, **params: urlunparse((lambda u: (u.scheme, u.netloc, u.path, u.params, urlencode(dict(parse_qsl(u.query)) | params), u.fragment))(urlparse(str(url))))
         # parse
         (resp := session.get("https://savemytracks.com/", timeout=20, **request_overrides)).raise_for_status(); decoded = []
         for b64 in re.findall(r'data:text/javascript;base64,([^"]+)', resp.text):
@@ -146,18 +147,16 @@ class SpotifyMusicClient(BaseMusicClient):
         m = re.search(r'"apiBase":"([^"]+)"', js); api_base = (m.group(1).replace("\\/", "/") if m else "https://treqly.onrender.com").rstrip("/")
         (resp := session.post(ajax_url, files={"action": (None, "vm_auth"), "nonce": (None, nonce)}, timeout=20, **request_overrides)).raise_for_status(); token = resp2json(resp=resp)["data"]["token"]
         (resp := session.get(f"{api_base}/api/spotify-info", params={"url": f"https://open.spotify.com/track/{song_id}"}, headers={"X-Req-V": token}, timeout=30, **request_overrides)).raise_for_status()
-        youtube_url = (download_result := resp2json(resp=resp))["youtubeUrl"]
-        (resp := session.get(f"{api_base}/api/download", params={"allow_extended_duration": "0", "copyright": "0", "format": "flac", "url": youtube_url}, headers={"X-Req-V": token}, timeout=30, **request_overrides)).raise_for_status()
-        download_result['job'] = resp2json(resp=resp); job_id = download_result['job']["id"]; ws_url = api_base.replace("https://", "wss://").replace("http://", "ws://"); ws_url += f"/api/progress-ws?id={job_id}&token={token}"
-        ws = websocket.create_connection(ws_url, timeout=180, origin="https://savemytracks.com", header=[f"User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/149.0.0.0 Safari/537.36"])
-        try:
-            while True:
-                msg: dict = json.loads(ws.recv())
-                if msg.get("download_url"): download_url = msg["download_url"]; break
-                if msg.get("type") == "error": raise RuntimeError(msg)
-        finally:
-            ws.close()
-        (resp := session.get(download_url, **request_overrides)).raise_for_status()
+        (resp := session.post(f"{api_base}/api/download", json={"url": (download_result := resp2json(resp=resp))["youtubeUrl"], "resolution": "audio", "audio_format": "mp3",}, headers={"X-Req-V": token}, timeout=30, **request_overrides)).raise_for_status()
+        download_result['job'] = resp2json(resp=resp); job_id = download_result['job']["job_id"]; max_retry_times = 120
+        for _ in range(max_retry_times):
+            (resp := session.post(ajax_url, files={"action": (None, "vm_auth"), "nonce": (None, nonce)}, timeout=20, **request_overrides)).raise_for_status(); token = resp2json(resp=resp)["data"]["token"]
+            (resp := session.get(f"{api_base}/api/job/{job_id}", headers={"X-Req-V": token}, timeout=30, **request_overrides)).raise_for_status()
+            if resp2json(resp=resp).get("status") == "completed" and resp2json(resp=resp).get("download_url"): download_url = resp2json(resp=resp)["download_url"]; break
+            if resp2json(resp=resp).get("status") == "failed": raise RuntimeError(resp2json(resp=resp).get("error") or "job failed")
+            time.sleep(2)
+        (resp := session.post(ajax_url, files={"action": (None, "vm_auth"), "nonce": (None, nonce)}, timeout=20, **request_overrides)).raise_for_status(); token = resp2json(resp=resp)["data"]["token"]
+        (resp := session.get((download_url := add_query_func(download_url, token=token)), **request_overrides)).raise_for_status()
         download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
         if download_url_status['file_size'] in {'NULL'}: download_url_status['file_size_bytes'], download_url_status['file_size'] = resp.content.__sizeof__(), SongInfoUtils.byte2mb(resp.content.__sizeof__())
         with suppress(Exception): duration_in_secs = 0; duration_in_secs = download_result.get('durationMs') / 1000
