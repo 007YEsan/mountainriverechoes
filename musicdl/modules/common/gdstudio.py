@@ -28,13 +28,14 @@ class GDStudioMusicClient(BaseMusicClient):
     MUSIC_QUALITIES = [999, 740, 320, 192, 128]
     SUPPORTED_SITES = ['netease', 'joox', 'spotify', 'tidal', 'qobuz', 'apple', 'ytmusic', 'bilibili', 'kuwo', 'tencent']
     def __init__(self, **kwargs):
-        self.allowed_music_sources = list(set(kwargs.pop('allowed_music_sources', GDStudioMusicClient.SUPPORTED_SITES[:-4])))
+        self.allowed_music_sources = list(set(kwargs.pop('allowed_music_sources', GDStudioMusicClient.SUPPORTED_SITES[:-2])))
         super(GDStudioMusicClient, self).__init__(**kwargs)
         self.default_search_headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36", "Origin": "https://music.gdstudio.xyz",
             "Referer": "https://music.gdstudio.xyz/", "X-Requested-With": "XMLHttpRequest", "Accept": "application/json, text/javascript, */*; q=0.01",
         }
         self.default_download_headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36'}
+        self.default_bilibili_download_headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Referer': 'https://www.bilibili.com/'}
         self.default_headers = self.default_search_headers
         self._initsession()
     '''jsencodeuricomponent'''
@@ -143,9 +144,10 @@ class GDStudioMusicClient(BaseMusicClient):
                 download_url = urljoin(GDStudioMusicClient.BASE_URL, download_url) if not str((download_url := download_result.get('url'))).startswith('http') else download_url
                 download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
                 if not download_url_status['ok']: download_url_status: dict = self.audio_link_tester.test(url=f'https://music-proxy.gdstudio.org/{download_url}', request_overrides=request_overrides, renew_session=True)
+                default_download_headers = self.default_bilibili_download_headers if root_source in {'bilibili'} else self.default_download_headers
                 song_info = SongInfo(
                     raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('name')), singers=legalizestring(', '.join(search_result.get('artist') or [])), album=legalizestring(search_result.get('album')), ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], 
-                    identifier=song_id, duration_s=safeextractfromdict(search_result, ['extra_data', 'duration'], None), duration=SongInfoUtils.seconds2hms(safeextractfromdict(search_result, ['extra_data', 'duration'], None)), lyric=None, cover_url=None, download_url=download_url_status['download_url'], download_url_status=download_url_status, root_source=root_source,
+                    identifier=song_id, duration_s=safeextractfromdict(search_result, ['extra_data', 'duration'], None), duration=SongInfoUtils.seconds2hms(safeextractfromdict(search_result, ['extra_data', 'duration'], None)), lyric=None, cover_url=None, download_url=download_url_status['download_url'], download_url_status=download_url_status, root_source=root_source, default_download_headers=default_download_headers
                 )
                 with suppress(Exception): song_info.duration_s, song_info.duration = (song_info.duration_s / 1000, SongInfoUtils.seconds2hms(song_info.duration_s / 1000)) if (root_source in {'spotify'}) else (song_info.duration_s, song_info.duration)
                 song_info.ext = 'm4a' if song_info.ext in {'m4s', 'mp4'} else song_info.ext
