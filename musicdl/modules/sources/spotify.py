@@ -9,12 +9,10 @@ WeChat Official Account (微信公众号):
 import os
 import re
 import copy
-import json
 import time
 import base64
 import random
 import requests
-import websocket
 from bs4 import BeautifulSoup
 from contextlib import suppress
 from .base import BaseMusicClient
