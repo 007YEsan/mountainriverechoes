@@ -54,7 +54,7 @@ class QQMusicClient(BaseMusicClient):
     def _parsewithvkeysapi(self, search_result: dict, request_overrides: dict = None):
         # init
         request_overrides, song_id = request_overrides or {}, search_result.get('mid') or search_result.get('songmid')
-        if not safeextractfromdict(search_result, ['album', 'title'], None) or search_result.get('albumname'): search_result.update(self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides))
+        if not (safeextractfromdict(search_result, ['album', 'title'], None) or search_result.get('albumname')): search_result.update(self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides))
         headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36",}
         # parse download result
         for music_quality in list(ThirdPartVKeysAPISongFileType.ID_TO_NAME.value.keys())[::-1][2: 8]:
@@ -75,13 +75,34 @@ class QQMusicClient(BaseMusicClient):
         song_info.lyric = lyric if (lyric and (lyric not in {'NULL'})) else song_info.lyric
         # return
         return song_info
+    '''_parsewithxingmianapi'''
+    def _parsewithxingmianapi(self, search_result: dict, request_overrides: dict = None):
+        # init
+        request_overrides, song_id, candidate_music_qualities = request_overrides or {}, search_result.get('mid') or search_result.get('songmid'), ['超清母带', 'Hi-Res', '无损', '高音质', '低音质']
+        if not (safeextractfromdict(search_result, ['album', 'title'], None) or search_result.get('albumname')): search_result.update(self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides))
+        decrypt_func, REQUEST_KEYS = lambda t: base64.b64decode(str(t)[14:].encode('utf-8')).decode('utf-8'), ['charlespikachuMjI2Yzg3OTQ5MGQ1MDZhYTgzODQ4NjA3NWU4MGNlODEwNzU2NDU4NTFhODMzMTliYmQzZDcyMTVhOGZiNGJkYw==', ]
+        headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36",}
+        # parse
+        for music_quality in candidate_music_qualities:
+            (resp := requests.get(f'https://api.xingmian.bbroot.com/API/qqmusicparse.php?id={song_id}&apikey={decrypt_func(random.choice(REQUEST_KEYS))}&quality={music_quality}', timeout=10, headers=headers, verify=False, **request_overrides)).raise_for_status()
+            if not (download_url := safeextractfromdict((download_result := resp2json(resp=resp)), ['data', 'url'], '')) or not str(download_url).startswith('http'): break
+            download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
+            duration_in_secs = int(float(safeextractfromdict(download_result, ['data', 'duration'], 0) or 0))
+            song_info = SongInfo(
+                raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(download_result, ['data', 'name'], None)), singers=legalizestring((safeextractfromdict(download_result, ['data', 'author'], None) or '').replace('/', ',')), album=legalizestring(safeextractfromdict(download_result, ['data', 'album'], None)), ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], 
+                file_size=download_url_status['file_size'], identifier=str(song_id), duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=cleanlrc(safeextractfromdict(download_result, ['data', 'lyric'], '') or ''), cover_url=safeextractfromdict(download_result, ['data', 'pic'], None), download_url=download_url_status['download_url'], download_url_status=download_url_status, 
+            )
+            if song_info.with_valid_download_url and song_info.ext in AudioLinkTester.VALID_AUDIO_EXTS: break
+        song_info = SongInfo(source=self.source, raw_data={'search': search_result, 'download': download_result, 'lyric': {}}) if (song_info.file_size_bytes * 8 < 320000 * song_info.duration_s) else song_info
+        # return
+        return song_info
     '''_parsewithxcvtsapi'''
     def _parsewithxcvtsapi(self, search_result: dict, request_overrides: dict = None):
         # init
         REQUEST_KEYS, decrypt_func = ['charlespikachuNzg5OTMzNDRiOWJmMTEwNTY1NTU5OTAwOWNkYmEzZDI=', 'charlespikachuY2U3NzhlYjBkMTg1OGVkZmI0YjIwNzFhMTE1ZjFlZGY='], lambda t: base64.b64decode(str(t)[14:].encode('utf-8')).decode('utf-8')
         MUSIC_QUALITIES = ["臻品母带", "臻品全景声", "臻品2.0", "SQ无损", "HQ高品质", "中品质", "普通", "低品质", "试听"]
         request_overrides, song_id, headers = request_overrides or {}, search_result.get('mid') or search_result.get('songmid'), {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36",}
-        if not safeextractfromdict(search_result, ['album', 'title'], None) or search_result.get('albumname'): search_result.update(self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides))
+        if not (safeextractfromdict(search_result, ['album', 'title'], None) or search_result.get('albumname')): search_result.update(self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides))
         # parse
         for music_quality in MUSIC_QUALITIES[:4]:
             (resp := requests.get(f"https://api.xcvts.cn/api/music/qq?apiKey={decrypt_func(random.choice(REQUEST_KEYS))}&mid={song_id}&type={music_quality}", timeout=10, headers=headers, **request_overrides)).raise_for_status()
@@ -102,7 +123,7 @@ class QQMusicClient(BaseMusicClient):
         # init
         MUSIC_QUALITIES, headers = ["7", "9", "10", "8", "6", "5"], {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"}
         request_overrides, song_id = request_overrides or {}, search_result.get('mid') or search_result.get('songmid')
-        if not safeextractfromdict(search_result, ['album', 'title'], None) or search_result.get('albumname'): search_result.update(self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides))
+        if not (safeextractfromdict(search_result, ['album', 'title'], None) or search_result.get('albumname')): search_result.update(self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides))
         REQUEST_KEYS, decrypt_func = ['charlespikachuWk83NlFKQ0lINVBQSUNKT09YVUg='], lambda t: base64.b64decode(str(t)[14:].encode('utf-8')).decode('utf-8')
         # parse
         for music_quality in MUSIC_QUALITIES:
@@ -123,7 +144,7 @@ class QQMusicClient(BaseMusicClient):
         # init
         MUSIC_QUALITIES, request_overrides, song_id = ["flac24bit", "hires", "flac", "320k"], request_overrides or {}, search_result.get('mid') or search_result.get('songmid')
         headers = {"Content-Type": "application/json", "User-Agent": "lx-music-request/2.6.0", "X-Request-Key": "share-v3"}
-        if not safeextractfromdict(search_result, ['album', 'title'], None) or search_result.get('albumname'): search_result.update(self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides))
+        if not (safeextractfromdict(search_result, ['album', 'title'], None) or search_result.get('albumname')): search_result.update(self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides))
         # parse
         for music_quality in MUSIC_QUALITIES:
             (resp := requests.get(f"https://lxmusicapi.onrender.com/url/tx/{song_id}/{music_quality}", headers=headers, timeout=10, **request_overrides)).raise_for_status()
@@ -144,7 +165,7 @@ class QQMusicClient(BaseMusicClient):
         REQUEST_KEYS = ['MjhmZWNlOTI1NDM5YjA1Mjc5MmE5Nzk4OWM4NzBjZWQzODAzYTcxYzZiNTM0ZjcxZTVhNTMzMzhiMmQzMWVmOA==', 'YzRjNGY1ZmMzNmJhZDRjYWNiOTg4MzllMTRmZWE0MDI3N2IzNWVhMmViMWJhYmRhZDdiYmRlMTI4NDAwZjNiMQ==']
         request_overrides, song_id, song_info, decrypt_func = request_overrides or {}, search_result.get('mid') or search_result.get('songmid'), SongInfo(source=self.source), lambda t: base64.b64decode(str(t).encode('utf-8')).decode('utf-8')
         to_seconds_func = lambda x: (lambda s: 0 if not s else (lambda p: p[-3]*3600+p[-2]*60+p[-1] if len(p)>=3 else p[0]*60+p[1] if len(p)==2 else p[0] if len(p)==1 else 0)([int(v) for v in re.findall(r'\d+', s.replace('：', ':'))]) if (':' in s or '：' in s) else (lambda h,m,sec,num: (lambda tot: tot if tot>0 else num)(h*3600+m*60+sec))(int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:小时|时|h|hr)', s)) else 0, int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:分钟|分|m|min)', s)) else 0, (int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:秒|s|sec)', s)) else (int(mo.group(1)) if (mo:=re.search(r'(?:分钟|分|m|min)\s*(\d+)\b', s)) else 0)), int(mo.group(0)) if (mo:=re.search(r'\d+', s)) else 0))(str(x).strip().lower())
-        if not safeextractfromdict(search_result, ['album', 'title'], None) or search_result.get('albumname'): search_result.update(self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides))
+        if not (safeextractfromdict(search_result, ['album', 'title'], None) or search_result.get('albumname')): search_result.update(self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides))
         # parse
         headers = {
             "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7", "accept-language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7", "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36",
@@ -167,7 +188,7 @@ class QQMusicClient(BaseMusicClient):
         # init
         request_overrides, song_id, song_info = request_overrides or {}, search_result.get('mid') or search_result.get('songmid'), SongInfo(source=self.source)
         to_seconds_func = lambda x: (lambda s: 0 if not s else (lambda p: p[-3]*3600+p[-2]*60+p[-1] if len(p)>=3 else p[0]*60+p[1] if len(p)==2 else p[0] if len(p)==1 else 0)([int(v) for v in re.findall(r'\d+', s.replace('：', ':'))]) if (':' in s or '：' in s) else (lambda h,m,sec,num: (lambda tot: tot if tot>0 else num)(h*3600+m*60+sec))(int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:小时|时|h|hr)', s)) else 0, int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:分钟|分|m|min)', s)) else 0, (int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:秒|s|sec)', s)) else (int(mo.group(1)) if (mo:=re.search(r'(?:分钟|分|m|min)\s*(\d+)\b', s)) else 0)), int(mo.group(0)) if (mo:=re.search(r'\d+', s)) else 0))(str(x).strip().lower())
-        if not safeextractfromdict(search_result, ['album', 'title'], None) or search_result.get('albumname'): search_result.update(self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides))
+        if not (safeextractfromdict(search_result, ['album', 'title'], None) or search_result.get('albumname')): search_result.update(self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides))
         # parse
         headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36",}
         (resp := requests.get(f'https://tang.api.s01s.cn/music_open_api.php?mid={song_id}', headers=headers, timeout=10, **request_overrides)).raise_for_status()
@@ -187,7 +208,7 @@ class QQMusicClient(BaseMusicClient):
         # init
         decrypt_func, REQUEST_KEYS = lambda t: base64.b64decode(str(t)[14:].encode('utf-8')).decode('utf-8'), ['charlespikachuc2stNTc2ZmFkZTQxNjI2M2I3ZmY3MjZhZjM1NGQ5ZDkzNzM=', 'charlespikachuc2stMDE4YjlmOGQ4MGRjMTg5OGEyOTI3ZTgwMjA2NjNkODY=']
         request_overrides, song_id, song_info = request_overrides or {}, search_result.get('mid') or search_result.get('songmid'), SongInfo(source=self.source)
-        if not safeextractfromdict(search_result, ['album', 'title'], None) or search_result.get('albumname'): search_result.update(self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides))
+        if not (safeextractfromdict(search_result, ['album', 'title'], None) or search_result.get('albumname')): search_result.update(self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides))
         # parse
         headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36",}
         (resp := requests.get(f'https://apii.xianyuw.cn/api/v1/qq-music-search?id={song_id}&key={decrypt_func(random.choice(REQUEST_KEYS))}&no_url=0&br=hires', headers=headers, timeout=10, **request_overrides)).raise_for_status()
@@ -204,7 +225,7 @@ class QQMusicClient(BaseMusicClient):
     def _parsewithxunhuisiapi(self, search_result: dict, request_overrides: dict = None):
         # init
         request_overrides, song_id, song_info = request_overrides or {}, search_result.get('mid') or search_result.get('songmid'), SongInfo(source=self.source)
-        if not safeextractfromdict(search_result, ['album', 'title'], None) or search_result.get('albumname'): search_result.update(self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides))
+        if not (safeextractfromdict(search_result, ['album', 'title'], None) or search_result.get('albumname')): search_result.update(self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides))
         # parse
         headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36",}
         (resp := requests.get(f'https://api.xunhuisi.store/API/QQMusic/Song.php?mid={song_id}&type=json', headers=headers, timeout=10, **request_overrides)).raise_for_status()
@@ -221,7 +242,7 @@ class QQMusicClient(BaseMusicClient):
     def _parsewithlpzapi(self, search_result: dict, request_overrides: dict = None):
         # init
         request_overrides, song_id, song_info = request_overrides or {}, search_result.get('mid') or search_result.get('songmid'), SongInfo(source=self.source)
-        if not safeextractfromdict(search_result, ['album', 'title'], None) or search_result.get('albumname'): search_result.update(self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides))
+        if not (safeextractfromdict(search_result, ['album', 'title'], None) or search_result.get('albumname')): search_result.update(self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides))
         # parse
         headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36",}
         (resp := requests.get(f'https://lpz.chatc.vip/apiqq.php?songmid={song_id}&type=json&br=1', headers=headers, timeout=10, verify=False, **request_overrides)).raise_for_status()
@@ -239,7 +260,7 @@ class QQMusicClient(BaseMusicClient):
         # init
         REQUEST_KEYS = ["1ffdf5733f5d538760e63d7e46ba17438d9f7b9dfc18c51be1109386fd74c3a1", "2baf39266d8ef0580aba937245d5bb569fe376f230ff508f1faa0922dc320fe4"]
         request_overrides, song_id, song_info = request_overrides or {}, search_result.get('mid') or search_result.get('songmid'), SongInfo(source=self.source)
-        if not safeextractfromdict(search_result, ['album', 'title'], None) or search_result.get('albumname'): search_result.update(self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides))
+        if not (safeextractfromdict(search_result, ['album', 'title'], None) or search_result.get('albumname')): search_result.update(self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides))
         # parse
         headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36",}
         (resp := requests.get(f'https://cyapi.top/API/qq_music.php', params={"apikey": random.choice(REQUEST_KEYS), "type": "json", "mid": song_id, "quality": "lossless"}, headers=headers, timeout=10, **request_overrides)).raise_for_status()
@@ -255,7 +276,7 @@ class QQMusicClient(BaseMusicClient):
     '''_parsewiththirdpartapis'''
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         if self.default_cookies or (request_overrides := request_overrides or {}).get('cookies'): return SongInfo(source=self.source)
-        l1_parser_funcs = [self._parsewithvkeysapi, self._parsewithxcvtsapi, ] # svip
+        l1_parser_funcs = [self._parsewithvkeysapi, self._parsewithxcvtsapi, self._parsewithxingmianapi] # svip
         l2_parser_funcs = [self._parsewithxianyuwapi, self._parsewithnkiapi, self._parsewithtangapi, self._parsewith317akapi, ] # vip
         l3_parser_funcs = [self._parsewithcyapi, self._parsewithxunhuisiapi, self._parsewithlxmusicapi, ] # vip account but only mp3 or m4a files can be requested
         l4_parser_funcs = [self._parsewithlpzapi, ] # invalid or unstable accounts
@@ -278,7 +299,7 @@ class QQMusicClient(BaseMusicClient):
         # parse download url based on arguments
         if lossless_quality_is_sufficient and song_info_flac.with_valid_download_url and (song_info_flac.ext in lossless_quality_definitions): song_info = song_info_flac
         else:
-            if not safeextractfromdict(search_result, ['album', 'title'], None) or search_result.get('albumname'): search_result.update(self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides))
+            if not (safeextractfromdict(search_result, ['album', 'title'], None) or search_result.get('albumname')): search_result.update(self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides))
             # --non-vip / vip users using enc_endpoint
             if self.use_encrypted_endpoint:
                 for music_quality in EncryptedSongFileType.SORTED_QUALITIES.value:

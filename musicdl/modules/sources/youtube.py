@@ -369,6 +369,7 @@ class YouTubeMusicClient(BaseMusicClient):
         lyric_result, lyric = LyricSearchClient().search(artist_name=song_info.singers, track_name=song_info.song_name, request_overrides=request_overrides)
         song_info.raw_data['lyric'] = lyric_result if lyric_result else song_info.raw_data['lyric']
         song_info.lyric = lyric if (lyric and (lyric not in {'NULL'})) else song_info.lyric
+        if not song_info.duration or song_info.duration == '00:00:00': song_info.duration_s = int(float(lyric_result.get('duration') or 0)); song_info.duration = SongInfoUtils.seconds2hms(song_info.duration_s)
         # return
         return song_info
     '''_search'''
