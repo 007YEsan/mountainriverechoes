@@ -364,12 +364,12 @@ class YouTubeMusicClient(BaseMusicClient):
         # compare and select the best
         song_info = song_info_flac if song_info_flac.with_valid_download_url and (not song_info.with_valid_download_url or song_info_flac.largerthan(song_info)) else song_info
         if not song_info.with_valid_download_url or song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS: return song_info
-        if not song_info.duration or song_info.duration == '00:00:00': song_info.duration_s = locals().get('duration_in_secs'); song_info.duration = SongInfoUtils.seconds2hms(song_info.duration_s)
+        if not song_info.duration or song_info.duration in {'00:00:00', '-:-:-'}: song_info.duration_s = locals().get('duration_in_secs'); song_info.duration = SongInfoUtils.seconds2hms(song_info.duration_s)
         # supplement lyric results
         lyric_result, lyric = LyricSearchClient().search(artist_name=song_info.singers, track_name=song_info.song_name, request_overrides=request_overrides)
         song_info.raw_data['lyric'] = lyric_result if lyric_result else song_info.raw_data['lyric']
         song_info.lyric = lyric if (lyric and (lyric not in {'NULL'})) else song_info.lyric
-        if not song_info.duration or song_info.duration == '00:00:00': song_info.duration_s = int(float(lyric_result.get('duration') or 0)); song_info.duration = SongInfoUtils.seconds2hms(song_info.duration_s)
+        if not song_info.duration or song_info.duration in {'00:00:00', '-:-:-'}: song_info.duration_s = int(float(lyric_result.get('duration') or 0)); song_info.duration = SongInfoUtils.seconds2hms(song_info.duration_s)
         # return
         return song_info
     '''_search'''
