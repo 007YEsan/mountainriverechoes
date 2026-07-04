@@ -26,9 +26,9 @@ class GDStudioMusicClient(BaseMusicClient):
     TIME_URL = "https://music.gdstudio.xyz/time"
     API_URL = "https://music.gdstudio.xyz/api.php"
     MUSIC_QUALITIES = [999, 740, 320, 192, 128]
-    SUPPORTED_SITES = ['netease', 'joox', 'spotify', 'tidal', 'qobuz', 'bilibili', 'ytmusic', 'kuwo', 'apple', 'tencent']
+    SUPPORTED_SITES = ['netease', 'joox', 'spotify', 'tidal', 'qobuz', 'apple', 'ytmusic', 'bilibili', 'kuwo', 'tencent']
     def __init__(self, **kwargs):
-        self.allowed_music_sources = list(set(kwargs.pop('allowed_music_sources', GDStudioMusicClient.SUPPORTED_SITES[:-5])))
+        self.allowed_music_sources = list(set(kwargs.pop('allowed_music_sources', GDStudioMusicClient.SUPPORTED_SITES[:-4])))
         super(GDStudioMusicClient, self).__init__(**kwargs)
         self.default_search_headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36", "Origin": "https://music.gdstudio.xyz",
