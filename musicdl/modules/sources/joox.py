@@ -65,8 +65,7 @@ class JooxMusicClient(BaseMusicClient):
         left_rotate_func = lambda x, amount: ((((x & 0xFFFFFFFF) << amount) | ((x & 0xFFFFFFFF) >> (32 - amount))) & 0xFFFFFFFF)
         normalize_version_func = lambda value: "".join(part.zfill(2) if len(part) == 1 else part for part in str(value).split("."))
         # parse
-        try: (server_time_resp := requests.get(time_url, headers=headers, timeout=10, **request_overrides)).raise_for_status(); server_time = server_time_resp.text.strip()
-        except Exception: server_time = str(int(time.time()))
+        with suppress(Exception): server_time = str(int(time.time())); (server_time_resp := requests.get(time_url, headers=headers, timeout=10, **request_overrides)).raise_for_status(); server_time = server_time_resp.text.strip()
         encoded_id = js_encode_uri_component_func(str(song_id)); raw_sign_text = f"{str(server_time)[:9]}|{host}|{normalize_version_func(version)}|{encoded_id}"
         data = raw_sign_text.encode("utf-8"); bit_len = (len(data) * 8) & 0xFFFFFFFFFFFFFFFF; data += b"\x80"
         while len(data) % 64 != 56: data += b"\x00"
@@ -90,8 +89,8 @@ class JooxMusicClient(BaseMusicClient):
         (download_result := self._getsongmetainfo(song_id, lang, country, request_overrides)).update(download_result_gdstudio)
         download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
         song_info = SongInfo(
-            raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(download_result.get('name')), singers=legalizestring(', '.join([singer.get('name') for singer in (download_result.get('artist_list', []) or []) if isinstance(singer, dict) and singer.get('name')])), album=legalizestring(download_result.get('album_name')), ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], 
-            file_size=download_url_status['file_size'], identifier=song_id, duration_s=int(float(download_result.get('play_duration') or 0)), duration=SongInfoUtils.seconds2hms(download_result.get('play_duration')), lyric=cleanlrc(base64.b64decode(download_result.get('lrc_content') or '').decode('utf-8')), cover_url=safeextractfromdict(download_result, ['images', 0, 'url'], None), download_url=download_url_status['download_url'], download_url_status=download_url_status, 
+            raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(download_result.get('name')), singers=legalizestring(', '.join([singer.get('name') for singer in (download_result.get('artist_list', []) or []) if isinstance(singer, dict) and singer.get('name')])), album=legalizestring(download_result.get('album_name')), ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], 
+            identifier=song_id, duration_s=int(float(search_result.get('play_duration') or download_result.get('play_duration') or 0)), duration=SongInfoUtils.seconds2hms(search_result.get('play_duration') or download_result.get('play_duration')), lyric=cleanlrc(base64.b64decode(download_result.get('lrc_content') or '').decode('utf-8')), cover_url=safeextractfromdict(download_result, ['images', 0, 'url'], None), download_url=download_url_status['download_url'], download_url_status=download_url_status, 
         )
         # return
         return song_info
@@ -104,8 +103,7 @@ class JooxMusicClient(BaseMusicClient):
         left_rotate_func = lambda x, amount: ((((x & 0xFFFFFFFF) << amount) | ((x & 0xFFFFFFFF) >> (32 - amount))) & 0xFFFFFFFF)
         normalize_version_func = lambda value: "".join(part.zfill(2) if len(part) == 1 else part for part in str(value).split("."))
         # parse
-        try: (server_time_resp := requests.get(time_url, headers=headers, timeout=10, **request_overrides)).raise_for_status(); server_time = server_time_resp.text.strip()
-        except Exception: server_time = str(int(time.time()))
+        with suppress(Exception): server_time = str(int(time.time())); (server_time_resp := requests.get(time_url, headers=headers, timeout=10, **request_overrides)).raise_for_status(); server_time = server_time_resp.text.strip()
         encoded_id = js_encode_uri_component_func(str(song_id)); raw_sign_text = f"{str(server_time)[:9]}|{host}|{normalize_version_func(version)}|{encoded_id}"
         data = raw_sign_text.encode("utf-8"); bit_len = (len(data) * 8) & 0xFFFFFFFFFFFFFFFF; data += b"\x80"
         while len(data) % 64 != 56: data += b"\x00"
@@ -129,8 +127,8 @@ class JooxMusicClient(BaseMusicClient):
         (download_result := self._getsongmetainfo(song_id, lang, country, request_overrides)).update(download_result_gdstudio)
         download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
         song_info = SongInfo(
-            raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(download_result.get('name')), singers=legalizestring(', '.join([singer.get('name') for singer in (download_result.get('artist_list', []) or []) if isinstance(singer, dict) and singer.get('name')])), album=legalizestring(download_result.get('album_name')), ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], 
-            file_size=download_url_status['file_size'], identifier=song_id, duration_s=int(float(download_result.get('play_duration') or 0)), duration=SongInfoUtils.seconds2hms(download_result.get('play_duration')), lyric=cleanlrc(base64.b64decode(download_result.get('lrc_content') or '').decode('utf-8')), cover_url=safeextractfromdict(download_result, ['images', 0, 'url'], None), download_url=download_url_status['download_url'], download_url_status=download_url_status, 
+            raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(download_result.get('name')), singers=legalizestring(', '.join([singer.get('name') for singer in (download_result.get('artist_list', []) or []) if isinstance(singer, dict) and singer.get('name')])), album=legalizestring(download_result.get('album_name')), ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], 
+            identifier=song_id, duration_s=int(float(search_result.get('play_duration') or download_result.get('play_duration') or 0)), duration=SongInfoUtils.seconds2hms(search_result.get('play_duration') or download_result.get('play_duration')), lyric=cleanlrc(base64.b64decode(download_result.get('lrc_content') or '').decode('utf-8')), cover_url=safeextractfromdict(download_result, ['images', 0, 'url'], None), download_url=download_url_status['download_url'], download_url_status=download_url_status, 
         )
         # return
         return song_info
@@ -161,8 +159,8 @@ class JooxMusicClient(BaseMusicClient):
                 if not download_url or not (str(download_url).startswith('http')): continue
                 download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
                 song_info = SongInfo(
-                    raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(download_result.get('name')), singers=legalizestring(', '.join([singer.get('name') for singer in (download_result.get('artist_list', []) or []) if isinstance(singer, dict) and singer.get('name')])), album=legalizestring(download_result.get('album_name')), ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], 
-                    file_size=download_url_status['file_size'], identifier=song_id, duration_s=int(float(download_result.get('play_duration') or 0)), duration=SongInfoUtils.seconds2hms(download_result.get('play_duration')), lyric=cleanlrc(base64.b64decode(download_result.get('lrc_content') or '').decode('utf-8')), cover_url=safeextractfromdict(download_result, ['images', 0, 'url'], None), download_url=download_url_status['download_url'], download_url_status=download_url_status, 
+                    raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(download_result.get('name')), singers=legalizestring(', '.join([singer.get('name') for singer in (download_result.get('artist_list', []) or []) if isinstance(singer, dict) and singer.get('name')])), album=legalizestring(download_result.get('album_name')), ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], 
+                    identifier=song_id, duration_s=int(float(search_result.get('play_duration') or download_result.get('play_duration') or 0)), duration=SongInfoUtils.seconds2hms(search_result.get('play_duration') or download_result.get('play_duration')), lyric=cleanlrc(base64.b64decode(download_result.get('lrc_content') or '').decode('utf-8')), cover_url=safeextractfromdict(download_result, ['images', 0, 'url'], None), download_url=download_url_status['download_url'], download_url_status=download_url_status, 
                 )
                 if song_info_flac.with_valid_download_url and song_info_flac.largerthan(song_info): song_info = song_info_flac
                 if song_info.with_valid_download_url and song_info.ext in AudioLinkTester.VALID_AUDIO_EXTS: break
