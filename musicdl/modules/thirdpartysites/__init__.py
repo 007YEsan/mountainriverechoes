@@ -1,7 +1,6 @@
 '''initialize'''
 from .mitu import MituMusicClient
 from .kkws import KKWSMusicClient
-from .alger import AlgerMusicClient
 from .jcpoo import JCPOOMusicClient
 from .flmp3 import FLMP3MusicClient
 from .htqyy import HTQYYMusicClient
