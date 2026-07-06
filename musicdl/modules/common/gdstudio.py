@@ -119,24 +119,24 @@ class GDStudioMusicClient(BaseMusicClient):
             (source_default_rule := copy.deepcopy(default_rule))['source'] = source; count = 0
             while self.search_size_per_source > count:
                 (rule := copy.deepcopy(source_default_rule))["pages"] = str(int(count // page_size) + 1)
-                search_urls.append({'url': base_url, 'data': rule, 'page_no': str(int(count // page_size) + 1)})
+                search_urls.append({'url': base_url, 'data': rule, 'page_no': str(int(count // page_size) + 1), 'source': source})
                 count += page_size
         # return
         return search_urls
     '''_search'''
     @usesearchheaderscookies
-    def _search(self, keyword: str = '', search_url: dict = None, request_overrides: dict = None, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
+    def _search(self, keyword: str = '', search_url: dict = None, request_overrides: dict = None, song_infos: list = [], progress: Progress = None):
         # init
-        self.default_headers, request_overrides, search_meta = copy.deepcopy(self.default_headers), copy.deepcopy(request_overrides or {}), copy.deepcopy(search_url)
-        search_url, post_data, page_no = search_meta.pop('url'), search_meta.pop('data'), search_meta.pop('page_no')
+        self.default_headers, request_overrides, search_meta, search_result_idx = copy.deepcopy(self.default_headers), copy.deepcopy(request_overrides or {}), copy.deepcopy(search_url), -1
+        search_url, post_data, page_no, root_source = search_meta.pop('url'), search_meta.pop('data'), search_meta.pop('page_no'), search_meta.pop('source')
+        task_id = progress.add_task(f"{self.source}.{root_source}._search >>> Start to process the 0th search result on page {page_no}", total=None, completed=0)
         # successful
         try:
             # --search results
             (resp := self.post(GDStudioMusicClient.API_URL, data=post_data, timeout=10, **request_overrides)).raise_for_status()
-            task_id = progress.add_task(f"{self.source}._search >>> Start to process the 0th search result on page {page_no}", total=None, completed=0)
             for search_result_idx, search_result in enumerate(resp2json(resp=resp)):
                 # --update progress
-                progress.update(task_id, description=f"{self.source}.{search_result['source']}._search >>> Start to process the {search_result_idx+1}th search result on page {page_no}", completed=search_result_idx+1, total=search_result_idx+1)
+                progress.update(task_id, description=f"{self.source}.{root_source}._search >>> Start to process the {search_result_idx+1}th search result on page {page_no}", completed=search_result_idx+1, total=search_result_idx+1)
                 # --download results
                 if (not isinstance(search_result, dict)) or (not (song_id := search_result.get('id'))) or (not (song_url_id := search_result.get('url_id'))) or (not (root_source := search_result.get('source'))): continue
                 with suppress(Exception): download_result = {}; download_result = self._getsongurl(song_url_id, source=root_source, br=(br := GDStudioMusicClient.MUSIC_QUALITIES[0]), request_overrides=request_overrides)
@@ -168,10 +168,10 @@ class GDStudioMusicClient(BaseMusicClient):
                 # --judgement for search_size
                 if self.strict_limit_search_size_per_page and len(song_infos) >= self.search_size_per_page: break
             # --update progress
-            progress.update(progress_id, description=f"{self.source}._search >>> {search_url} (Success)")
+            progress.update(task_id, description=f'{self.source}.{root_source}._search >>> {search_result_idx+1} search results processed on page {page_no}')
         # failure
         except Exception as err:
-            progress.update(progress_id, description=f"{self.source}._search >>> {search_url} (Error: {err})")
-            self.logger_handle.error(f"{self.source}._search >>> {search_url} (Error: {err})", disable_print=self.disable_print)
+            progress.update(task_id, description=f'{self.source}.{root_source}._search >>> {keyword} on page {page_no} (Error: {err})')
+            self.logger_handle.error(f'{self.source}.{root_source}._search >>> {keyword} on page {page_no} (Error: {err})', disable_print=self.disable_print)
         # return
         return song_infos
