@@ -12,11 +12,13 @@ import uuid
 import copy
 import time
 import json
+import html
 import random
 import base64
 import hashlib
 import warnings
 import requests
+from bs4 import BeautifulSoup
 from contextlib import suppress
 from .base import BaseMusicClient
 from rich.progress import Progress
@@ -88,6 +90,7 @@ class BodianMusicClient(BaseMusicClient):
     def _parsewithtianbaoapi(self, search_result: dict, request_overrides: dict = None):
         # init
         request_overrides, song_id, song_info = request_overrides or {}, search_result['id'], SongInfo(source=self.source)
+        if not (search_result.get('SONGNAME') or search_result.get('name') or search_result.get('songName')): search_result.update(self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides))
         # parse
         headers = {"User-Agent": "Dart/2.19 (dart:io)", "plat": "ar", "channel": "aliopen"}
         api_url = f"https://mobi.kuwo.cn/mobi.s?f=web&user={random.randint(1000000, 10000000)}&source=kwplayerhd_ar_4.3.0.8_tianbao_T1A_qirui.apk&type=convert_url_with_sign&br=2000kflac&rid={song_id}"
@@ -96,8 +99,8 @@ class BodianMusicClient(BaseMusicClient):
         duration_in_secs = int(float(safeextractfromdict(download_result, ['data', 'duration'], 0) or 0))
         download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
         song_info = SongInfo(
-            raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('name')), singers=legalizestring(search_result.get('artist')), album=legalizestring(search_result.get('album')), ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], 
-            file_size=download_url_status['file_size'], identifier=song_id, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, cover_url=search_result.get('albumPic'), download_url=download_url_status['download_url'], download_url_status=download_url_status, 
+            raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('name') or search_result.get('songName')), singers=legalizestring(search_result.get('artist')), album=legalizestring(search_result.get('album')), ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], 
+            file_size=download_url_status['file_size'], identifier=song_id, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, cover_url=search_result.get('albumPic') or search_result.get('pic'), download_url=download_url_status['download_url'], download_url_status=download_url_status, 
         )
         # return
         return song_info
@@ -109,6 +112,26 @@ class BodianMusicClient(BaseMusicClient):
             with suppress(Exception): song_info_flac = parser_func(search_result, request_overrides)
             if song_info_flac.with_valid_download_url and song_info_flac.ext in AudioLinkTester.VALID_AUDIO_EXTS: break
         return song_info_flac
+    '''_getsongmetainfo'''
+    def _getsongmetainfo(self, song_id, request_overrides: dict = None):
+        # init
+        request_overrides, resp = request_overrides or {}, None
+        to_seconds_func = lambda x: (lambda s: 0 if not s else (lambda p: p[-3]*3600+p[-2]*60+p[-1] if len(p)>=3 else p[0]*60+p[1] if len(p)==2 else p[0] if len(p)==1 else 0)([int(v) for v in re.findall(r'\d+', s.replace('：', ':'))]) if (':' in s or '：' in s) else (lambda h,m,sec,num: (lambda tot: tot if tot>0 else num)(h*3600+m*60+sec))(int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:小时|时|h|hr)', s)) else 0, int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:分钟|分|m|min)', s)) else 0, (int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:秒|s|sec)', s)) else (int(mo.group(1)) if (mo:=re.search(r'(?:分钟|分|m|min)\s*(\d+)\b', s)) else 0)), int(mo.group(0)) if (mo:=re.search(r'\d+', s)) else 0))(str(x).strip().lower())
+        # h5 api
+        headers = {"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1", "Referer": f"https://m.kuwo.cn/yinyue/{song_id}", "Accept": "application/json, text/plain, */*"}
+        with suppress(Exception): (resp := self.get("https://m.kuwo.cn/newh5/singles/songinfoandlrc", headers=headers, params={"musicId": song_id}, **request_overrides)).raise_for_status()
+        if (song_detail := (safeextractfromdict(resp2json(resp=resp), ['data', 'songinfo'], {}) or {})) and song_detail.get('album') and song_detail.get('duration'): return song_detail
+        # fallback to parse html page
+        headers, resp = {"Referer": "https://www.kuwo.cn/", "Accept-Language": "zh-CN,zh;q=0.9"}, None
+        with suppress(Exception): (resp := self.get(f"https://www.kuwo.cn/play_detail/{song_id}", headers=headers, **request_overrides)).raise_for_status()
+        if not locals().get('resp') or not hasattr(locals().get('resp'), 'text'): return {}
+        soup = BeautifulSoup((page_text := html.unescape(resp.text).replace(r"\u002F", "/")), "lxml")
+        text_of_func = lambda selector, default=None: (tag.get_text(strip=True) if (tag := soup.select_one(selector)) else default)
+        value_of_func = lambda selector, default=None: (tag.get("value", default) if (tag := soup.select_one(selector)) else default)
+        cover_candidates = re.findall(r'https://img\d+\.kuwo\.cn/star/(?:albumcover|starheads)/[^"\'<>\s]+?\.jpg', page_text)
+        duration_match = (re.search(r'songTimeMinutes:\s*"([^"]+)"', page_text) or re.search(r"duration:\s*(\d+)", page_text))
+        duration = (duration_match.group(1) if ":" in duration_match.group(1) else f"{int(duration_match.group(1)) // 60:02d}:{int(duration_match.group(1)) % 60:02d}") if duration_match else ''
+        return {'id': song_id, 'songName': value_of_func("#songinfo-name", None), 'artist': text_of_func("p.artist_name span.name", None), 'album': text_of_func("span.album_name", None), 'duration': to_seconds_func(duration), 'pic': next((url for url in cover_candidates if "/500/" in url), cover_candidates[-1] if cover_candidates else None)}
     '''_parsewithofficialapiv1'''
     def _parsewithofficialapiv1(self, search_result: dict, song_info_flac: SongInfo = None, lossless_quality_is_sufficient: bool = True, lossless_quality_definitions: set | list | tuple = {'flac'}, request_overrides: dict = None) -> "SongInfo":
         # init
@@ -156,15 +179,15 @@ class BodianMusicClient(BaseMusicClient):
         return song_info
     '''_search'''
     @usesearchheaderscookies
-    def _search(self, keyword: str = '', search_url: str = '', request_overrides: dict = None, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
+    def _search(self, keyword: str = '', search_url: str = '', request_overrides: dict = None, song_infos: list = [], progress: Progress = None):
         # init
         request_overrides, lossless_quality_is_sufficient = request_overrides or {}, False if self.auth_info.get('token') else True
-        page_no = int(float(parse_qs(urlparse(url=search_url).query, keep_blank_values=True).get('pn')[0]) + 1)
+        page_no, search_result_idx = int(float(parse_qs(urlparse(url=search_url).query, keep_blank_values=True).get('pn')[0]) + 1), -1
+        task_id = progress.add_task(f"{self.source}._search >>> Start to process the 0th search result on page {page_no}", total=None, completed=0)
         # successful
         try:
             # --search results
             (resp := self.get(search_url, **request_overrides)).raise_for_status()
-            task_id = progress.add_task(f"{self.source}._search >>> Start to process the 0th search result on page {page_no}", total=None, completed=0)
             for search_result_idx, search_result in enumerate(resp2json(resp)['data']['resultList']):
                 # --update progress
                 progress.update(task_id, description=f'{self.source}._search >>> Start to process the {search_result_idx+1}th search result on page {page_no}', completed=search_result_idx+1, total=search_result_idx+1)
@@ -179,11 +202,11 @@ class BodianMusicClient(BaseMusicClient):
                 # --judgement for search_size
                 if self.strict_limit_search_size_per_page and len(song_infos) >= self.search_size_per_page: break
             # --update progress
-            progress.update(progress_id, description=f"{self.source}._search >>> {search_url} (Success)")
+            progress.update(task_id, description=f'{self.source}._search >>> {search_result_idx+1} search results processed on page {page_no}')
         # failure
         except Exception as err:
-            progress.update(progress_id, description=f"{self.source}._search >>> {search_url} (Error: {err})")
-            self.logger_handle.error(f"{self.source}._search >>> {search_url} (Error: {err})", disable_print=self.disable_print)
+            progress.update(task_id, description=f'{self.source}._search >>> {keyword} on page {page_no} (Error: {err})')
+            self.logger_handle.error(f'{self.source}._search >>> {keyword} on page {page_no} (Error: {err})', disable_print=self.disable_print)
         # return
         return song_infos
     '''parseplaylist'''

@@ -31,14 +31,8 @@ class MOOVMusicClient(BaseMusicClient):
     DEVICE_ID = str(uuid.UUID(bytes=hashlib.sha256(f"{platform.node()}-{uuid.getnode()}".encode()).digest()[:16], version=4)).upper()
     def __init__(self, **kwargs):
         super(MOOVMusicClient, self).__init__(**kwargs)
-        self.default_search_headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36",
-            "Origin": "https://moov.hk", "Referer": "https://moov.hk/", "Accept": "application/json, text/javascript, */*; q=0.01",
-        }
-        self.default_parse_headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36",
-            "Origin": "https://moov.hk", "Referer": "https://moov.hk/", "Accept": "application/json, text/javascript, */*; q=0.01",
-        }
+        self.default_search_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36", "Origin": "https://moov.hk", "Referer": "https://moov.hk/", "Accept": "application/json, text/javascript, */*; q=0.01",}
+        self.default_parse_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36", "Origin": "https://moov.hk", "Referer": "https://moov.hk/", "Accept": "application/json, text/javascript, */*; q=0.01",}
         self.default_download_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"}
         if self.default_search_cookies: self.default_search_headers['Cookie'] = cookies2string(self.default_search_cookies)
         if self.default_parse_cookies: self.default_parse_headers['Cookie'] = cookies2string(self.default_parse_cookies)
@@ -95,8 +89,7 @@ class MOOVMusicClient(BaseMusicClient):
         if lossless_quality_is_sufficient and song_info_flac.with_valid_download_url and (song_info_flac.ext in lossless_quality_definitions): song_info = song_info_flac
         else:
             search_result.update(self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides))
-            music_qualities = [q.strip() for q in (search_result.get('qualities', 'HD') or 'HD').split(',')][::-1]
-            for music_quality in music_qualities:
+            for music_quality in [q.strip() for q in (search_result.get('qualities', 'HD') or 'HD').split(',')][::-1]:
                 params = {
                     "deviceid": MOOVMusicClient.DEVICE_ID, "devicetype": "web", "cat": "playlist", "refid": "", "reftype": "", "pid": song_id, "preview": "F", 
                     "connect": "web", "streamtype": "stdHlsSgl", "quality": music_quality, "application": "moovnext", "clientver": "2.0.6", "carrier": "csl",
@@ -116,20 +109,19 @@ class MOOVMusicClient(BaseMusicClient):
         lyric = cleanlrc(safeextractfromdict((lyric_result := resp2json(resp=resp)), ['dataObject', 'lyric'], '') or '')
         song_info.raw_data['lyric'] = lyric_result if lyric_result else song_info.raw_data['lyric']
         song_info.lyric = lyric if (lyric and (lyric not in {'NULL'})) else song_info.lyric
-        if not song_info.duration or song_info.duration == '-:-:-': song_info.duration_s = extractdurationsecondsfromlrc(song_info.lyric); song_info.duration = SongInfoUtils.seconds2hms(song_info.duration_s)
+        if not song_info.duration or song_info.duration in {'-:-:-', '00:00:00'}: song_info.duration_s = extractdurationsecondsfromlrc(song_info.lyric); song_info.duration = SongInfoUtils.seconds2hms(song_info.duration_s)
         # return
         return song_info
     '''_search'''
     @usesearchheaderscookies
-    def _search(self, keyword: str = '', search_url: str = '', request_overrides: dict = None, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
+    def _search(self, keyword: str = '', search_url: str = '', request_overrides: dict = None, song_infos: list = [], progress: Progress = None):
         # init
-        request_overrides = request_overrides or {}
-        page_no = int(float(parse_qs(urlparse(url=search_url).query, keep_blank_values=True).get('from')[0]) / self.search_size_per_page) + 1
+        page_no, search_result_idx = int(float(parse_qs(urlparse(url=search_url).query, keep_blank_values=True).get('from')[0]) / self.search_size_per_page) + 1, -1
+        task_id = progress.add_task(f"{self.source}._search >>> Start to process the 0th search result on page {page_no}", total=None, completed=0)
         # successful
         try:
             # --search results
-            (resp := self.get(search_url, **request_overrides)).raise_for_status()
-            task_id = progress.add_task(f"{self.source}._search >>> Start to process the 0th search result on page {page_no}", total=None, completed=0)
+            (resp := self.get(search_url, **(request_overrides := request_overrides or {}))).raise_for_status()
             for search_result_idx, search_result in enumerate(resp2json(resp=resp)['dataObject']['primarySearch'] + (safeextractfromdict(resp2json(resp=resp)['dataObject'], ['secondarySearch'], []) or [])):
                 # --update progress
                 progress.update(task_id, description=f'{self.source}._search >>> Start to process the {search_result_idx+1}th search result on page {page_no}', completed=search_result_idx+1, total=search_result_idx+1)
@@ -142,11 +134,11 @@ class MOOVMusicClient(BaseMusicClient):
                 # --judgement for search_size
                 if self.strict_limit_search_size_per_page and len(song_infos) >= self.search_size_per_page: break
             # --update progress
-            progress.update(progress_id, description=f"{self.source}._search >>> {search_url} (Success)")
+            progress.update(task_id, description=f'{self.source}._search >>> {search_result_idx+1} search results processed on page {page_no}')
         # failure
         except Exception as err:
-            progress.update(progress_id, description=f"{self.source}._search >>> {search_url} (Error: {err})")
-            self.logger_handle.error(f"{self.source}._search >>> {search_url} (Error: {err})", disable_print=self.disable_print)
+            progress.update(task_id, description=f'{self.source}._search >>> {keyword} on page {page_no} (Error: {err})')
+            self.logger_handle.error(f'{self.source}._search >>> {keyword} on page {page_no} (Error: {err})', disable_print=self.disable_print)
         # return
         return song_infos
     '''_guessmoovreftype'''
