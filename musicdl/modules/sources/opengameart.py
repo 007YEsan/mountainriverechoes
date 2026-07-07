@@ -84,16 +84,16 @@ class OpenGameArtMusicClient(BaseMusicClient):
         return song_info
     '''_search'''
     @usesearchheaderscookies
-    def _search(self, keyword: str = '', search_url: str = '', request_overrides: dict = None, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
+    def _search(self, keyword: str = '', search_url: str = '', request_overrides: dict = None, song_infos: list = [], progress: Progress = None):
         # init
         request_overrides, seen, normalize_func = request_overrides or {}, set(), lambda text: re.sub(r"\s+", " ", text or "").strip()
         find_heading_func: Callable[[BeautifulSoup | Tag, str], Tag | None] = lambda soup, heading_text: next((tag for tag in soup.find_all(["h1", "h2", "h3"]) if normalize_func(tag.get_text(" ", strip=True)).lower() == heading_text.strip().lower()), None)
-        page_no = int(float(parse_qs(urlparse(url=search_url).query, keep_blank_values=True).get('page')[0])) + 1
+        page_no, search_result_idx = int(float(parse_qs(urlparse(url=search_url).query, keep_blank_values=True).get('page')[0])) + 1, -1
+        task_id = progress.add_task(f"{self.source}._search >>> Start to process the 0th search result on page {page_no}", total=None, completed=0)
         # successful
         try:
             # --search results
             (resp := self.get(search_url, **request_overrides)).raise_for_status()
-            task_id = progress.add_task(f"{self.source}._search >>> Start to process the 0th search result on page {page_no}", total=None, completed=0)
             search_result_tags: list[BeautifulSoup | Tag] = find_heading_func(BeautifulSoup(resp.text, 'lxml'), "Search Art").find_all_next()
             for search_result_idx, search_result_tag in enumerate(search_result_tags):
                 # --update progress
@@ -113,10 +113,10 @@ class OpenGameArtMusicClient(BaseMusicClient):
                 # --judgement for search_size
                 if self.strict_limit_search_size_per_page and len(song_infos) >= self.search_size_per_page: song_infos = song_infos[:self.search_size_per_page]; break
             # --update progress
-            progress.update(progress_id, description=f"{self.source}._search >>> {search_url} (Success)")
+            progress.update(task_id, description=f'{self.source}._search >>> {search_result_idx+1} search results processed on page {page_no}')
         # failure
         except Exception as err:
-            progress.update(progress_id, description=f"{self.source}._search >>> {search_url} (Error: {err})")
-            self.logger_handle.error(f"{self.source}._search >>> {search_url} (Error: {err})", disable_print=self.disable_print)
+            progress.update(task_id, description=f'{self.source}._search >>> {keyword} on page {page_no} (Error: {err})')
+            self.logger_handle.error(f'{self.source}._search >>> {keyword} on page {page_no} (Error: {err})', disable_print=self.disable_print)
         # return
         return song_infos
