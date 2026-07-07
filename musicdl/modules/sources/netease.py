@@ -67,7 +67,8 @@ class NeteaseMusicClient(BaseMusicClient):
             # --download url
             payload = {"id": str(song_id), "level": music_quality, "timestamp": int(time.time() * 1000)} 
             with suppress(Exception): resp = None; (resp := requests.post("https://nextmusic.toubiec.cn/api/getSongUrl", headers=headers, json=payload, verify=False, timeout=10, **request_overrides)).raise_for_status()
-            if safeextractfromdict(resp2json(resp=resp), ['data', 'url'], 'level') != music_quality: (resp := requests.post("https://nextmusic.toubiec.cn/api/getMusicUrl", headers=headers, json=payload, verify=False, timeout=10, **request_overrides)).raise_for_status()
+            if safeextractfromdict(resp2json(resp=resp), ['data', 'url'], 'level') != music_quality:
+                with suppress(Exception): (resp := requests.post("https://nextmusic.toubiec.cn/api/getMusicUrl", headers=headers, json=payload, verify=False, timeout=10, **request_overrides)).raise_for_status()
             if not (download_url := safeextractfromdict((download_result := resp2json(resp=resp)), ['data', 'url'], '')) or not str(download_url).startswith('http'): break
             # --song info
             (resp := requests.post("https://nextmusic.toubiec.cn/api/getSongInfo", headers=headers, json={"id": str(song_id), "timestamp": int(time.time() * 1000)}, verify=False, timeout=10, **request_overrides)).raise_for_status()
@@ -234,8 +235,10 @@ class NeteaseMusicClient(BaseMusicClient):
     '''_parsewithbileizhenapi'''
     def _parsewithbileizhenapi(self, search_result: dict, request_overrides: dict = None):
         # init
-        request_overrides, song_id, headers = request_overrides or {}, search_result['id'], {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36",}
+        request_overrides, song_id, headers = request_overrides or {}, search_result['id'], {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36",}
         if not search_result.get('name'): search_result.update(self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides))
+        decrypt_func, REQUEST_KEYS = lambda t: base64.b64decode(str(t)[14:].encode('utf-8')).decode('utf-8'), ['charlespikachubHpfM2NlZmEwYTFiZGE3NTA4NjE4NWM3NWQxNTZmMWNiMDQ0ZGM3NDY3MDEzNjMxYTQ1', 'charlespikachubHpfYzBkYzE5ZTI0ZGRkMTYxNjFjOWU4Yjg0MTZiYTYzYzExY2UxNzE5OGJlMTkzZGJh']
+        headers.update({'X-Api-Key': decrypt_func(random.choice(REQUEST_KEYS))})
         # parse
         for music_quality in MUSIC_QUALITIES:
             (resp := requests.get(f'https://api.bileizhen.top/api/netease?id={song_id}&level={music_quality}', headers=headers, timeout=10, **request_overrides)).raise_for_status()
@@ -621,7 +624,7 @@ class NeteaseMusicClient(BaseMusicClient):
     '''_parsewiththirdpartapis'''
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         if (cookies := self.default_cookies or (request_overrides := request_overrides or {}).get('cookies')) and (cookies != DEFAULT_COOKIES): return SongInfo(source=self.source, raw_data={'quality': MUSIC_QUALITIES[-1]})
-        l1_parser_funcs = [self._parsewithtmetuapi, self._parsewithxiaoqinapi, self._parsewithxuanluogeapi, self._parsewithchkszapi, self._parsewithxingmianapi, self._parsewithhaitangwapi, self._parsewithbugpkapi, self._parsewithznnuapi, self._parsewithkangqiovoapi, self._parsewithrrvennapi, self._parsewithguyueiapi, self._parsewithbileizhenapi, self._parsewithvincentzyu233api, self._parsewithjfjtapi,] # svip
+        l1_parser_funcs = [self._parsewithtmetuapi, self._parsewithxuanluogeapi, self._parsewithchkszapi, self._parsewithrrvennapi, self._parsewithbugpkapi, self._parsewithznnuapi, self._parsewithkangqiovoapi, self._parsewithxingmianapi, self._parsewithxiaoqinapi, self._parsewithhaitangwapi, self._parsewithguyueiapi, self._parsewithjfjtapi, self._parsewithbileizhenapi, self._parsewithvincentzyu233api] # svip
         l2_parser_funcs = [self._parsewithnanorockyapi, self._parsewithqjqqapi, self._parsewithcocodownloaderapi, self._parsewithrxtoolapi, self._parsewithgdstudioapi, self._parsewithbyfunsapi, self._parsewithxiaotapi, self._parsewithxianyuwapi, self._parsewithxcvtsapi, self._parsewithmanshuoapi, ] # vip
         l3_parser_funcs = [self._parsewithcggapi, self._parsewithxunjinluapi, self._parsewithlblbapi, self._parsewithcunyuapi, self._parsewithyutangxiaowuapi, self._parsewithceseetapi, ] # invalid account or some unstable accounts
         for parser_func in (l1_parser_funcs + l2_parser_funcs + l3_parser_funcs):
@@ -670,15 +673,15 @@ class NeteaseMusicClient(BaseMusicClient):
         return song_info
     '''_search'''
     @usesearchheaderscookies
-    def _search(self, keyword: str = '', search_url: dict = {}, request_overrides: dict = None, song_infos: list = [], progress: Progress = None, progress_id: int = 0):
+    def _search(self, keyword: str = '', search_url: dict = {}, request_overrides: dict = None, song_infos: list = [], progress: Progress = None):
         # init
         request_overrides, lossless_quality_is_sufficient = request_overrides or {}, False if (cookies := self.default_cookies or request_overrides.get('cookies')) and (cookies != DEFAULT_COOKIES) else True
-        search_meta = copy.deepcopy(search_url); search_url, page_no = search_meta.pop('url'), search_meta.pop('page')
+        search_meta, search_result_idx = copy.deepcopy(search_url), -1; search_url, page_no = search_meta.pop('url'), search_meta.pop('page')
+        task_id = progress.add_task(f"{self.source}._search >>> Start to process the 0th search result on page {page_no}", total=None, completed=0)
         # successful
         try:
             # --search results
             (resp := self.post(search_url, **search_meta, **request_overrides)).raise_for_status()
-            task_id = progress.add_task(f"{self.source}._search >>> Start to process the 0th search result on page {page_no}", total=None, completed=0)
             for search_result_idx, search_result in enumerate(resp2json(resp)['result']['songs']):
                 # --update progress
                 progress.update(task_id, description=f'{self.source}._search >>> Start to process the {search_result_idx+1}th search result on page {page_no}', completed=search_result_idx+1, total=search_result_idx+1)
@@ -693,11 +696,11 @@ class NeteaseMusicClient(BaseMusicClient):
                 # --judgement for search_size
                 if self.strict_limit_search_size_per_page and len(song_infos) >= self.search_size_per_page: break
             # --update progress
-            progress.update(progress_id, description=f"{self.source}._search >>> {search_url} (Success)")
+            progress.update(task_id, description=f'{self.source}._search >>> {search_result_idx+1} search results processed on page {page_no}')
         # failure
         except Exception as err:
-            progress.update(progress_id, description=f"{self.source}._search >>> {search_url} (Error: {err})")
-            self.logger_handle.error(f"{self.source}._search >>> {search_url} (Error: {err})", disable_print=self.disable_print)
+            progress.update(task_id, description=f'{self.source}._search >>> {keyword} on page {page_no} (Error: {err})')
+            self.logger_handle.error(f'{self.source}._search >>> {keyword} on page {page_no} (Error: {err})', disable_print=self.disable_print)
         # return
         return song_infos
     '''parseplaylist'''
