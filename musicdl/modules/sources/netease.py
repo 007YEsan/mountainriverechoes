@@ -277,7 +277,7 @@ class NeteaseMusicClient(BaseMusicClient):
         # init
         request_overrides, song_id, music_quality_mapper = request_overrides or {}, search_result['id'], {'jymaster': '超清母带', 'dolby': '杜比全景声', 'sky': '沉浸环绕声', 'jyeffect': '高清环绕声', 'hires': 'Hi-Res', 'lossless': '无损', 'exhigh': '高音质', 'standard': '低音质'}
         to_seconds_func = lambda x: (lambda s: 0 if not s else (lambda p: p[-3]*3600+p[-2]*60+p[-1] if len(p)>=3 else p[0]*60+p[1] if len(p)==2 else p[0] if len(p)==1 else 0)([int(v) for v in re.findall(r'\d+', s.replace('：', ':'))]) if (':' in s or '：' in s) else (lambda h,m,sec,num: (lambda tot: tot if tot>0 else num)(h*3600+m*60+sec))(int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:小时|时|h|hr)', s)) else 0, int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:分钟|分|m|min)', s)) else 0, (int(mo.group(1)) if (mo:=re.search(r'(\d+)\s*(?:秒|s|sec)', s)) else (int(mo.group(1)) if (mo:=re.search(r'(?:分钟|分|m|min)\s*(\d+)\b', s)) else 0)), int(mo.group(0)) if (mo:=re.search(r'\d+', s)) else 0))(str(x).strip().lower())
-        decrypt_func, REQUEST_KEYS = lambda t: base64.b64decode(str(t)[14:].encode('utf-8')).decode('utf-8'), ['charlespikachuNzRiYmE2ZmVkNTc3MDA2NTNjZGI2NDMyZjM5MTY2MjY3ZDdjYWUzMzNhMDRmNmNkMjI0NjAwMGQ5NDNlM2I4ZA==', ]
+        decrypt_func, REQUEST_KEYS = lambda t: base64.b64decode(str(t)[14:].encode('utf-8')).decode('utf-8'), ['charlespikachuNjk0ZjVlYjUxMzg5ZjNiMmZiZmI3YzMzYzQ1MmM5ZTZmOGJlODBiYzg4ZGY3NDkyYWEyMGU5ZDZjNWI1MDE5Nw==', ]
         headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36",}
         # parse
         for music_quality in MUSIC_QUALITIES:

@@ -80,7 +80,7 @@ class QQMusicClient(BaseMusicClient):
         # init
         request_overrides, song_id, candidate_music_qualities = request_overrides or {}, search_result.get('mid') or search_result.get('songmid'), ['超清母带', 'Hi-Res', '无损', '高音质', '低音质']
         if not (safeextractfromdict(search_result, ['album', 'title'], None) or search_result.get('albumname')): search_result.update(self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides))
-        decrypt_func, REQUEST_KEYS = lambda t: base64.b64decode(str(t)[14:].encode('utf-8')).decode('utf-8'), ['charlespikachuMjI2Yzg3OTQ5MGQ1MDZhYTgzODQ4NjA3NWU4MGNlODEwNzU2NDU4NTFhODMzMTliYmQzZDcyMTVhOGZiNGJkYw==', ]
+        decrypt_func, REQUEST_KEYS = lambda t: base64.b64decode(str(t)[14:].encode('utf-8')).decode('utf-8'), ['charlespikachuZGM3NDc1MTFjYmYwOGVkNjQ3MzY0NmU3MGYyYWNmYjA1YWM0OWFmMDhiZTg2ZjRlYmYxNDJhZWJkNmNhMDk3Yw==', ]
         headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36",}
         # parse
         for music_quality in candidate_music_qualities:
