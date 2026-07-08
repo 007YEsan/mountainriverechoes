@@ -125,13 +125,12 @@ class AppleMusicClient(BaseMusicClient):
     @usesearchheaderscookies
     def _search(self, keyword: str = '', search_url: str = '', request_overrides: dict = None, song_infos: list = [], progress: Progress = None):
         # init
-        request_overrides, search_result_idx = request_overrides or {}, -1
-        page_no = int(float(parse_qs(urlparse(url=search_url).query, keep_blank_values=True).get('offset')[0]) / self.search_size_per_page) + 1
+        page_no, search_result_idx = int(float(parse_qs(urlparse(url=search_url).query, keep_blank_values=True).get('offset')[0]) / self.search_size_per_page) + 1, -1
         task_id = progress.add_task(f"{self.source}._search >>> Start to process the 0th search result on page {page_no}", total=None, completed=0)
         # successful
         try:
             # --search results
-            (resp := self.get(search_url, **request_overrides)).raise_for_status()
+            (resp := self.get(search_url, **(request_overrides := request_overrides or {}))).raise_for_status()
             for search_result_idx, (song_key, search_result) in enumerate(dict(resp2json(resp)['resources']['songs']).items()):
                 # --update progress
                 progress.update(task_id, description=f'{self.source}._search >>> Start to process the {search_result_idx+1}th search result on page {page_no}', completed=search_result_idx+1, total=search_result_idx+1)
