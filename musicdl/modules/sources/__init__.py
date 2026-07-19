@@ -30,7 +30,7 @@ from ..audiobooks import XimalayaMusicClient, LizhiMusicClient, QingtingMusicCli
 from ..common import GDStudioMusicClient, TuneHubMusicClient, MP3JuiceMusicClient, MyFreeMP3MusicClient, JBSouMusicClient, XiaoBaiMusicClient
 from ..thirdpartysites import (
     MituMusicClient, BuguyyMusicClient, YinyuedaoMusicClient, FiveSongMusicClient, FangpiMusicClient, TwoT58MusicClient, ZhuolinMusicClient, HTQYYMusicClient, FLMP3MusicClient, GequbaoMusicClient, 
-    KKWSMusicClient, GequhaiMusicClient, LivePOOMusicClient, LiziYYMusicClient
+    KKWSMusicClient, GequhaiMusicClient, LivePOOMusicClient, LiziYYMusicClient, MGMP3MusicClient
 )
 
 
@@ -53,7 +53,7 @@ class MusicClientBuilder(BaseModuleBuilder):
         # Unofficial Download Sites / Scrapers
         'MituMusicClient': MituMusicClient,              'BuguyyMusicClient': BuguyyMusicClient,             'GequbaoMusicClient': GequbaoMusicClient,           'YinyuedaoMusicClient': YinyuedaoMusicClient,     'FLMP3MusicClient': FLMP3MusicClient,
         'FangpiMusicClient': FangpiMusicClient,          'FiveSongMusicClient': FiveSongMusicClient,         'KKWSMusicClient': KKWSMusicClient,                 'GequhaiMusicClient': GequhaiMusicClient,         'LivePOOMusicClient': LivePOOMusicClient,
-        'HTQYYMusicClient': HTQYYMusicClient,            'TwoT58MusicClient': TwoT58MusicClient,             'ZhuolinMusicClient': ZhuolinMusicClient,           'LiziYYMusicClient': LiziYYMusicClient,
+        'HTQYYMusicClient': HTQYYMusicClient,            'TwoT58MusicClient': TwoT58MusicClient,             'ZhuolinMusicClient': ZhuolinMusicClient,           'LiziYYMusicClient': LiziYYMusicClient,           'MGMP3MusicClient': MGMP3MusicClient,
     }
 
 
