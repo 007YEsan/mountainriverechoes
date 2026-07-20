@@ -89,23 +89,6 @@ class KuwoMusicClient(BaseMusicClient):
         )
         # return
         return song_info
-    '''_parsewithceseetapi'''
-    def _parsewithceseetapi(self, search_result: dict, request_overrides: dict = None):
-        # init
-        request_overrides, song_id, song_info = request_overrides or {}, str(search_result.get('MUSICRID') or search_result.get('musicrid')).removeprefix('MUSIC_'), SongInfo(source=self.source)
-        if not (search_result.get('SONGNAME') or search_result.get('name') or search_result.get('songName')): search_result.update(self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides))
-        headers = {'Content-Type': 'application/json', 'User-Agent': 'lx-music-request/2.6.0',  'X-Request-Key': ''}
-        # parse
-        (resp := requests.get(f"https://m-api.ceseet.me/url/kw/{song_id}/flac", headers=headers, timeout=10, **request_overrides)).raise_for_status()
-        if not (download_url := safeextractfromdict((download_result := resp2json(resp=resp)), ['data'], '')) or not str(download_url).startswith('http'): return song_info
-        duration_in_secs = int(float(search_result.get('DURATION') or search_result.get('duration') or 0))
-        download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
-        song_info = SongInfo(
-            raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('SONGNAME') or search_result.get('name') or search_result.get('songName')), singers=legalizestring(search_result.get('ARTIST') or search_result.get('artist')), album=legalizestring(search_result.get('ALBUM') or search_result.get('album')), ext=download_url_status['ext'], 
-            file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], identifier=song_id, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, cover_url=search_result.get('hts_MVPIC') or search_result.get('albumpic') or search_result.get('pic'), download_url=download_url_status['download_url'], download_url_status=download_url_status, 
-        )
-        # return
-        return song_info
     '''_parsewithyyy001api'''
     def _parsewithyyy001api(self, search_result: dict, request_overrides: dict = None):
         # init
@@ -249,8 +232,8 @@ class KuwoMusicClient(BaseMusicClient):
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         if self.default_cookies or request_overrides.get('cookies'): return SongInfo(source=self.source)
         l1_parser_funcs = [self._parsewithliuyunidcapi, self._parsewithccwuapi, ][:1] # svip
-        l2_parser_funcs = [self._parsewithcggapi, self._parsewithyyy001api, self._parsewithlxmusicapi, self._parsewithnxinxzapi, self._parsewithhaitangwapi, ] # vip
-        l3_parser_funcs = [self._parsewithguyueiapi, self._parsewithgdstudioapi, self._parsewithceseetapi, ][:0] # invalid or unstable accounts
+        l2_parser_funcs = [self._parsewithcggapi, self._parsewithlxmusicapi, self._parsewithnxinxzapi, self._parsewithhaitangwapi, ] # vip
+        l3_parser_funcs = [self._parsewithguyueiapi, self._parsewithyyy001api, self._parsewithgdstudioapi, ][:0] # invalid or unstable accounts
         for parser_func in (l1_parser_funcs + l2_parser_funcs + l3_parser_funcs):
             song_info_flac = SongInfo(source=self.source, raw_data={'search': search_result, 'download': {}, 'lyric': {}})
             with suppress(Exception): song_info_flac = parser_func(search_result, request_overrides)
@@ -363,7 +346,7 @@ class KuwoMusicClient(BaseMusicClient):
                 lossless_quality_is_sufficient = False if self.default_cookies or request_overrides.get('cookies') else True
                 with suppress(Exception): song_info = self._parsewithofficialapiv1(search_result=track_info, song_info_flac=song_info_flac, lossless_quality_is_sufficient=lossless_quality_is_sufficient, request_overrides=request_overrides)
                 if (song_info := song_info if song_info.with_valid_download_url else song_info_flac).with_valid_download_url: song_infos.append(song_info); continue
-                self.logger_handle.warning(f'Fail to parse song id {song_info.identifier} >>> {song_info.album} {song_info.song_name} {song_info.singers} {song_info.download_url}', disable_print=self.disable_print)
+                self.logger_handle.warning(f'Fail to parse track info {track_info}', disable_print=self.disable_print)
             main_process_context.advance(main_progress_id, 1); main_process_context.update(main_progress_id, description=f"{len(tracks_in_playlist)} Songs Found in Playlist {playlist_id} >>> Completed ({idx+1}/{len(tracks_in_playlist)}) SongInfo")
         # post processing
         playlist_name = legalizestring(safeextractfromdict(playlist_result_first, ['data', 'name'], None) or f"playlist-{playlist_id}")
