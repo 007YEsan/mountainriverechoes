@@ -9,6 +9,7 @@ from .twot58 import TwoT58MusicClient
 from .fangpi import FangpiMusicClient
 from .buguyy import BuguyyMusicClient
 from .liziyy import LiziYYMusicClient
+from .xiageba import XiagebaMusicClient
 from .itingwa import ITingWaMusicClient
 from .zhuolin import ZhuolinMusicClient
 from .gequbao import GequbaoMusicClient

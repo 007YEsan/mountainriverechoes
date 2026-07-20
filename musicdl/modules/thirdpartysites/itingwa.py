@@ -7,11 +7,12 @@ WeChat Official Account (微信公众号):
     Charles的皮卡丘
 '''
 import re
+import copy
 from bs4 import BeautifulSoup
 from contextlib import suppress
 from rich.progress import Progress
 from ..sources import BaseMusicClient
-from urllib.parse import urljoin, quote, parse_qs, urlparse
+from urllib.parse import urljoin, parse_qs, urlparse, urlencode
 from ..utils import legalizestring, usesearchheaderscookies, cleanlrc, SongInfo, AudioLinkTester
 
 
@@ -31,11 +32,13 @@ class ITingWaMusicClient(BaseMusicClient):
     def _constructsearchurls(self, keyword: str, rule: dict = None, request_overrides: dict = None):
         # init
         rule, request_overrides = rule or {}, request_overrides or {}
+        (default_rule := {'c': 'index', 'k': keyword, 't': '1', 'p': '1'}).update(rule)
         # construct search urls
         self.search_size_per_page = min(self.search_size_per_source, 10)
-        search_urls, page_size, count = [], self.search_size_per_page, 0
+        search_urls, page_size, count, base_url = [], self.search_size_per_page, 0, 'https://so.itingwa.com/?'
         while self.search_size_per_source > count:
-            search_urls.append(f'https://so.itingwa.com/?c=index&k={quote(keyword)}&t=1&p={int(count // page_size) + 1}')
+            (page_rule := copy.deepcopy(default_rule))['p'] = str(int(count // page_size) + 1)
+            search_urls.append(base_url + urlencode(page_rule))
             count += page_size
         # return
         return search_urls
