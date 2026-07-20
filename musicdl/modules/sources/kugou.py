@@ -101,13 +101,33 @@ class KugouMusicClient(BaseMusicClient):
         REQUEST_KEYS, decrypt_func = ['charlespikachuUE9WTUhLSklYOEE3SUdIMkZNMVA=', 'charlespikachuWE1VS0lBSjNQOExQWDNQOTcxS1U=', 'charlespikachuN0tUSTUyVDdWTE9EUjZTVDM3UFQ='], lambda t: base64.b64decode(str(t)[14:].encode('utf-8')).decode('utf-8')
         # parse
         for music_quality in MUSIC_QUALITIES:
-            (resp := requests.get(f"https://api.317ak.com/api/yinyue/kugou?ckey={decrypt_func(random.choice(REQUEST_KEYS))}&i={file_hash}&br={music_quality}&type=json&lrc=1", headers=headers, timeout=10, verify=False, **request_overrides)).raise_for_status()
+            (resp := requests.get(f"https://api.317ak.cn/api/yinyue/kugou?ckey={decrypt_func(random.choice(REQUEST_KEYS))}&i={file_hash}&br={music_quality}&type=json&lrc=1", headers=headers, timeout=10, verify=False, **request_overrides)).raise_for_status()
             if not (download_url := safeextractfromdict((download_result := resp2json(resp=resp)), ['url'], None)) or not str(download_url).startswith('http'): break
             with suppress(Exception): duration_in_secs = 0; duration_in_secs = float(search_result.get('duration', 0) or search_result.get('Duration', 0) or 0) or (float(search_result.get('timelen', 0) or 0) / 1000)
             download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
             song_info = SongInfo(
                 raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(download_result.get('songName')), singers=legalizestring(download_result.get('artistName')), album=legalizestring(download_result.get('albumName')), ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], 
                 file_size=download_url_status['file_size'], identifier=file_hash, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=cleanlrc(download_result.get('lyric') or ''), cover_url=download_result.get('cover'), download_url=download_url_status['download_url'], download_url_status=download_url_status, 
+            )
+            if song_info.with_valid_download_url and song_info.ext in AudioLinkTester.VALID_AUDIO_EXTS: break
+        song_info = SongInfo(source=self.source, raw_data={'search': search_result, 'download': download_result, 'lyric': {}}) if (song_info.file_size_bytes * 8 < 320000 * song_info.duration_s) else song_info
+        # return
+        return song_info
+    '''_parsewithxuanluogeapi'''
+    def _parsewithxuanluogeapi(self, search_result: dict, request_overrides: dict = None) -> "SongInfo":
+        # init
+        request_overrides, file_hash, MUSIC_QUALITIES = request_overrides or {}, search_result.get('hash') or search_result.get('FileHash'), ['super', 'viper_tape', 'viper_clear', 'viper_atmos', 'high', 'flac', '320'][2:]
+        if not (search_result.get('duration') or search_result.get('Duration') or search_result.get('timelen')): search_result.update(self._getsongmetainfo(song_id=file_hash, request_overrides=request_overrides))
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36", "Referer": "http://118.24.104.108:3456/"}
+        # parse
+        for music_quality in MUSIC_QUALITIES:
+            (resp := requests.get(f"http://118.24.104.108:3456/api.php?miss=getMusicUrl&source=kugou&id={file_hash}&level={music_quality}", headers=headers, timeout=10, verify=False, **request_overrides)).raise_for_status()
+            if not (download_url := safeextractfromdict((download_result := resp2json(resp=resp)), ['data', 0, 'url'], None)) or not str(download_url).startswith('http'): break
+            with suppress(Exception): duration_in_secs = 0; duration_in_secs = float(search_result.get('duration', 0) or search_result.get('Duration', 0) or 0) or (float(search_result.get('timelen', 0) or 0) / 1000)
+            download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
+            song_info = SongInfo(
+                raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(search_result.get('songname') or search_result.get('SongName') or search_result.get('songname_original') or search_result.get('OriSongName') or search_result.get('filename') or search_result.get('FileName') or search_result.get('name') or search_result.get('Name')), singers=legalizestring(search_result.get('singername') or search_result.get('SingerName') or ', '.join([singer.get('name') for singer in (search_result.get('singerinfo') or search_result.get('Singers') or []) if isinstance(singer, dict) and singer.get('name')])), 
+                album=legalizestring(search_result.get('album_name') or search_result.get('AlbumName') or safeextractfromdict(search_result, ['albuminfo', 'name'], None)), ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], identifier=file_hash, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, cover_url=safeextractfromdict(search_result, ['trans_param', 'union_cover'], None) or search_result.get('cover_url') or search_result.get('Image'), download_url=download_url_status['download_url'], download_url_status=download_url_status, 
             )
             if song_info.with_valid_download_url and song_info.ext in AudioLinkTester.VALID_AUDIO_EXTS: break
         song_info = SongInfo(source=self.source, raw_data={'search': search_result, 'download': download_result, 'lyric': {}}) if (song_info.file_size_bytes * 8 < 320000 * song_info.duration_s) else song_info
@@ -139,12 +159,34 @@ class KugouMusicClient(BaseMusicClient):
         with suppress(Exception): (resp := requests.get(lyric_url, headers=headers, allow_redirects=True, **request_overrides)).raise_for_status(); song_info.lyric = cleanlrc(resp.text)
         # return
         return song_info
+    '''_parsewith90svipapi'''
+    def _parsewith90svipapi(self, search_result: dict, request_overrides: dict = None) -> "SongInfo":
+        # init
+        request_overrides, file_hash, base_url = request_overrides or {}, search_result.get('hash') or search_result.get('FileHash'), 'https://music.90svip.cn/'
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36", "Referer": "https://music.90svip.cn/", "Accept": "application/json, text/javascript, */*; q=0.01", "X-Requested-With": "XMLHttpRequest"}
+        if not (search_result.get('duration') or search_result.get('Duration') or search_result.get('timelen')): search_result.update(self._getsongmetainfo(song_id=file_hash, request_overrides=request_overrides))
+        # parse download result
+        (resp := requests.post('https://music.90svip.cn/', data={'input': file_hash, 'filter': 'id', 'type': 'kugou', 'page': '1'}, headers=headers, **request_overrides)).raise_for_status()
+        download_url = urljoin(base_url, safeextractfromdict((download_result := resp2json(resp=resp)), ['data', 0, 'url'], ''))
+        with suppress(Exception): duration_in_secs = 0; duration_in_secs = float(search_result.get('duration', 0) or search_result.get('Duration', 0) or 0) or (float(search_result.get('timelen', 0) or 0) / 1000)
+        cover_url = urljoin(base_url, safeextractfromdict(download_result, ['data', 0, 'cover'], '') or '')
+        download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
+        song_info = SongInfo(
+            raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(download_result, ['data', 0, 'name'], None)), singers=legalizestring(safeextractfromdict(download_result, ['data', 0, 'artist'], None)), album=legalizestring(search_result.get('album_name') or search_result.get('AlbumName') or safeextractfromdict(search_result, ['albuminfo', 'name'], None)), 
+            ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], identifier=file_hash, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, cover_url=cover_url, download_url=download_url_status['download_url'], download_url_status=download_url_status, 
+        )
+        if not song_info.with_valid_download_url or song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS: return song_info
+        # parse lyric result
+        lyric_url = urljoin(base_url, safeextractfromdict(download_result, ['data', 0, 'lrc'], '') or '')
+        with suppress(Exception): (resp := requests.get(lyric_url, headers=headers, allow_redirects=True, **request_overrides)).raise_for_status(); song_info.lyric = cleanlrc(resp.text)
+        # return
+        return song_info
     '''_parsewiththirdpartapis'''
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         if self.default_cookies or request_overrides.get('cookies'): return SongInfo(source=self.source)
-        l1_parser_funcs = [self._parsewith317akapi, self._parsewithcocodownloaderapi, self._parsewithhaitangwapi, ] # svip
-        l2_parser_funcs = [self._parsewithjbsouapi, ] # vip
-        l3_parser_funcs = [] # invalid or unstable accounts
+        l1_parser_funcs = [self._parsewithxuanluogeapi, self._parsewith317akapi, ] # svip
+        l2_parser_funcs = [self._parsewithjbsouapi, self._parsewith90svipapi, ] # vip
+        l3_parser_funcs = [self._parsewithcocodownloaderapi, self._parsewithhaitangwapi, ] # invalid or unstable accounts
         for parser_func in (l1_parser_funcs + l2_parser_funcs + l3_parser_funcs):
             song_info_flac = SongInfo(source=self.source, raw_data={'search': search_result, 'download': {}, 'lyric': {}})
             with suppress(Exception): song_info_flac = parser_func(search_result, request_overrides)
@@ -257,7 +299,7 @@ class KugouMusicClient(BaseMusicClient):
                 lossless_quality_is_sufficient = False if self.default_cookies or request_overrides.get('cookies') else True
                 with suppress(Exception): song_info = self._parsewithofficialapiv1(search_result=track_info, song_info_flac=song_info_flac, lossless_quality_is_sufficient=lossless_quality_is_sufficient, request_overrides=request_overrides)
                 if (song_info := song_info if song_info.with_valid_download_url else song_info_flac).with_valid_download_url: song_infos.append(song_info); continue
-                self.logger_handle.warning(f'Fail to parse song id {song_info.identifier} >>> {song_info.album} {song_info.song_name} {song_info.singers} {song_info.download_url}', disable_print=self.disable_print)
+                self.logger_handle.warning(f'Fail to parse track info {track_info}', disable_print=self.disable_print)
             main_process_context.advance(main_progress_id, 1); main_process_context.update(main_progress_id, description=f"{len(tracks_in_playlist)} Songs Found in Playlist {playlist_id} >>> Completed ({idx+1}/{len(tracks_in_playlist)}) SongInfo")
         # post processing
         with suppress(Exception): playlist_name = None; (resp := self.get(playlist_url, headers={'referer': 'https://www.kugou.com/songlist/'}, **request_overrides)).raise_for_status(); playlist_name = json_repair.loads(re.search(r'var\s+specialInfo\s*=\s*(\{.*?\});', resp.text, re.S).group(1))['name']
