@@ -194,11 +194,33 @@ class KugouMusicClient(BaseMusicClient):
         with suppress(Exception): (resp := requests.get(lyric_url, headers=headers, allow_redirects=True, **request_overrides)).raise_for_status(); song_info.lyric = cleanlrc(resp.text)
         # return
         return song_info
+    '''_parsewithtomapi'''
+    def _parsewithtomapi(self, search_result: dict, request_overrides: dict = None) -> "SongInfo":
+        # init
+        request_overrides, file_hash, base_url = request_overrides or {}, search_result.get('hash') or search_result.get('FileHash'), 'https://music.tom.moe/'
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36", "Referer": "https://music.tom.moe/", "Accept": "application/json, text/javascript, */*; q=0.01", "X-Requested-With": "XMLHttpRequest"}
+        if not (search_result.get('duration') or search_result.get('Duration') or search_result.get('timelen')): search_result.update(self._getsongmetainfo(song_id=file_hash, request_overrides=request_overrides))
+        # parse download result
+        (resp := requests.post('https://music.tom.moe/', data={'input': file_hash, 'filter': 'id', 'type': 'kugou', 'page': '1'}, headers=headers, **request_overrides)).raise_for_status()
+        download_url = urljoin(base_url, safeextractfromdict((download_result := resp2json(resp=resp)), ['data', 0, 'url'], ''))
+        with suppress(Exception): duration_in_secs = 0; duration_in_secs = float(search_result.get('duration', 0) or search_result.get('Duration', 0) or 0) or (float(search_result.get('timelen', 0) or 0) / 1000)
+        cover_url = urljoin(base_url, safeextractfromdict(download_result, ['data', 0, 'cover'], '') or '')
+        download_url_status: dict = self.audio_link_tester.test(url=download_url, request_overrides=request_overrides, renew_session=True)
+        song_info = SongInfo(
+            raw_data={'search': search_result, 'download': download_result, 'lyric': {}}, source=self.source, song_name=legalizestring(safeextractfromdict(download_result, ['data', 0, 'name'], None)), singers=legalizestring(safeextractfromdict(download_result, ['data', 0, 'artist'], None)), album=legalizestring(search_result.get('album_name') or search_result.get('AlbumName') or safeextractfromdict(search_result, ['albuminfo', 'name'], None)), 
+            ext=download_url_status['ext'], file_size_bytes=download_url_status['file_size_bytes'], file_size=download_url_status['file_size'], identifier=file_hash, duration_s=duration_in_secs, duration=SongInfoUtils.seconds2hms(duration_in_secs), lyric=None, cover_url=cover_url, download_url=download_url_status['download_url'], download_url_status=download_url_status, 
+        )
+        if not song_info.with_valid_download_url or song_info.ext not in AudioLinkTester.VALID_AUDIO_EXTS: return song_info
+        # parse lyric result
+        lyric_url = urljoin(base_url, safeextractfromdict(download_result, ['data', 0, 'lrc'], '') or '')
+        with suppress(Exception): (resp := requests.get(lyric_url, headers=headers, allow_redirects=True, **request_overrides)).raise_for_status(); song_info.lyric = cleanlrc(resp.text)
+        # return
+        return song_info
     '''_parsewiththirdpartapis'''
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         if self.default_cookies or request_overrides.get('cookies'): return SongInfo(source=self.source)
         l1_parser_funcs = [self._parsewithxuanluogeapi, self._parsewith317akapi, ] # svip
-        l2_parser_funcs = [self._parsewithbakaapi, self._parsewithjbsouapi, self._parsewith90svipapi, ] # vip
+        l2_parser_funcs = [self._parsewithbakaapi, self._parsewithtomapi, self._parsewithjbsouapi, self._parsewith90svipapi, ] # vip
         l3_parser_funcs = [self._parsewithcocodownloaderapi, self._parsewithhaitangwapi, ] # invalid or unstable accounts
         for parser_func in (l1_parser_funcs + l2_parser_funcs + l3_parser_funcs):
             song_info_flac = SongInfo(source=self.source, raw_data={'search': search_result, 'download': {}, 'lyric': {}})
