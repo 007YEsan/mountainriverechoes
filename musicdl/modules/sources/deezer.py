@@ -114,7 +114,11 @@ class DeezerMusicClient(BaseMusicClient):
     def _parsewithantrahoshiapi(self, search_result: dict, request_overrides: dict = None):
         # init
         request_overrides, song_id, headers = request_overrides or {}, str(search_result.get('id') or search_result.get('SNG_ID')), {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36", "Origin": "https://antra.hoshi.cfd", "Referer": "https://antra.hoshi.cfd/"}
-        decrypt_func, accounts = lambda t: base64.b64decode(str(t)[14:].encode('utf-8')).decode('utf-8'), [('charlespikachubGFvd2FuZw==', 'charlespikachubGFvd2FuZzk2MDIxMg=='), ('charlespikachuRXJpYw==', 'charlespikachucmFuZG9tOTk5'), ('charlespikachuYnVzaW5lc3M=', 'charlespikachuYnVzaW5lc3M=')]
+        accounts = [
+            ('charlespikachubGFvd2FuZw==', 'charlespikachubGFvd2FuZzk2MDIxMg=='), ('charlespikachuZ2lybHNsb3ZldG9t', 'charlespikachuZ2lybHNsb3ZldG9tMTIzNDU2'), ('charlespikachuRXJpYw==', 'charlespikachucmFuZG9tOTk5'), ('charlespikachuZ3JlYXRtYW5hbnRyYQ==', 'charlespikachuZ3JlYXRtYW5hbnRyYQ=='), 
+            ('charlespikachubWFya2hlcmU=', 'charlespikachubWFya2hlcmU5OTk2NjY='), ('charlespikachubGFkeWdhZ2FmYW5z', 'charlespikachuMTIzNDU2Nzc2NTQzMjE='), ('charlespikachudGFsYXlvcg==', 'charlespikachudGFsYXlvcnRhbGF5b3I='), ('charlespikachuYnVzaW5lc3M=', 'charlespikachuYnVzaW5lc3M='), 
+        ]
+        decrypt_func = lambda t: base64.b64decode(str(t)[14:].encode('utf-8')).decode('utf-8')
         username, password = random.choice(accounts); username, password = decrypt_func(username), decrypt_func(password)
         # parse
         download_result = self._getsongmetainfo(song_id=song_id, request_overrides=request_overrides); session = requests.Session(); session.headers.update(headers)
@@ -183,7 +187,11 @@ class DeezerMusicClient(BaseMusicClient):
     '''_parsewiththirdpartapis'''
     def _parsewiththirdpartapis(self, search_result: dict, request_overrides: dict = None):
         if self.default_cookies: return SongInfo(source=self.source)
-        for parser_func in [self._parsewithflacdownloaderapi, self._parsewithdeemixerapi, self._parsewithantrahoshiapi, self._parsewithdeezdownloadersapi, self._parsewithmusicfabapi]:
+        l1_parser_funcs = [self._parsewithantrahoshiapi, ] # vip accounts
+        l2_parser_funcs = [self._parsewithflacdownloaderapi, self._parsewithdeemixerapi, ] # vip accounts but unstable
+        l3_parser_funcs = [self._parsewithmusicfabapi, ] # free accounts
+        l4_parser_funcs = [self._parsewithdeezdownloadersapi, ] # free accounts but unstable
+        for parser_func in (l1_parser_funcs + l2_parser_funcs + l3_parser_funcs + l4_parser_funcs):
             song_info_flac = SongInfo(source=self.source, raw_data={'search': search_result, 'download': {}, 'lyric': {}})
             with suppress(Exception): song_info_flac = parser_func(search_result, request_overrides)
             if song_info_flac.with_valid_download_url and song_info_flac.ext in AudioLinkTester.VALID_AUDIO_EXTS: break
