@@ -919,7 +919,13 @@ If you use this project in your research, please cite the repository.
 
 # 🌟 Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=CharlesPikachu/musicdl&type=date&legend=top-left)](https://www.star-history.com/#CharlesPikachu/musicdl&type=date&legend=top-left)
+<a href="https://www.star-history.com/?repos=CharlesPikachu%2Fmusicdl&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=CharlesPikachu/musicdl&type=date&theme=dark&legend=top-left&sealed_token=axGdGsfuV3U7yU3xuRqefd00QOOyg4ML_pZYT085iB1NQXB1KAjy4yg5ZeqeCGqsWgtJuJG9lkvlWhjuanM3NYaNXrStXzIsUThiBlYp4wNjK_5IVusPtw" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=CharlesPikachu/musicdl&type=date&legend=top-left&sealed_token=axGdGsfuV3U7yU3xuRqefd00QOOyg4ML_pZYT085iB1NQXB1KAjy4yg5ZeqeCGqsWgtJuJG9lkvlWhjuanM3NYaNXrStXzIsUThiBlYp4wNjK_5IVusPtw" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=CharlesPikachu/musicdl&type=date&legend=top-left&sealed_token=axGdGsfuV3U7yU3xuRqefd00QOOyg4ML_pZYT085iB1NQXB1KAjy4yg5ZeqeCGqsWgtJuJG9lkvlWhjuanM3NYaNXrStXzIsUThiBlYp4wNjK_5IVusPtw" />
+ </picture>
+</a>
 
 
 # ☕ Appreciation (赞赏 / 打赏)
