@@ -65,7 +65,7 @@ class AudioAwareColumn(ProgressColumn):
 class BaseMusicClient():
     source = 'BaseMusicClient'
     def __init__(self, search_size_per_source: int = 5, auto_set_proxies: bool = False, random_update_ua: bool = False, enable_search_curl_cffi: bool = False, enable_parse_curl_cffi: bool = False, enable_download_curl_cffi: bool = False, maintain_session: bool = False, logger_handle: LoggerHandle = None, disable_print: bool = False, work_dir: str = 'musicdl_outputs', 
-                 max_retries: int = 3, freeproxy_settings: dict = None, default_search_cookies: dict | str = None, default_download_cookies: dict | str = None, default_parse_cookies: dict | str = None, strict_limit_search_size_per_page: bool = True, search_size_per_page: int = 10, quark_parser_config: dict = None):
+                 max_retries: int = 3, freeproxy_settings: dict = None, default_search_cookies: dict | str = None, default_download_cookies: dict | str = None, default_parse_cookies: dict | str = None, strict_limit_search_size_per_page: bool = True, search_size_per_page: int = 10, quark_parser_config: dict = None, default_timeout: float | tuple = (10, 30)):
         # set up work dir
         IOUtils.touchdir(work_dir)
         # search size
@@ -88,6 +88,10 @@ class BaseMusicClient():
         self.maintain_session = maintain_session
         # max http request retries
         self.max_retries = max(max_retries, 1)
+        # default http request timeout: (连接超时, 读取超时)
+        # 用元组而非单一数值, 这样流式下载大文件时不会因为总耗时超限而中断 —
+        # 读取超时只约束"两次 chunk 之间的等待", 不约束整个响应的总时长。
+        self.default_timeout = default_timeout
         # headers and ua trick
         self.random_update_ua = random_update_ua
         self.default_search_headers = {'User-Agent': UserAgent().random}
@@ -273,22 +277,26 @@ class BaseMusicClient():
     def get(self, url, **kwargs):
         if 'cookies' not in kwargs: kwargs['cookies'] = self.default_cookies
         if 'impersonate' not in kwargs and self.enable_curl_cffi: kwargs['impersonate'] = random.choice(self.cc_impersonates)
+        # 兜底超时: 缺了它, 一个僵死连接会永久占住下载线程池里的一个线程, 整个任务卡死且不可中断
+        if kwargs.get('timeout') is None: kwargs['timeout'] = self.default_timeout
         for _ in range(self.max_retries):
             if not self.maintain_session: self._initsession(); self.random_update_ua and self.session.headers.update({'User-Agent': UserAgent().random})
             proxies, resp = kwargs.pop('proxies', None) or self._autosetproxies(), None
             try: (resp := self.session.get(url, proxies=proxies, **kwargs)).raise_for_status()
-            except Exception as err: self.logger_handle.error(f'{self.source}.get >>> {url} (Error: {err}; status={getattr(locals().get("resp"), "status_code", None)})', disable_print=self.disable_print); continue
+            except Exception as err: self.logger_handle.error(f'{self.source}.get >>> {url} (Error: {err}; status={getattr(resp, "status_code", None)})', disable_print=self.disable_print); continue
             return resp
         return resp
     '''post'''
     def post(self, url, **kwargs):
         if 'cookies' not in kwargs: kwargs['cookies'] = self.default_cookies
         if 'impersonate' not in kwargs and self.enable_curl_cffi: kwargs['impersonate'] = random.choice(self.cc_impersonates)
+        # 兜底超时: 同 get, 防止僵死请求永久占用线程
+        if kwargs.get('timeout') is None: kwargs['timeout'] = self.default_timeout
         for _ in range(self.max_retries):
             if not self.maintain_session: self._initsession(); self.random_update_ua and self.session.headers.update({'User-Agent': UserAgent().random})
             proxies, resp = kwargs.pop('proxies', None) or self._autosetproxies(), None
             try: (resp := self.session.post(url, proxies=proxies, **kwargs)).raise_for_status()
-            except Exception as err: self.logger_handle.error(f'{self.source}.post >>> {url} (Error: {err}; status={getattr(locals().get("resp"), "status_code", None)})', disable_print=self.disable_print); continue
+            except Exception as err: self.logger_handle.error(f'{self.source}.post >>> {url} (Error: {err}; status={getattr(resp, "status_code", None)})', disable_print=self.disable_print); continue
             return resp
         return resp
     '''_savetopkl'''
