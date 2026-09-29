@@ -111,3 +111,6 @@ musicdl_outputs/
 webui/ethnos_cache/
 # macOS Finder 元数据
 .DS_Store
+
+# 一次性调试脚手架(微信音源开发期产物, 成品见 musicdl/modules/sources/weixin.py)
+probe_weixin*.py

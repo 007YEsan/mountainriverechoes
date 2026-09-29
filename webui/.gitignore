@@ -6,3 +6,5 @@ ethnos_cache/
 server.log
 *.tmp
 .DS_Store
+ui_state.json
+# ui_state.json 是运行时 UI 态(我的歌单/隐藏曲目/卡片排序/自定义歌手增删), 属本机用户数据, 不入版本库

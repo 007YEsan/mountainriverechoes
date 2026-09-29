@@ -28,6 +28,7 @@ from .soundcloud import SoundCloudMusicClient
 from .streetvoice import StreetVoiceMusicClient
 from .opengameart import OpenGameArtMusicClient
 from .base import BaseMusicClient, BaseMusicClientKwargs
+from .weixin import WeixinMusicClient
 from .wikimediacommons import WikimediaCommonsMusicClient
 from ..audiobooks import XimalayaMusicClient, LizhiMusicClient, QingtingMusicClient, LRTSMusicClient, ITunesMusicClient
 from ..common import GDStudioMusicClient, TuneHubMusicClient, MP3JuiceMusicClient, MyFreeMP3MusicClient, JBSouMusicClient, XiaoBaiMusicClient
@@ -59,6 +60,7 @@ class MusicClientBuilder(BaseModuleBuilder):
         'FangpiMusicClient'  : FangpiMusicClient,      'FiveSongMusicClient'   : FiveSongMusicClient,       'KKWSMusicClient'       : KKWSMusicClient,           'GequhaiMusicClient'         : GequhaiMusicClient,             'LivePOOMusicClient'   : LivePOOMusicClient,
         'HTQYYMusicClient'   : HTQYYMusicClient,       'TwoT58MusicClient'     : TwoT58MusicClient,         'YinyuekuMusicClient'   : YinyuekuMusicClient,       'LiziYYMusicClient'          : LiziYYMusicClient,              'MGMP3MusicClient'     : MGMP3MusicClient,
         'ITingWaMusicClient' : ITingWaMusicClient,     'SgogoMusicClient'      : SgogoMusicClient,          'XMFWAVMusicClient'     : XMFWAVMusicClient,
+        'WeixinMusicClient'  : WeixinMusicClient,
     }
 
 
