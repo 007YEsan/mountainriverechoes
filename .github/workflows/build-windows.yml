@@ -19,6 +19,9 @@ jobs:
   build:
     runs-on: windows-latest
     timeout-minutes: 90
+    # 发版那一步要往 Releases 写东西, 默认令牌是只读的, 必须显式开写权限
+    permissions:
+      contents: write
 
     steps:
       - name: 检出源码
@@ -120,3 +123,22 @@ jobs:
           Get-ChildItem -Recurse packaging/installer/Output/*.exe | ForEach-Object {
             Write-Host "$($_.Name)  $([math]::Round($_.Length/1MB,1)) MB"
           }
+
+      - name: 发布到 Releases 页面
+        # 只在打 tag 时发版; 手动触发(workflow_dispatch)没有 tag, 只留 Actions 产物
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $exe = Get-ChildItem packaging/installer/Output/*.exe | Select-Object -First 1
+          if (-not $exe) { throw "未找到安装包" }
+          $sha = (Get-FileHash $exe.FullName -Algorithm SHA256).Hash.ToLower()
+          $sum = Join-Path $exe.DirectoryName "SHA256SUMS.txt"
+          Set-Content -Path $sum -Value "$sha  $($exe.Name)" -Encoding utf8
+          $notes = "Windows 安装包：双击即可安装（免管理员权限，内置 208MB 民族曲库）。" +
+                   " 校验 SHA256: $sha"
+          gh release create "${{ github.ref_name }}" $exe.FullName $sum `
+            --title "山河回响 ${{ github.ref_name }}" `
+            --notes $notes
+          Write-Host "已发布: ${{ github.ref_name }} -> $($exe.Name)"
