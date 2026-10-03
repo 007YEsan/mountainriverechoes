@@ -104,11 +104,13 @@ venv.bak/
 .mypy_cache/
 
 # === 本项目新增 ===
-# 运行产物与本地大数据: 体积以 GB 计, 不入版本控制
+# 运行产物: 不入版本控制
 # (backup/ 是没 git 时手工打包的兜底快照, 现已由 git 接管)
 backup/
 musicdl_outputs/
-webui/ethnos_cache/
+# 民族曲库 ethnos_cache 主数据已入库(2026-10-03) —— git 历史即回滚层,
+# 应用自身的单版快照目录继续排除, 避免每次界面操作都制造历史噪音
+webui/ethnos_cache/versions/
 # macOS Finder 元数据
 .DS_Store
 

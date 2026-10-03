@@ -2,9 +2,10 @@ venv/
 __pycache__/
 *.pyc
 downloads/
-ethnos_cache/
+ethnos_cache/versions/
 server.log
 *.tmp
 .DS_Store
 ui_state.json
 # ui_state.json 是运行时 UI 态(我的歌单/隐藏曲目/卡片排序/自定义歌手增删), 属本机用户数据, 不入版本库
+# ethnos_cache 主数据已入库(2026-10-03), 仅排除应用自身的单版快照目录 versions/
