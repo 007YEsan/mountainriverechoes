@@ -178,6 +178,7 @@ If you are a copyright or rights holder and believe that this repository infring
 - **配套入库工具**：
   - `wx_video_album.py`：微信公众号文章 / 视频专辑 / 公众号合集 → 曲库条目（mpvoice 音频 + mpvideo 视频 + 腾讯视频兜底，直链过期由主程序自愈逻辑回源续期）。
   - `import_bili_favlist.py`：B 站收藏夹 → 指定民族歌单（增量并入、自动去重、原子写回）。
+- **配套入库 Skill**：仓库根目录的 [`SKILL.md`](SKILL.md) 定义了一个歌曲入库技能（唤醒词：**「将这个链接入"某某"民族库」**）——给一个音乐平台链接并指定民族，即可自动完成解析、查重、合并写库全流程，支持微信文章/合集、六大音乐平台与 B 站收藏夹。
 
 ## 📦 数据与运行时产物
 
