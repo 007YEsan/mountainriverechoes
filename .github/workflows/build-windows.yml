@@ -1,0 +1,122 @@
+name: Build Windows Installer
+
+# 在云端 Windows runner 上产出真正的 .exe 安装包。
+# 触发方式二选一:
+#   1) GitHub 网页上 Actions -> Build Windows Installer -> Run workflow(手工触发)
+#   2) git tag v1.0.0 && git push --tags(发版)
+on:
+  workflow_dispatch:
+    inputs:
+      with_library:
+        description: '是否内置曲库(取消勾选则只装程序, 首次启动需自行导入)'
+        required: false
+        default: 'true'
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: 检出源码
+        uses: actions/checkout@v4
+
+      - name: 准备 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: 安装依赖
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install "pyinstaller>=6,<7"
+
+      - name: 由 JSON 曲库构建 SQLite 数据库
+        if: ${{ github.event.inputs.with_library != 'false' }}
+        run: |
+          python scripts/migrate_json_to_sqlite.py --db dist/library/mountainriverechoes.db
+
+      - name: 打包为单目录程序
+        run: |
+          pyinstaller packaging/mountainriverechoes.spec --noconfirm --distpath dist --workpath build/pyinstaller
+
+      - name: 冒烟测试(启动产物并验证健康接口)
+        shell: pwsh
+        env:
+          # 固定数据目录: 一是避免污染 runner 用户目录, 二是让日志路径可预期(后面要扫日志)
+          MRE_DATA_DIR: ${{ runner.temp }}\mre-smoke
+        run: |
+          $exe = "dist\mountainriverechoes\mountainriverechoes.exe"
+          if (-not (Test-Path $exe)) { throw "未找到产物: $exe" }
+          New-Item -ItemType Directory -Force -Path $env:MRE_DATA_DIR | Out-Null
+          $proc = Start-Process -FilePath $exe -ArgumentList "--no-browser" -PassThru
+          try {
+            $ok = $false
+            for ($i = 0; $i -lt 30; $i++) {
+              Start-Sleep -Seconds 2
+              try {
+                $r = Invoke-WebRequest -Uri "http://127.0.0.1:8766/health" -UseBasicParsing -TimeoutSec 5
+                if ($r.StatusCode -eq 200) { $ok = $true; break }
+              } catch {}
+            }
+            if (-not $ok) { throw "产物启动后 60 秒内 /health 未就绪" }
+            # 只验 /health 不够: 蓝图是动态导入的, 打包漏了子模块时 /health 照样 200,
+            # 但所有业务接口都不存在。所以再验一个真接口 + 扫描日志里的"未启用"告警。
+            $info = Invoke-WebRequest -Uri "http://127.0.0.1:8766/api/index" -UseBasicParsing
+            if ($info.StatusCode -ne 200) { throw "/api/index 状态码 $($info.StatusCode)" }
+            Write-Host "冒烟通过: $($info.Content)"
+            $log = Join-Path $env:MRE_DATA_DIR "logs\mountainriverechoes.log"
+            if (-not (Test-Path $log)) { throw "未找到运行日志: $log" }
+            $warns = Select-String -Path $log -Pattern "未启用" -Encoding utf8 -ErrorAction SilentlyContinue
+            if ($warns) { throw "打包产物存在未加载的模块:`n$($warns -join "`n")" }
+            Write-Host "模块加载检查通过(无未启用项)"
+          } finally {
+            if (-not $proc.HasExited) { Stop-Process -Id $proc.Id -Force }
+          }
+
+      - name: 验证用户数据目录落在发行方目录下
+        shell: pwsh
+        run: |
+          # 上一冒烟用 MRE_DATA_DIR 指定了目录, 这里刻意不指定: 走默认规则,
+          # 才能真机确认"发行方名 -> 数据目录路径"这一环(本机 macOS 无法验证 Windows 行为)。
+          $expected = Join-Path $env:LOCALAPPDATA "李大光\MountainRiverEchoes"
+          $proc = Start-Process -FilePath "dist\mountainriverechoes\mountainriverechoes.exe" `
+                                -ArgumentList "--no-browser","--port","8790" -PassThru
+          try {
+            for ($i = 0; $i -lt 30; $i++) {
+              Start-Sleep -Seconds 2
+              if (Test-Path $expected) { break }
+            }
+            if (-not (Test-Path $expected)) { throw "未生成预期的数据目录: $expected" }
+            Write-Host "数据目录符合预期: $expected"
+          } finally {
+            if (-not $proc.HasExited) { Stop-Process -Id $proc.Id -Force }
+          }
+
+      - name: 安装 Inno Setup
+        run: choco install innosetup --no-progress -y
+
+      - name: 生成安装包
+        shell: cmd
+        run: |
+          "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" packaging\installer\setup.iss
+
+      - name: 上传安装包
+        uses: actions/upload-artifact@v4
+        with:
+          name: MountainRiverEchoes-Setup
+          path: packaging/installer/Output/*.exe
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: 整理产物信息
+        shell: pwsh
+        run: |
+          Get-ChildItem -Recurse packaging/installer/Output/*.exe | ForEach-Object {
+            Write-Host "$($_.Name)  $([math]::Round($_.Length/1MB,1)) MB"
+          }

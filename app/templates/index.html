@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>山河回响 听见56个民族的音乐</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body>
+<svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+<symbol id="i-note" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></symbol>
+<symbol id="i-disc" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/></symbol>
+<symbol id="i-fm" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="12" rx="3"/><path d="M7 8l9-5"/><circle cx="16" cy="14" r="3"/></symbol>
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.5-4.5"/></symbol>
+<symbol id="i-discover" viewBox="0 0 24 24"><path d="M3 12l18-8-8 18-2-8z"/></symbol>
+<symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5"/><path d="M4 20h16"/></symbol>
+<symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2.5h8a2 2 0 012 2V17a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></symbol>
+<symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20.5S3.5 15 3.5 9.3A4.8 4.8 0 0112 6.4a4.8 4.8 0 018.5 2.9C20.5 15 12 20.5 12 20.5z"/></symbol>
+<symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.8v14.4c0 .9 1 1.5 1.8 1L20 13c.8-.5.8-1.6 0-2L8.8 3.8C8 3.3 7 3.9 7 4.8z"/></symbol>
+<symbol id="i-pause" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" rx="1.2"/><rect x="14" y="4" width="4" height="16" rx="1.2"/></symbol>
+<symbol id="i-prev" viewBox="0 0 24 24"><path d="M5 5v14"/><path d="M19 6.5v11c0 .8-.9 1.3-1.6.9L8.6 13a1 1 0 010-1.8l8.8-5.5c.7-.4 1.6.1 1.6.8z"/></symbol>
+<symbol id="i-next" viewBox="0 0 24 24"><path d="M19 5v14"/><path d="M5 6.5v11c0 .8.9 1.3 1.6.9l8.8-5.4a1 1 0 000-1.8L6.6 5.7C5.9 5.3 5 5.8 5 6.5z"/></symbol>
+<symbol id="i-repeat" viewBox="0 0 24 24"><path d="M17 2.5l3 3-3 3"/><path d="M20 5.5H7a3.5 3.5 0 00-3.5 3.5v1"/><path d="M7 21.5l-3-3 3-3"/><path d="M4 18.5h13a3.5 3.5 0 003.5-3.5v-1"/></symbol>
+<symbol id="i-repeat1" viewBox="0 0 24 24"><path d="M17 2.5l3 3-3 3"/><path d="M20 5.5H7a3.5 3.5 0 00-3.5 3.5v1"/><path d="M7 21.5l-3-3 3-3"/><path d="M4 18.5h13a3.5 3.5 0 003.5-3.5v-1"/><path d="M11 15V9l-1.5 1.2" stroke-width="1.6"/></symbol>
+<symbol id="i-shuffle" viewBox="0 0 24 24"><path d="M3 7h3.5c1.7 0 3.2.8 4.2 2.2l3.6 5.6c1 1.4 2.5 2.2 4.2 2.2H21"/><path d="M3 17h3.5c1.7 0 3.2-.8 4.2-2.2l3.6-5.6C15.3 7.8 16.8 7 18.5 7H21"/><path d="M18.5 4.5L21 7l-2.5 2.5M18.5 14.5L21 17l-2.5 2.5"/></symbol>
+<symbol id="i-vol" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4.2 4.2 0 010 6"/><path d="M18 6.5a8 8 0 010 11"/></symbol>
+<symbol id="i-list" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h9"/><circle cx="19" cy="18" r="2"/><path d="M21 18V9.5"/></symbol>
+<symbol id="i-lyric" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M8 8.5h8M8 12h8M8 15.5h5"/></symbol>
+<symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M19 12a7 7 0 00-.14-1.4l2-1.55-2-3.46-2.36.95a7 7 0 00-2.42-1.4L13.7 2.6h-3.4l-.38 2.54a7 7 0 00-2.42 1.4l-2.36-.95-2 3.46 2 1.55A7 7 0 005 12c0 .47.05.94.14 1.4l-2 1.55 2 3.46 2.36-.95a7 7 0 002.42 1.4l.38 2.54h3.4l.38-2.54a7 7 0 002.42-1.4l2.36.95 2-3.46-2-1.55c.09-.46.14-.93.14-1.4z"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-artist" viewBox="0 0 24 24"><path d="M9 11a3.5 3.5 0 100-7 3.5 3.5 0 000 7z"/><path d="M2.5 20c0-3.3 2.9-5.5 6.5-5.5 1 0 1.9.15 2.7.45"/><path d="M17.5 14v6M14.5 17h6"/></symbol>
+<symbol id="i-import" viewBox="0 0 24 24"><path d="M12 3v10m0 0l-4-4m4 4l4-4"/><path d="M4 15v3a3 3 0 003 3h10a3 3 0 003-3v-3"/></symbol>
+<symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2M6.5 7l1 13h9l1-13"/></symbol>
+<symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="M4.5 12.5l5 5L19.5 7"/></symbol>
+<symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 12a8 8 0 10-2.34 5.66"/><path d="M20 12V6.5M20 12h-5.5"/></symbol>
+<symbol id="i-extern" viewBox="0 0 24 24"><path d="M14 4h6v6"/><path d="M20 4L10 14"/><path d="M19 13.5V19a1.5 1.5 0 01-1.5 1.5h-12A1.5 1.5 0 014 19V7a1.5 1.5 0 011.5-1.5H10"/></symbol>
+<symbol id="i-arrow-l" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+<symbol id="i-arrow-r" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+</svg>
+
+<div id="app">
+  <!-- ============ 侧栏 ============ -->
+  <aside id="sidebar">
+    <div class="logo">
+      <div class="logo-icon"><svg viewBox="0 0 24 24"><use href="#i-note"/></svg></div>
+      <div><b>山河回响</b><small>听见56个民族的音乐</small></div>
+    </div>
+    <nav id="nav">
+      <div class="nav-title">在线音乐</div>
+      <div class="nav-item nav-indexhl" data-page="index"><svg class="ic" style="color:#e0392f"><use href="#i-disc"/></svg><span class="grow" style="font-weight:600">音乐库索引</span></div>
+      <div class="nav-item nav-ethnos" data-page="ethnos"><svg class="ic" style="color:#b8860b"><use href="#i-note"/></svg><span class="grow" style="color:#b8860b;font-weight:600">民族音乐歌单</span></div>
+      <div class="nav-item" data-page="discover"><svg class="ic" style="color:#3b82f6"><use href="#i-discover"/></svg><span class="grow">发现音乐</span></div>
+      <div class="nav-item" data-page="fm"><svg class="ic" style="color:#8b5cf6"><use href="#i-fm"/></svg><span class="grow">私人FM</span><span class="badge" id="fm-badge" style="display:none">ON</span></div>
+      <div class="nav-title">我的音乐</div>
+      <div class="nav-item" data-page="history"><svg class="ic" style="color:#14b8a6"><use href="#i-clock"/></svg><span class="grow">最近播放</span></div>
+      <div class="nav-item" data-page="downloads"><svg class="ic" style="color:#22c55e"><use href="#i-download"/></svg><span class="grow">下载管理</span></div>
+      <div class="nav-item" data-page="local"><svg class="ic" style="color:#f97316"><use href="#i-folder"/></svg><span class="grow">本地音乐</span></div>
+      <div class="nav-item" data-page="favorites"><svg class="ic" style="color:#ec4899"><use href="#i-heart"/></svg><span class="grow">我喜欢的音乐</span></div>
+      <div class="nav-title">我的歌单</div>
+      <div class="nav-item" id="nav-newpl"><svg class="ic" style="color:#64748b"><use href="#i-plus"/></svg><span class="grow">新建歌单...</span></div>
+      <div id="my-playlists"></div>
+      <div class="nav-title">导入的歌单</div>
+      <div class="nav-item" id="nav-import"><svg class="ic" style="color:#0ea5e9"><use href="#i-import"/></svg><span class="grow">导入歌单...</span></div>
+      <div id="custom-playlists"></div>
+    </nav>
+    <div class="side-foot">
+      <button id="btn-settings"><svg class="ic sm"><use href="#i-gear"/></svg>音源设置</button>
+      <span style="flex:1"></span>
+      <button id="btn-power" title="关闭服务">⏻</button>
+    </div>
+  </aside>
+
+  <!-- ============ 主区 ============ -->
+  <main id="main">
+    <header id="topbar">
+      <div class="nav-btns">
+        <button class="round-btn" id="btn-back" title="返回上一页"><svg class="ic"><use href="#i-arrow-l"/></svg></button>
+        <button class="round-btn" id="btn-fwd" disabled><svg class="ic"><use href="#i-arrow-r"/></svg></button>
+      </div>
+      <div id="searchbox">
+        <div class="box">
+          <svg class="ic sm"><use href="#i-search"/></svg>
+          <input id="search-input" placeholder="搜索音乐、歌手、专辑..." autocomplete="off">
+        </div>
+        <div id="search-hist"></div>
+      </div>
+    </header>
+
+    <section id="content">
+      <!-- 发现音乐 -->
+      <div class="page" id="page-discover">
+        <div class="hero">
+          <h2>在这里，听见全世界</h2>
+          <p>聚合 · 搜索 / 试听 / 歌词 / </p>
+          <div class="hot" id="hot-words"></div>
+        </div>
+        <div class="sec-title" style="margin-top:26px"><b>排行榜</b><span style="font-size:12px;color:var(--txt3)" id="charts-updated">实时抓取</span></div>
+        <div class="chart-row" id="chart-row"></div>
+        <div class="sec-title"><b>推荐歌单</b><span style="font-size:12px;color:var(--txt3)">点击歌单即刻浏览</span></div>
+        <div class="pl-grid" id="pl-grid"></div>
+      </div>
+
+      <!-- 民族音乐 -->
+      <div class="page" id="page-ethnos">
+        <div class="page-title">民族音乐专区<small>56 个民族歌单 · 点击卡片进入</small></div>
+        <div class="pl-grid" id="ethnos-grid"></div>
+      </div>
+
+      <!-- 最近播放 -->
+      <div class="page" id="page-history">
+        <div class="page-title">最近播放<small id="hist-sub"></small></div>
+        <div class="chips"><span style="flex:1"></span><button class="btn btn-plain btn-sm" id="hist-clear"><svg class="ic sm"><use href="#i-trash"/></svg>清空记录</button></div>
+        <table class="song-table"><thead><tr>
+          <th class="td-index"></th><th>歌曲</th><th style="width:190px">歌手</th><th style="width:190px">专辑</th><th style="width:80px">音源</th><th style="width:52px">时长</th><th style="width:130px"></th>
+        </tr></thead><tbody id="history-tbody"></tbody></table>
+      </div>
+
+      <!-- 音乐库索引 (默认首页) -->
+      <div class="page" id="page-index">
+        <div class="ethnos-hero">
+          <div>
+            <h2>五十六个民族 · 音乐地图</h2>
+            <p>遍历多音源聚合搜索，为 56个少数民族逐一构建民族音乐歌单（民歌 / 特色曲种 / 民族语言歌曲）</p>
+          </div>
+          <div class="ethnos-hero-acts">
+            <button class="btn ethnos-btn" id="ethnos-stop" style="display:none">停止构建</button>
+          </div>
+        </div>
+        <div class="ethnos-progress" id="ethnos-progress" style="display:none">
+          <div class="ethnos-bar"><div class="ethnos-fill" id="ethnos-fill"></div></div>
+          <span id="ethnos-prog-text" style="font-size:12px;color:#8a6d1a"></span>
+        </div>
+        <div class="page-title">音乐库索引<small id="idx-sub"></small></div>
+        <div class="stabs" style="margin-bottom:18px">
+          <div class="stab on" data-itab="ethnos">民族</div>
+          <div class="stab" data-itab="topics">专题</div>
+        </div>
+        <div id="itab-ethnos">
+          <div style="display:flex;gap:10px;margin-bottom:14px;align-items:center">
+            <input class="filter-input" id="eth-filter" placeholder="输入歌手名或歌曲名...">
+            <div class="chips" id="eth-mode" style="margin:0">
+              <div class="chip on" data-mode="artist">歌手</div>
+              <div class="chip" data-mode="song">歌曲</div>
+            </div>
+            <span style="font-size:11.5px;color:var(--txt3)" id="eth-filter-hint"></span>
+          </div>
+          <!-- 歌曲检索结果: 与 #idx-ethnos 并列, 放在搜索框外部, 避免被 renderIndex 重写 innerHTML 摧毁 -->
+          <div id="idx-songs" style="display:none">
+            <div id="idx-songs-summary" style="color:var(--txt3);font-size:12.5px;margin:0 0 10px"></div>
+            <table class="song-table"><thead><tr>
+              <th class="td-index"></th><th>歌曲</th><th style="width:150px">歌手</th><th style="width:150px">专辑</th><th style="width:86px">民族库</th><th style="width:76px">音源</th><th style="width:52px">时长</th><th style="width:110px"></th>
+            </tr></thead><tbody id="idx-songs-tbody"></tbody></table>
+            <div class="empty" id="idx-songs-empty" style="display:none"><svg><use href="#i-disc"/></svg><div>暂无匹配的歌曲</div></div>
+          </div>
+          <div id="idx-ethnos"></div>
+        </div>
+        <div id="itab-topics" style="display:none"><div class="pl-grid" id="idx-topics"></div></div>
+      </div>
+
+      <!-- 私人FM -->
+      <div class="page" id="page-fm">
+        <div class="fm-wrap">
+          <div class="fm-disc" id="fm-disc"><div class="inner">FM</div></div>
+          <h2 style="margin:22px 0 6px">私人FM</h2>
+          <p style="color:var(--txt3);margin-bottom:24px" id="fm-tip">根据热榜为你随机推荐，遇见惊喜</p>
+          <div style="display:flex;gap:12px">
+            <button class="btn btn-primary" id="fm-start"><svg class="ic"><use href="#i-play"/></svg>开始收听</button>
+            <button class="btn btn-plain" id="fm-next" style="display:none"><svg class="ic"><use href="#i-next"/></svg>换一首</button>
+            <button class="btn btn-plain" id="fm-ban" style="display:none"><svg class="ic"><use href="#i-trash"/></svg>不喜欢</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 搜索 -->
+      <div class="page" id="page-search">
+        <div class="stabs">
+          <div class="stab on" data-tab="songs">单曲</div>
+          <div class="stab" data-tab="artists">歌手</div>
+          <div class="stab" data-tab="albums">专辑</div>
+          <div class="stab" data-tab="playlist">歌单</div>
+        </div>
+        <div id="stab-songs">
+          <div class="chips" id="src-chips"></div>
+          <div id="search-summary" style="color:var(--txt3);font-size:12.5px;margin:4px 0 10px"></div>
+          <table class="song-table"><thead><tr>
+            <th class="td-index"></th><th>歌曲</th><th style="width:190px">歌手</th><th style="width:190px">专辑</th><th style="width:80px">音源</th><th style="width:52px">时长</th><th style="width:96px"></th>
+          </tr></thead><tbody id="search-tbody"></tbody></table>
+          <div class="empty" id="search-empty" style="display:none"><svg><use href="#i-disc"/></svg><div>暂无搜索结果</div></div>
+        </div>
+        <div id="stab-artists" style="display:none"><div class="art-grid" id="art-grid"></div></div>
+        <div id="stab-albums" style="display:none"><div class="alb-grid" id="alb-grid"></div></div>
+        <div id="stab-playlist" style="display:none;max-width:560px;padding-top:24px">
+          <p style="color:var(--txt2);margin-bottom:12px">粘贴网易云 / QQ音乐 / 汽水音乐歌单链接，一键导入：</p>
+          <div style="display:flex;gap:10px">
+            <input class="filter-input" id="pl-url" style="flex:1" placeholder="music.163.com/#/playlist?id=... 或 y.qq.com 或 qishui.douyin.com/s/...">
+            <button class="btn btn-primary btn-sm" id="pl-go">导入歌单</button>
+          </div>
+          <p style="color:var(--txt3);font-size:11.5px;margin-top:10px">汽水音乐支持 App 分享短链；酷狗 / 酷我歌单走逐首解析较慢。导入后加入左侧"导入的歌单"。</p>
+        </div>
+      </div>
+
+      <!-- 歌单详情 -->
+      <div class="page" id="page-playlist">
+        <div style="margin-bottom:14px"><button class="btn btn-plain btn-sm" id="pld-back"><svg class="ic sm"><use href="#i-arrow-l"/></svg>返回上一级</button></div>
+        <div class="pl-head">
+          <div class="cov" id="pld-cov"></div>
+          <div style="flex:1;min-width:0">
+            <span class="tag" id="pld-platform" style="background:#fdeeee;color:var(--red);font-size:11px;padding:2px 9px">歌单</span>
+            <h2 id="pld-name">歌单</h2>
+            <div class="meta" id="pld-meta"></div>
+            <div class="acts">
+              <button class="btn btn-primary" id="pld-playall"><svg class="ic sm"><use href="#i-play"/></svg>播放全部</button>
+              <button class="btn btn-plain" id="pld-batch"><svg class="ic sm"><use href="#i-list"/></svg>批量管理</button>
+            </div>
+          </div>
+        </div>
+        <table class="song-table"><thead><tr>
+          <th class="td-index"></th><th>歌曲</th><th style="width:190px">歌手</th><th style="width:190px">专辑</th><th style="width:80px">音源</th><th style="width:52px">时长</th><th style="width:96px"></th>
+        </tr></thead><tbody id="pld-tbody"></tbody></table>
+        <div class="batchbar" id="pld-batchbar" style="display:none">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px"><input type="checkbox" id="pld-ball"> 全选</label>
+          <span class="bcnt" id="pld-bcnt">已选 <b>0</b> 首</span>
+          <span style="flex:1"></span>
+          <button class="btn btn-plain btn-sm" id="pld-bmove"><svg class="ic sm"><use href="#i-folder"/></svg>移动到…</button>
+          <button class="btn btn-danger btn-sm" id="pld-bdel"><svg class="ic sm"><use href="#i-trash"/></svg>删除所选</button>
+          <button class="btn btn-plain btn-sm" id="pld-bcopy" title="复制到其他民族歌单，源歌单保留"><svg class="ic sm"><use href="#i-plus"/></svg>复制到…</button>
+          <button class="btn btn-plain btn-sm" id="pld-bexit">退出</button>
+        </div>
+      </div>
+
+      <!-- 下载管理 -->
+      <div class="page" id="page-downloads">
+        <div class="page-title">下载管理<small id="dl-sub"></small></div>
+        <div class="chips" id="dl-chips">
+          <div class="chip on" data-f="all">全部</div>
+          <div class="chip" data-f="downloading">进行中</div>
+          <div class="chip" data-f="done">已完成</div>
+          <div class="chip" data-f="failed">失败</div>
+          <span style="flex:1"></span>
+          <button class="btn btn-plain btn-sm" id="dl-clear">清除已完成</button>
+        </div>
+        <div id="dl-list"></div>
+      </div>
+
+      <!-- 本地音乐 -->
+      <div class="page" id="page-local">
+        <div class="page-title">本地音乐<small id="local-sub"></small></div>
+        <div style="display:flex;gap:10px;margin-bottom:14px;align-items:center">
+          <input class="filter-input" id="local-filter" placeholder="筛选本地文件...">
+          <button class="btn btn-plain btn-sm" id="local-open"><svg class="ic sm"><use href="#i-extern"/></svg>打开下载目录</button>
+          <button class="btn btn-plain btn-sm" id="local-playall"><svg class="ic sm"><use href="#i-play"/></svg>播放全部</button>
+        </div>
+        <table class="song-table"><thead><tr>
+          <th class="td-index"></th><th>文件</th><th style="width:120px">歌手*</th><th style="width:70px">格式</th><th style="width:80px">大小</th><th style="width:130px">下载时间</th><th style="width:96px"></th>
+        </tr></thead><tbody id="local-tbody"></tbody></table>
+      </div>
+
+      <!-- 我喜欢的音乐 -->
+      <div class="page" id="page-favorites">
+        <div class="pl-head" style="margin-bottom:10px">
+          <div class="cov" style="display:grid;place-items:center;background:linear-gradient(135deg,#ffb199,#ff0844)"><svg class="ic lg fill" style="color:#fff;width:54px;height:54px"><use href="#i-heart"/></svg></div>
+          <div>
+            <span class="tag" style="background:#fdeeee;color:var(--red);font-size:11px;padding:2px 9px">歌单</span>
+            <h2>我喜欢的音乐</h2>
+            <div class="meta" id="fav-meta"></div>
+            <div class="acts"><button class="btn btn-primary" id="fav-playall"><svg class="ic sm"><use href="#i-play"/></svg>播放全部</button></div>
+          </div>
+        </div>
+        <table class="song-table"><thead><tr>
+          <th class="td-index"></th><th>歌曲</th><th style="width:190px">歌手</th><th style="width:190px">专辑</th><th style="width:80px">音源</th><th style="width:52px">时长</th><th style="width:96px"></th>
+        </tr></thead><tbody id="fav-tbody"></tbody></table>
+        <div class="empty" id="fav-empty" style="display:none"><svg><use href="#i-heart"/></svg><div>点击歌曲旁的 ♥ 收藏喜欢的音乐</div></div>
+      </div>
+
+      <!-- 播放页(黑胶) -->
+      <div id="nowplaying">
+        <div id="np-bg"></div>
+        <div id="np-close">✕</div>
+        <div id="np-body">
+          <div class="np-left">
+            <div id="np-needle"><svg viewBox="0 0 120 120"><circle cx="16" cy="16" r="10" fill="#444"/><rect x="12" y="20" width="9" height="62" rx="4" transform="rotate(12 16 16)"/><rect x="20" y="76" width="26" height="10" rx="5" transform="rotate(12 16 16)" fill="#e8e8ea"/></svg></div>
+            <div id="np-disc"><div id="np-cover"><div class="ph"><svg class="ic lg"><use href="#i-disc"/></svg></div></div></div>
+          </div>
+          <div class="np-right">
+            <div class="np-headrow">
+              <div class="tblock">
+                <div id="np-title">未在播放</div>
+                <div id="np-sub"></div>
+              </div>
+              <div id="np-acts">
+                <button class="np-btn" id="np-heart" title="喜欢"><svg class="ic lg"><use href="#i-heart"/></svg></button>
+                <button class="np-btn" id="np-addlrc" title="添加歌词"><svg class="ic lg"><use href="#i-note"/></svg></button>
+                <button class="np-btn" id="np-dl" title="多音源下载"><svg class="ic lg"><use href="#i-download"/></svg></button>
+              </div>
+            </div>
+            <div id="np-lyric"><div class="lrc-line" style="text-align:center;margin-top:34%">暂无歌词</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============ 播放条 ============ -->
+  <footer id="playerbar">
+    <div class="pb-left">
+      <div id="pb-cover" title="打开播放页"><div class="ph"><svg class="ic lg"><use href="#i-note"/></svg></div><div class="res"><span class="spin"></span></div></div>
+      <div class="pb-song">
+        <div class="nm" id="pb-name">未在播放</div>
+        <div class="ar" id="pb-artist">—</div>
+      </div>
+      <button class="heart pb-heart" id="pb-heart"><svg class="ic"><use href="#i-heart"/></svg></button>
+      <button class="heart pb-heart" id="pb-dl" title="多音源下载当前歌曲"><svg class="ic"><use href="#i-download"/></svg></button>
+    </div>
+    <div class="pb-center" style="flex-direction:column;gap:0">
+      <div style="display:flex;align-items:center;gap:14px">
+        <button class="pb-btn" id="pb-mode" title="播放模式"><svg class="ic"><use href="#i-repeat"/></svg></button>
+        <button class="pb-btn" id="pb-prev" title="上一首"><svg class="ic lg fill"><use href="#i-prev"/></svg></button>
+        <button id="pb-play" title="播放/暂停"><svg class="fill"><use href="#i-play"/></svg></button>
+        <button class="pb-btn" id="pb-next" title="下一首"><svg class="ic lg fill"><use href="#i-next"/></svg></button>
+        <div id="vol-wrap">
+          <button class="pb-btn dim" id="pb-vol"><svg class="ic"><use href="#i-vol"/></svg></button>
+          <div id="vol-pop"><div class="bar" id="vol-bar"><div class="fill" style="width:80%"></div><div class="dot" style="left:80%"></div></div></div>
+        </div>
+      </div>
+      <div class="pb-prog">
+        <span class="time" id="t-cur">00:00</span>
+        <div class="bar" id="prog-bar"><div class="fill" style="width:0"></div><div class="dot" style="left:0"></div></div>
+        <span class="time" id="t-dur">00:00</span>
+      </div>
+    </div>
+    <div class="pb-right">
+      <button class="pb-btn dim" id="btn-lyricpage" title="歌词"><svg class="ic"><use href="#i-lyric"/></svg></button>
+      <div style="position:relative">
+        <button class="pb-btn dim" id="btn-drawer" title="播放列表"><svg class="ic"><use href="#i-list"/></svg><span id="pb-count">0</span></button>
+      </div>
+    </div>
+  </footer>
+
+  <!-- 播放列表抽屉 -->
+  <div id="drawer">
+    <div class="dw-head"><span id="dw-title">播放列表</span><span class="grow"></span>
+      <button id="dw-clear"><svg class="ic sm"><use href="#i-trash"/></svg>清空</button>
+      <button id="dw-close"><svg class="ic sm"><use href="#i-x"/></svg></button>
+    </div>
+    <div id="dw-list"></div>
+  </div>
+</div>
+
+<!-- 加入歌单 -->
+<div class="overlay" id="dlg-addpl">
+  <div class="dlg" style="width:min(440px,92vw)">
+    <div class="dlg-head">
+      <div class="t"><b>加入歌单</b><div class="sub" id="addpl-song"></div></div>
+      <button class="dlg-close" data-close="dlg-addpl">✕</button>
+    </div>
+    <div class="dlg-body" id="addpl-list" style="min-height:80px"></div>
+    <div class="dlg-foot"><span class="grow"></span><button class="btn btn-plain btn-sm" id="addpl-new"><svg class="ic sm"><use href="#i-plus"/></svg>新建歌单</button></div>
+  </div>
+</div>
+
+<!-- 多音源下载对话框 -->
+<div class="overlay" id="dlg-ms">
+  <div class="dlg">
+    <div class="dlg-head">
+      <div class="t"><b id="ms-name">多音源下载</b><div class="sub" id="ms-sub"></div></div>
+      <button class="dlg-close" data-close="dlg-ms">✕</button>
+    </div>
+    <div class="src-progress" id="ms-progress"></div>
+    <div class="dlg-body" id="ms-body"></div>
+    <div class="dlg-foot">
+      <button class="btn btn-plain btn-sm" id="ms-all">全选 / 取消全选</button>
+      <button class="btn btn-plain btn-sm" id="ms-research"><svg class="ic sm"><use href="#i-refresh"/></svg>重新搜索</button>
+      <span class="grow"></span>
+      <button class="btn btn-primary btn-sm" id="ms-best">⬇ 智能选优下载</button>
+      <button class="btn btn-primary btn-sm" id="ms-dl">下载所选 (0)</button>
+    </div>
+  </div>
+</div>
+
+<!-- 音源设置 -->
+<div class="overlay" id="dlg-set">
+  <div class="dlg" style="width:min(640px,92vw)">
+    <div class="dlg-head">
+      <div class="t"><b>音源设置</b><div class="sub">一套音源同时用于搜索与下载</div></div>
+      <button class="dlg-close" data-close="dlg-set">✕</button>
+    </div>
+    <div class="dlg-body">
+      <div class="set-group"><b>音源</b><div class="hint">⚡ 为实测快源（几秒内出结果）；未标注的官方源（网易云等）通常要 20~60 秒。建议勾选 3~6 个</div><div class="src-checks" id="set-search"></div></div>
+    </div>
+    <div class="dlg-foot">
+      <button class="btn btn-plain btn-sm" id="set-reset">恢复默认</button><span class="grow"></span>
+      <button class="btn btn-primary btn-sm" id="set-save">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 导入歌单 -->
+<div class="overlay" id="dlg-imp">
+  <div class="dlg" style="width:min(520px,92vw)">
+    <div class="dlg-head">
+      <div class="t"><b>导入歌单</b><div class="sub">网易云 / QQ音乐 / 汽水音乐（含分享短链）秒级导入；酷狗 / 酷我逐首解析；酷狗gcid新歌单请用下方文本导入</div></div>
+      <button class="dlg-close" data-close="dlg-imp">✕</button>
+    </div>
+    <div class="dlg-body" style="padding:6px 20px 20px">
+      <input class="filter-input" id="imp-url" style="width:100%" placeholder="粘贴歌单链接或网易云歌单ID">
+      <div style="display:flex;align-items:center;gap:8px;margin:14px 0 8px;color:var(--txt3);font-size:11.5px"><span style="flex:1;height:1px;background:var(--brd)"></span>或 粘贴歌曲文本（酷狗gcid网页歌单等）<span style="flex:1;height:1px;background:var(--brd)"></span></div>
+      <textarea class="filter-input" id="imp-text" style="width:100%;height:110px;resize:vertical;font-size:12px" placeholder="每行一首，格式：序号 歌手 - 歌名&#10;例：01 安康 尼勒 - 当初&#10;在浏览器歌单页全选复制歌曲列表后粘贴到这里，逐行搜索匹配导入"></textarea>
+      <div style="margin-top:12px;color:var(--txt3);font-size:11.5px" id="imp-tip"></div>
+    </div>
+    <div class="dlg-foot"><span class="grow"></span><button class="btn btn-sm" id="imp-txt-go">文本导入</button><button class="btn btn-primary btn-sm" id="imp-go">导入</button></div>
+  </div>
+</div>
+
+<!-- 曲目移动 / 复制目标选择 -->
+<div class="overlay" id="dlg-move">
+  <div class="dlg" style="width:min(600px,92vw)">
+    <div class="dlg-head">
+      <div class="t"><b id="mv-title">移动到</b><div class="sub" id="mv-sub"></div></div>
+      <button class="dlg-close" data-close="dlg-move">✕</button>
+    </div>
+    <div class="dlg-body">
+      <div style="display:flex;gap:10px;align-items:center">
+        <select class="filter-input" id="mv-eth" style="width:170px;flex:none"></select>
+        <input class="filter-input" id="mv-q" style="flex:1" placeholder="输入目标歌手（支持模糊/跳字匹配，如“阿乌”→“曲比阿乌”）" autocomplete="off">
+      </div>
+      <div class="mv-grid" id="mv-list" style="max-height:320px;overflow:auto;margin-top:10px"></div>
+      <div style="margin-top:10px;color:var(--txt3);font-size:11.5px" id="mv-tip"></div>
+    </div>
+    <div class="dlg-foot"><span class="grow"></span><button class="btn btn-plain btn-sm" data-close="dlg-move">取消</button><button class="btn btn-primary btn-sm" id="mv-ok">确认</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="dlg-artist">
+  <div class="dlg" style="width:min(560px,92vw)">
+    <div class="dlg-head">
+      <div class="t"><b>添加到歌手</b><div class="sub" id="as-sub"></div></div>
+      <button class="dlg-close" data-close="dlg-artist">✕</button>
+    </div>
+    <div class="dlg-body">
+      <input class="filter-input" id="as-q" style="width:100%" placeholder="输入歌手名（支持模糊：姓名片段 / 跳字匹配，如“阿乌”可命中“曲比阿乌”）" autocomplete="off">
+      <div class="mv-grid" id="as-list" style="max-height:320px;overflow:auto;margin-top:10px"></div>
+      <div style="margin-top:10px;color:var(--txt3);font-size:11.5px" id="as-tip"></div>
+    </div>
+    <div class="dlg-foot"><span class="grow"></span><button class="btn btn-plain btn-sm" data-close="dlg-artist">取消</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="dlg-lyric">
+  <div class="dlg" style="width:min(640px,94vw)">
+    <div class="dlg-head">
+      <div class="t"><b>添加歌词</b><div class="sub" id="ly-sub"></div></div>
+      <button class="dlg-close" data-close="dlg-lyric">✕</button>
+    </div>
+    <div class="dlg-body">
+      <div style="color:var(--txt3);font-size:11.5px;margin-bottom:8px">支持 LRC 时间轴（[00:12.30]歌词，逐行滚动卡拉OK式显示）或纯文本歌词（整段显示）。保存后在本机长期生效，优先于在线歌词。</div>
+      <textarea id="ly-text" placeholder="在此粘贴歌词，例如：&#10;[00:00.00]歌名 - 歌手&#10;[00:12.30]第一句歌词&#10;[00:18.90]第二句歌词"></textarea>
+    </div>
+    <div class="dlg-foot"><span class="grow"></span><button class="btn btn-plain btn-sm" data-close="dlg-lyric">取消</button><button class="btn btn-primary btn-sm" id="ly-ok">保存并显示</button></div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+<audio id="audio" preload="auto"></audio>
+
+<script src="{{ url_for('static', filename='js/01-utils.js') }}"></script>
+<script src="{{ url_for('static', filename='js/02-state.js') }}"></script>
+<script src="{{ url_for('static', filename='js/03-router.js') }}"></script>
+<script src="{{ url_for('static', filename='js/04-settings.js') }}"></script>
+<script src="{{ url_for('static', filename='js/05-search.js') }}"></script>
+<script src="{{ url_for('static', filename='js/06-artist-assign.js') }}"></script>
+<script src="{{ url_for('static', filename='js/07-song-rows.js') }}"></script>
+<script src="{{ url_for('static', filename='js/08-player.js') }}"></script>
+<script src="{{ url_for('static', filename='js/09-lyrics.js') }}"></script>
+<script src="{{ url_for('static', filename='js/10-nowplaying.js') }}"></script>
+<script src="{{ url_for('static', filename='js/11-playlists.js') }}"></script>
+<script src="{{ url_for('static', filename='js/12-download-dialog.js') }}"></script>
+<script src="{{ url_for('static', filename='js/13-downloads.js') }}"></script>
+<script src="{{ url_for('static', filename='js/14-local.js') }}"></script>
+<script src="{{ url_for('static', filename='js/15-favorites.js') }}"></script>
+<script src="{{ url_for('static', filename='js/16-ethnos.js') }}"></script>
+<script src="{{ url_for('static', filename='js/17-index.js') }}"></script>
+<script src="{{ url_for('static', filename='js/18-discover.js') }}"></script>
+<script src="{{ url_for('static', filename='js/19-batch.js') }}"></script>
+<script src="{{ url_for('static', filename='js/20-import.js') }}"></script>
+<script src="{{ url_for('static', filename='js/21-fm.js') }}"></script>
+<script src="{{ url_for('static', filename='js/22-shortcuts.js') }}"></script>
+<script src="{{ url_for('static', filename='js/23-boot.js') }}"></script>
+</body>
+</html>

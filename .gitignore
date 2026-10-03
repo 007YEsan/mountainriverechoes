@@ -30,6 +30,9 @@ MANIFEST
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
+# 但 packaging/ 下的构建脚本是本项目源码的一部分(不是生成物), 必须入库 ——
+# 否则 GitHub Actions 在云端拿不到 spec, 打包直接失败。
+!packaging/*.spec
 
 # Installer logs
 pip-log.txt

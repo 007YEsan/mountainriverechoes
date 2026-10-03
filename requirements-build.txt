@@ -1,0 +1,14 @@
+# 打包构建期依赖(运行期不需要装)
+#
+# 用法:
+#   pip install -r requirements.txt
+#   pip install -r requirements-build.txt
+#   pyinstaller packaging/mountainriverechoes.spec --noconfirm
+#
+# 说明: Inno Setup(生成安装向导 .exe 的那一步)不是 Python 包,
+#       在 Windows 上用 `choco install innosetup` 安装,
+#       CI 里已配置好, 详见 .github/workflows/build-windows.yml。
+pyinstaller>=6.0,<7
+
+# 仅在生成图标/处理图片资源时需要, 应用运行期不依赖
+Pillow>=11.0,<13

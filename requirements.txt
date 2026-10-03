@@ -33,3 +33,9 @@ websocket-client>=1.8.0,<2
 typing-extensions>=4.16.0,<5
 # WebUI 播放管道(B站 ytdlp: 通道的流式管道与直链实时解析); pip 安装自带同名 CLI 二进制
 yt-dlp>=2026.8.19
+
+# === 山河回响全栈应用(app/)新增: 数据访问层 ===
+# ORM 与迁移; 曲库从 JSON 文件迁到 SQLite(FTS5 全文索引)后引入。
+# 老脚本 webui/mountainriverechoes.py 不依赖这两项, 装上不影响其运行。
+SQLAlchemy>=2.0,<3
+alembic>=1.14,<2
