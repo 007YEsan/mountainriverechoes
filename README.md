@@ -3,7 +3,7 @@
 </div>
 
 > 本仓库 **山河回响 (mountainriverechoes)** —— 基于 [CharlesPikachu/musicdl](https://github.com/CharlesPikachu/musicdl) 本地化改造：
-> 保留其全部音源检索 / 下载能力，并内置「山河回响 WebUI」（见 [山河回响 WebUI](#-山河回响-webui本仓库新增) 一节）。
+> 保留其全部功能，并内置「山河回响 WebUI」（见 [山河回响 WebUI](#-山河回响-webui本仓库新增) 一节）。
 
 # 🧭 项目缘起
 
@@ -16,36 +16,64 @@
 
 ## 👥 各民族负责人（56 个民族）
 
-| 民族 | GitHub 负责人 | 民族 | GitHub 负责人 |
-| --- | --- | --- | --- |
-| 蒙古族 | 孙雅静 | 土族 | 007YEsan |
-| 回族 | 马北辰 | 达斡尔族 | liumengjiao-png |
-| 藏族 | 赵磊 | 仫佬族 | buaixiayu |
-| 维吾尔族 | 张诗琪 | 羌族 | auroraaa924-lab |
-| 苗族 | 1V1-yhy | 布朗族 | liliR929 |
-| 彝族 | Valeria-1229 | 撒拉族 | zallla |
-| 壮族 | lu-ji-juan | 毛南族 | 小地瓜 |
-| 布依族 | juewangdelanmo | 仡佬族 | 小地瓜 |
-| 朝鲜族 | iivy-cell | 锡伯族 | 小地瓜 |
-| 满族 | Zeqqq | 阿昌族 | 007YEsan |
-| 侗族 | yim315898-lgtm | 普米族 | Yuna-417 |
-| 瑶族 | teenboi | 塔吉克族 | 乔幽 |
-| 白族 | xlx85 | 怒族 | 乔幽 |
-| 土家族 | zll08 | 乌孜别克族 | Yanxiao008 |
-| 哈尼族 | iiis-47 | 俄罗斯族 | 杨舒喻 |
-| 哈萨克族 | AURORA1444 | 鄂温克族 | 乔幽 |
-| 傣族 | waitmoments | 德昂族 | 007YEsan |
-| 黎族 | buaixiayu | 保安族 | N-ux-hue |
-| 傈僳族 | qisongwang2026 | 裕固族 | festcontr |
-| 佤族 | iris | 京族 | auroraaa924-lab |
-| 畲族 | 乔幽 | 塔塔尔族 | auroraaa924-lab |
-| 高山族 | Yu Xian | 独龙族 | 小地瓜 |
-| 拉祜族 | elesieqian | 鄂伦春族 | buaixiayu |
-| 水族 | zallla | 赫哲族 | duyue430602 |
-| 东乡族 | zallla | 门巴族 | 123mu（亩） |
-| 纳西族 | zcz-8062 | 珞巴族 | buaixiayu |
-| 景颇族 | YY | 基诺族 | 唐佳敏 |
-| 柯尔克孜族 | zallla | 汉族 | zallla |
+| 民族 | GitHub 负责人 |
+| --- | --- |
+| 蒙古族 | 孙雅静 |
+| 回族 | 马北辰 |
+| 藏族 | 赵磊 |
+| 维吾尔族 | 张诗琪 |
+| 苗族 | 1V1-yhy |
+| 彝族 | Valeria-1229 |
+| 壮族 | lu-ji-juan |
+| 布依族 | juewangdelanmo |
+| 朝鲜族 | iivy-cell |
+| 满族 | Zeqqq |
+| 侗族 | yim315898-lgtm |
+| 瑶族 | teenboi |
+| 白族 | xlx85 |
+| 土家族 | zll08 |
+| 哈尼族 | iiis-47 |
+| 哈萨克族 | AURORA1444 |
+| 傣族 | waitmoments |
+| 黎族 | buaixiayu |
+| 傈僳族 | qisongwang2026 |
+| 佤族 | iris |
+| 畲族 | 乔幽 |
+| 高山族 | Yu Xian |
+| 拉祜族 | elesieqian |
+| 水族 | zallla |
+| 东乡族 | zallla |
+| 纳西族 | zcz-8062 |
+| 景颇族 | YY |
+| 柯尔克孜族 | zallla |
+| 土族 | 007YEsan |
+| 达斡尔族 | liumengjiao-png |
+| 仫佬族 | buaixiayu |
+| 羌族 | auroraaa924-lab |
+| 布朗族 | liliR929 |
+| 撒拉族 | zallla |
+| 毛南族 | 小地瓜 |
+| 仡佬族 | 小地瓜 |
+| 锡伯族 | 小地瓜 |
+| 阿昌族 | 007YEsan |
+| 普米族 | Yuna-417 |
+| 塔吉克族 | 乔幽 |
+| 怒族 | 乔幽 |
+| 乌孜别克族 | Yanxiao008 |
+| 俄罗斯族 | 杨舒喻 |
+| 鄂温克族 | 乔幽 |
+| 德昂族 | 007YEsan |
+| 保安族 | N-ux-hue |
+| 裕固族 | festcontr |
+| 京族 | auroraaa924-lab |
+| 塔塔尔族 | auroraaa924-lab |
+| 独龙族 | 小地瓜 |
+| 鄂伦春族 | buaixiayu |
+| 赫哲族 | duyue430602 |
+| 门巴族 | 123mu（亩） |
+| 珞巴族 | buaixiayu |
+| 基诺族 | 唐佳敏 |
+| 汉族 | zallla |
 
 
 # 🎵 Introduction
