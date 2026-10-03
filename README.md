@@ -87,8 +87,8 @@ If you are a copyright or rights holder and believe that this repository infring
 
 # 🏔 山河回响 WebUI（本仓库新增）
 
-**山河回响 (mountainriverechoes)** 是本仓库在内置的本地 Web 界面（后端 `webui/mountainriverechoes.py`，端口 `8766`），
-预置 56 个民族的完整曲库（`webui/ethnos_cache/`，约 6.2 万首歌 / 1.6 万位歌手，属本机大数据，不入版本库），
+**山河回响 (mountainriverechoes)** 是本仓库内置的本地 Web 界面（后端 `webui/mountainriverechoes.py`，端口 `8766`），
+预置 56 个民族的完整曲库（`webui/ethnos_cache/`，约 6.2 万首歌 / 1.6 万位歌手，已纳入版本控制），
 提供检索、试听、歌单管理、批量编辑与直链自愈等完整听歌体验。
 
 ```sh
@@ -108,11 +108,11 @@ If you are a copyright or rights holder and believe that this repository infring
   - `wx_video_album.py`：微信公众号文章 / 视频专辑 / 公众号合集 → 曲库条目（mpvoice 音频 + mpvideo 视频 + 腾讯视频兜底，直链过期由主程序自愈逻辑回源续期）。
   - `import_bili_favlist.py`：B 站收藏夹 → 指定民族歌单（增量并入、自动去重、原子写回）。
 
-## 📦 运行时产物（不入版本库）
+## 📦 数据与运行时产物
 
-- `webui/ethnos_cache/`：56 民族曲库数据（主文件 + `versions/` 单版快照，任何改动可回滚一步）。
-- `webui/ui_state.json`：浏览器界面状态的服务端镜像（排序 / 歌单 / 隐藏记录等，带时间戳"新者胜"合并）。
-- `downloads/`：下载产物统一落盘目录。
+- `webui/ethnos_cache/`：56 民族曲库数据，**已纳入版本控制**（含固化的歌手排序 / 置顶 / 手工收录等默认自定义；`versions/` 应用内单版快照目录除外 —— git 历史本身即回滚层）。
+- `webui/ui_state.json`：浏览器界面状态的服务端镜像（我的歌单 / 隐藏记录等，带时间戳"新者胜"合并），不入版本库。
+- `downloads/`：下载产物统一落盘目录，不入版本库。
 
 
 # 📦 Install
