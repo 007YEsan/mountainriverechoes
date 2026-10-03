@@ -23,11 +23,14 @@ if str(_REPO_ROOT) not in sys.path:
 from app.config import load_settings                     # noqa: E402
 from app.database import create_schema                    # noqa: E402
 from app.extensions import init_engine                    # noqa: E402
-from app.logging_setup import setup_logging               # noqa: E402
+from app.logging_setup import ensure_utf8_streams, setup_logging  # noqa: E402
 from app.services.migration_service import migrate_from_json  # noqa: E402
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Windows 控制台默认 ANSI(cp1252/gbk) 编码, 中文 print 会 UnicodeEncodeError 崩掉,
+    # 且崩溃发生在数据已经全部迁移完之后, 极难排查 —— 先强制 UTF-8。
+    ensure_utf8_streams()
     parser = argparse.ArgumentParser(description='将旧版 JSON 曲库迁移到 SQLite')
     parser.add_argument('--db', help='目标数据库路径(默认取 MRE_DB_PATH)')
     parser.add_argument('--cache-dir', help='旧版 ethnos_cache 目录')

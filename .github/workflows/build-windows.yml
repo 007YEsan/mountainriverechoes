@@ -23,6 +23,12 @@ jobs:
     permissions:
       contents: write
 
+    env:
+      # Windows runner 上 Python 默认按 ANSI(cp1252) 输出, 一条中文 print/log 就会
+      # UnicodeEncodeError 崩掉(实测挂在"打印迁移结果"那步)。开 UTF-8 模式根治。
+      PYTHONUTF8: '1'
+      PYTHONIOENCODING: utf-8
+
     steps:
       - name: 检出源码
         uses: actions/checkout@v4

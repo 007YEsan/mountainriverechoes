@@ -13,6 +13,7 @@ import webbrowser
 from app import __version__
 from app.config import load_settings
 from app.factory import create_app
+from app.logging_setup import ensure_utf8_streams
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +29,8 @@ def _open_browser(url: str, delay: float = 1.5) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
+    # 必须先于任何 print: Windows 控制台默认 ANSI 编码, 中文 print 会直接崩进程
+    ensure_utf8_streams()
     parser = argparse.ArgumentParser(description='山河回响 · 中国民族音乐曲库')
     parser.add_argument('--host', help='监听地址, 默认取 MRE_HOST(127.0.0.1)')
     parser.add_argument('--port', type=int, help='监听端口, 默认取 MRE_PORT(8766)')

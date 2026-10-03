@@ -67,6 +67,24 @@ class RequestIdFilter(logging.Filter):
 _LOGGER_NAMES = ('mre', 'app')
 
 
+def ensure_utf8_streams() -> None:
+    '''把标准输出强制成 UTF-8。
+
+    Windows 上 Python 默认按 ANSI(cp1252 / gbk) 编码 stdout, 一条中文 print 就会
+    UnicodeEncodeError 直接崩掉进程 —— CI 上就是在"打印迁移结果"这一步挂的。
+    另外 PyInstaller 无控制台模式(console=False)下 sys.stdout/stderr 是 None,
+    这时必须跳过, 否则 StreamHandler(None) 写日志时逐个 AttributeError。
+    '''
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, 'reconfigure', None)
+        if reconfigure is None:
+            continue
+        try:
+            reconfigure(encoding='utf-8', errors='replace')
+        except Exception:                                          # noqa: BLE001
+            pass
+
+
 def setup_logging(*, level: str, json_format: bool, log_dir: Path | None, console: bool = True) -> None:
     root = logging.getLogger()
     for handler in list(root.handlers):
@@ -75,7 +93,8 @@ def setup_logging(*, level: str, json_format: bool, log_dir: Path | None, consol
     fmt: logging.Formatter = JsonFormatter() if json_format else PlainFormatter()
     root.setLevel(getattr(logging, level.upper(), logging.INFO))
 
-    if console:
+    ensure_utf8_streams()
+    if console and sys.stdout is not None:
         console_handler = logging.StreamHandler(sys.stdout)
         console_handler.setFormatter(fmt)
         console_handler.addFilter(RequestIdFilter())
