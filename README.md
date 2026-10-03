@@ -87,12 +87,12 @@ If you are a copyright or rights holder and believe that this repository infring
 
 # 🏔 民族音乐 WebUI（本仓库新增）
 
-本仓库在 musicdl 基础上内置了一个本地 Web 界面（`webui/mountainiverechoes.py`），
+本仓库在 musicdl 基础上内置了一个本地 Web 界面（`webui/mountainriverechoes.py`），
 预置 56 个民族的曲库数据（`webui/ethnos_cache/`，属本机大数据，不入版本库），
 支持检索、试听、批量管理与过期直链自愈。
 
 ```sh
-./webui/run-mountainiverechoes.sh    # 启动后访问 http://127.0.0.1:8766
+./webui/run-mountainriverechoes.sh    # 启动后访问 http://127.0.0.1:8766
 ```
 
 配套入库工具：

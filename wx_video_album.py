@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 r"""微信公众号文章 -> 微信文章库入库条目 (含 mpvoice 音频 + mpvideo 视频 + 腾讯视频 vid 兜底)
 
-三类微信内容都走同一份输出 schema, 跟主程序 mountainiverechoes 的自愈链路对齐:
+三类微信内容都走同一份输出 schema, 跟主程序 mountainriverechoes 的自愈链路对齐:
 
   - 音频:  res.wx.qq.com/voice/getvoice?mediaid=...     (getvoice 直链免鉴权, 永久)
   - 视频:  mpvideo.qpic.cn/<base>.f10004.mp4?dis_k=...  (mpvideo 签名, 时效约 2 天)
@@ -10,7 +10,7 @@ r"""微信公众号文章 -> 微信文章库入库条目 (含 mpvoice 音频 + m
   - 兜底: ugchsy.gtimg.com/B_... 或 v.qq.com 合集     (qqvideourl 取 fvkey 直链, 短时效)
 
 三条路径都在输出 JSON 里带 article_url + voice_id/qqvid-xxx 字段, WebUI 试听直链过期时
-由 mountainiverechoes 的自愈逻辑(_refresh_weixin_link / _refresh_song_link)按这些线索回源续期。
+由 mountainriverechoes 的自愈逻辑(_refresh_weixin_link / _refresh_song_link)按这些线索回源续期。
 
 支持的输入形态:
 
@@ -443,7 +443,7 @@ def harvest_article(entry, album_of_site, album_title=''):
       1. 直接 hit mp.weixin.qq.com 拿正文(早期公众号 / 部分合集仍走通)
       2. 若服务端返 ret=-2 空壳(body < 60k 或不含 mpvoice/mpvideo 字段), 自动转走搜狗反向拿候选
          (mpvoice 走通; mpvideo/qqvid 走不通, 因为它们在文章正文字面量里)
-    直链过期不要紧, 自愈靠 article_url + voice_id(主程序 mountainiverechoes 续期)。"""
+    直链过期不要紧, 自愈靠 article_url + voice_id(主程序 mountainriverechoes 续期)。"""
     url = entry['url'].replace('http://mp.weixin.qq.com', 'https://mp.weixin.qq.com')
     body = _get(url)
     nickname_hint = entry.get('nickname') or ''
