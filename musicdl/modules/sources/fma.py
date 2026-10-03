@@ -139,7 +139,7 @@ class FMAMusicClient(BaseMusicClient):
         playlist_url = self.session.head(playlist_url, allow_redirects=True, **(request_overrides := dict(request_overrides or {}))).url
         playlist_id, song_infos = urlparse(playlist_url).path.strip('/').split('/')[-1].removesuffix('.html').removesuffix('.htm'), []
         if (not (hostname := obtainhostname(url=playlist_url))) or (not hostmatchessuffix(hostname, FMA_MUSIC_HOSTS)): return song_infos
-        if not self.default_cookies: self.logger_handle.error(f'{self.source}.parseplaylist >>> "default_parse_cookies" are not configured, so musicdl does not have permission to parse FMA playlists, refer to "https://musicdl.readthedocs.io/en/latest/Clients.html#fmamusicclient".'); return song_infos
+        if not self.default_cookies: self.logger_handle.error(f'{self.source}.parseplaylist >>> "default_parse_cookies" are not configured, so musicdl does not have permission to parse FMA playlists (refer to the project README or contact liwh@ynu.edu.cn).'); return song_infos
         # get tracks in playlist
         playlist_url = urlunsplit(((p := urlsplit((playlist_url).strip())).scheme, p.netloc, p.path.rstrip("/") or "/", "", ""))
         tracks_in_playlist, page, playlist_result_first = [], 1, None
