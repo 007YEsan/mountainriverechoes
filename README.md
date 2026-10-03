@@ -5,6 +5,49 @@
 > 本仓库 **山河回响 (mountainriverechoes)** —— 基于 [CharlesPikachu/musicdl](https://github.com/CharlesPikachu/musicdl) 本地化改造：
 > 保留其全部音源检索 / 下载能力，并内置「山河回响 WebUI」（见 [山河回响 WebUI](#-山河回响-webui本仓库新增) 一节）。
 
+# 🧭 项目缘起
+
+本项目旨在为全世界的中国民族音乐及民族文化爱好者搭建一个较为系统的听歌平台——
+在同一个曲库里，既能听见每个民族自己的声音，也能对照体会不同民族音乐之间的互鉴与成长。
+
+本项目是云南大学民社学院 2026 年秋季民族学班「AI 与社会科学」课程的阶段性成果：
+由任课教师**李伟华**搭建数据库基础框架，班级全体同学与部分旁听同学分工负责各民族曲库的搜集与整理，
+建设周期暂定至 **2026 年 12 月 31 日**。
+
+## 👥 各民族负责人（55 个少数民族）
+
+| 民族 | GitHub 负责人 | 民族 | GitHub 负责人 |
+| --- | --- | --- | --- |
+| 蒙古族 | 孙雅静 | 土族 | 007YEsan |
+| 回族 | 马北辰 | 达斡尔族 | liumengjiao-png |
+| 藏族 | 赵磊 | 仫佬族 | buaixiayu |
+| 维吾尔族 | 张诗琪 | 羌族 | auroraaa924-lab |
+| 苗族 | 1V1-yhy | 布朗族 | liliR929 |
+| 彝族 | Valeria-1229 | 撒拉族 | zallla |
+| 壮族 | lu-ji-juan | 毛南族 | 小地瓜 |
+| 布依族 | juewangdelanmo | 仡佬族 | 小地瓜 |
+| 朝鲜族 | iivy-cell | 锡伯族 | 小地瓜 |
+| 满族 | Zeqqq | 阿昌族 | 007YEsan |
+| 侗族 | yim315898-lgtm | 普米族 | Yuna-417 |
+| 瑶族 | teenboi | 塔吉克族 | 乔幽 |
+| 白族 | xlx85 | 怒族 | 乔幽 |
+| 土家族 | zll08 | 乌孜别克族 | Yanxiao008 |
+| 哈尼族 | iiis-47 | 俄罗斯族 | 杨舒喻 |
+| 哈萨克族 | AURORA1444 | 鄂温克族 | 乔幽 |
+| 傣族 | waitmoments | 德昂族 | 007YEsan |
+| 黎族 | buaixiayu | 保安族 | N-ux-hue |
+| 傈僳族 | qisongwang2026 | 裕固族 | festcontr |
+| 佤族 | iris | 京族 | auroraaa924-lab |
+| 畲族 | 乔幽 | 塔塔尔族 | auroraaa924-lab |
+| 高山族 | Yu Xian | 独龙族 | 小地瓜 |
+| 拉祜族 | elesieqian | 鄂伦春族 | buaixiayu |
+| 水族 | zallla | 赫哲族 | duyue430602 |
+| 东乡族 | zallla | 门巴族 | 123mu（亩） |
+| 纳西族 | zcz-8062 | 珞巴族 | buaixiayu |
+| 景颇族 | YY | 基诺族 | 唐佳敏 |
+| 柯尔克孜族 | zallla |  |  |
+
+
 # 🎵 Introduction
 
 A lightweight music downloader built entirely in pure Python, designed for simplicity, clarity, and ease of use. 
