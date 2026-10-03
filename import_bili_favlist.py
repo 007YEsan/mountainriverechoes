@@ -3,7 +3,7 @@
 导入 B站收藏夹到指定民族歌单(门巴 e52 / 珞巴 e53)。
 - 抓取收藏夹全部视频
 - 用 BilibiliMusicClient._parsewithofficialapiv1 把每个 bvid 解析为带可播放直链的 SongInfo
-- 复用 cloudmusic_app 的 _ethnos_payload / _dedup_key / _atomic_write_json 严格匹配现有缓存格式
+- 复用 mountainiverechoes 的 _ethnos_payload / _dedup_key / _atomic_write_json 严格匹配现有缓存格式
 - 增量并入: 已有曲目(warm)优先, 不重复, 原子写回(自动归档旧版本)
 """
 import importlib.util, os, json, sys, time, threading
@@ -13,8 +13,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 HERE = os.path.dirname(os.path.abspath(__file__))
 CACHE_DIR = os.path.join(HERE, "webui", "ethnos_cache")
 
-# ---- 导入 cloudmusic_app 复用序列化辅助(不会触发 app.run) ----
-spec = importlib.util.spec_from_file_location("cam", os.path.join(HERE, "webui", "cloudmusic_app.py"))
+# ---- 导入 mountainiverechoes 复用序列化辅助(不会触发 app.run) ----
+spec = importlib.util.spec_from_file_location("cam", os.path.join(HERE, "webui", "mountainiverechoes.py"))
 cam = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(cam)
 

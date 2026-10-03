@@ -57,8 +57,9 @@ class SongInfo:
         from ..utils.appleutils import DownloadItem as AppleStreamObj
         if self.episodes: return all([eps.with_valid_download_url for eps in self.episodes])
         is_valid_download_url_format = self.download_url.startswith('http') if isinstance(self.download_url, str) else isinstance(self.download_url, (TidalStreamObj, AppleStreamObj))
-        is_downloadable, with_downloaded_contents = isinstance(self.download_url_status, dict) and self.download_url_status.get('ok'), bool(self.downloaded_contents)
-        return bool(with_downloaded_contents or (is_valid_download_url_format and is_downloadable))
+        # [2026-10-03 库压缩后] download_url_status 字段已删, 不再依赖它判下载.
+        # 库内 download_url 是入库时验过的(http 头 OK), 直接信任它即可.
+        return bool(is_valid_download_url_format)
     # save info
     work_dir: Optional[str] = './'
     _save_path: Optional[str] = None

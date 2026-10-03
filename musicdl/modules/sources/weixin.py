@@ -23,7 +23,7 @@ from collections import OrderedDict
 from contextlib import suppress
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing_extensions import Unpack
-from urllib.parse import quote_plus, urlparse, parse_qs
+from urllib.parse import quote_plus, urlparse, parse_qs, unquote
 from rich.progress import Progress
 from .base import BaseMusicClient, BaseMusicClientKwargs
 from ..utils import legalizestring, usesearchheaderscookies, optionalimport, AudioLinkTester, SongInfo, SongInfoUtils
@@ -52,7 +52,9 @@ class WeixinSogouBlocked(Exception):
 class WeixinMusicClient(BaseMusicClient):
     source = 'WeixinMusicClient'
     # 单次搜索最多抓取的文章数(每篇正文 1~4MB, 这是耗时的主要来源)
-    MAX_ARTICLES = 6
+    # 单次搜索最多抓取的文章数(每篇正文 1~4MB, 这是耗时的主要来源)
+    # 2026-10-03: 6 -> 10 = 搜狗一整页; 只手动搜索的场景下配额与耗时均可承受
+    MAX_ARTICLES = 10
     # 单篇文章最多提取的音频条目
     MAX_AUDIO_PER_ARTICLE = 3
     # 单篇文章最多走"视频->音频"通道的条目
@@ -226,7 +228,8 @@ class WeixinMusicClient(BaseMusicClient):
             mediaid = (attrs.get('voice_encode_fileid') or '').strip()
             if not mediaid:
                 continue
-            name = self._clean(attrs.get('name', ''))
+            # mpvoice 的 name 属性在文章源码里常是 URL 编码形态(%E6%B0%B8...), 必须解码, 否则歌名直接乱码
+            name = self._clean(unquote(attrs.get('name', '')))
             try: duration_ms = int(float(attrs.get('play_length', '0') or 0))
             except Exception: duration_ms = 0
             size_kb = 0.0
@@ -267,6 +270,41 @@ class WeixinMusicClient(BaseMusicClient):
             if len(seen) >= self.MAX_VIDEO_PER_ARTICLE:
                 break
         return seen
+    '''_parsempvideos'''
+    # 公众号视频(mpvideo, wxv_ 形态)直链档位优先级(与 wx_video_album 入库工具同源)
+    MPVIDEO_FMT_PRIORITY = ('10004', '10002', '10104', '10102')
+
+    def _parsempvideos(self, article_html: str) -> list:
+        """正文里的公众号视频(mpvideo) -> [{download_url, duration_s, file_size_bytes}]
+        直链藏在正文 JS 字面量 format_id/url 字段里(多层转义), 签名与抓正文用的会话绑定,
+        时效约 2 天, 过期由 WebUI 的 _weixin_video_self_heal 回文章页续命。
+        注意: 路径形如 <videoid>.f10004.mp4, 必须剥掉 .fXXXXX 档位后缀再按基名分组,
+        否则同一视频的 4 档会被当成 4 个视频。"""
+        groups = {}
+        for m in re.finditer(r"format_id:\s*'(\d+)'[^{}]*?url:\s*'(http://mpvideo[^']+)'", article_html, flags=re.S):
+            fmt, raw, block = m.group(1), m.group(2), m.group(0)
+            bm = re.match(r'https?://mpvideo\.qpic\.cn/([^/?]+)\.', raw)
+            if not bm:
+                continue
+            base = re.sub(r'\.f\d+$', '', bm.group(1))
+            dur = re.search(r"duration:\s*'([\d.]+)'", block)
+            size = re.search(r"filesize:\s*'(\d+)'", block)
+            url = raw
+            for _ in range(3):
+                url = url.replace('\\x26amp;', '&').replace('\\x26', '&').replace('&amp;', '&')
+            g = groups.setdefault(base, {'formats': {}})
+            g['formats'][fmt] = {'url': url,
+                                 'duration_s': int(float(dur.group(1))) if dur else 0,
+                                 'file_size_bytes': int(size.group(1)) if size and size.group(1) else 0}
+        items = []
+        for base, g in groups.items():
+            fmts = g['formats']
+            chosen = next((fmts[f] for f in self.MPVIDEO_FMT_PRIORITY if f in fmts), None)
+            if not chosen or not chosen['url'].startswith('http'):
+                continue
+            items.append({'download_url': chosen['url'], 'duration_s': chosen['duration_s'],
+                          'file_size_bytes': chosen['file_size_bytes'], 'identifier': 'wxmpv-' + base})
+        return items
     '''_qqvideourl'''
     def _qqvideourl(self, vid: str):
         """腾讯视频 vid -> (直链, 标题, 时长秒); fvkey 只有在带 guid/sdtfrom/host 时才返回, 缺了会 client not auth"""
@@ -308,7 +346,17 @@ class WeixinMusicClient(BaseMusicClient):
         items = []
         for item in self._parseaudiotags(article_html):
             items.append(dict(item, singers=nickname, album=article_title, cover_url=cover_url, article_url=article_url))
-        # 视频 -> 音频: 仅在原生音频不足时启用, 避免主结果里混入大量视频
+        # 视频 -> 音频: 仅在原生音频不足时启用, 避免主结果里混入大量视频。
+        # 优先公众号视频(mpvideo, wxv_ 形态, 直链在正文 JS 字面量里) —— 大量民族音乐文章
+        # (如《古歌献给亲爱的党》)只嵌这种视频, 之前的解析器只认普通腾讯视频 iframe, 全部漏掉。
+        if not items:
+            for mv in self._parsempvideos(article_html)[:self.MAX_VIDEO_PER_ARTICLE]:
+                items.append({
+                    'kind': 'video', 'name': article_title, 'duration_s': mv['duration_s'],
+                    'file_size_bytes': mv['file_size_bytes'], 'identifier': mv['identifier'],
+                    'download_url': mv['download_url'], 'ext': 'mp4',
+                    'singers': nickname, 'album': article_title, 'cover_url': cover_url, 'article_url': article_url,
+                })
         if not items:
             for vid in self._parsevideoids(article_html):
                 parsed = self._qqvideourl(vid)
@@ -369,6 +417,8 @@ class WeixinMusicClient(BaseMusicClient):
             file_size = AudioLinkTester.byte2mb(file_size_bytes) if file_size_bytes else 'NULL'
             song_info = SongInfo(
                 raw_data={'search': {'title': item.get('name'), 'article': item.get('album'), 'url': item.get('article_url')},
+                          # WebUI 自愈约定: mpvideo 签名直链(约2天)过期后按 wechat.url 回文章页重取
+                          'wechat': {'url': item.get('article_url') or '', 'voice_id': ''},
                           'download': {}, 'lyric': {}},
                 source=self.source, song_name=song_name, singers=legalizestring(item.get('singers') or '') or '微信公众号',
                 album=legalizestring(item.get('album') or '') or 'NULL', ext=ext, file_size_bytes=file_size_bytes,
