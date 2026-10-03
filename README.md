@@ -915,4 +915,4 @@ If your playlist exceeds this limit, split it into several smaller playlists and
 
 </details>
 
-For more details, please refer to the [official documentation](https://musicdl.readthedocs.io/).
+更多详情，请联系 **李伟华**（[liwh@ynu.edu.cn](mailto:liwh@ynu.edu.cn)）。
