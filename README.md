@@ -2,8 +2,8 @@
   <img src="https://raw.githubusercontent.com/CharlesPikachu/musicdl/master/docs/logo.png" width="600" alt="musicdl logo" />
 </div>
 
-> 本仓库基于 [CharlesPikachu/musicdl](https://github.com/CharlesPikachu/musicdl) 本地化改造：
-> 保留其全部音源检索 / 下载能力，并新增「56 民族音乐 WebUI」（见 [民族音乐 WebUI](#-民族音乐-webui本仓库新增) 一节）。
+> 本仓库 **山河回响 (mountainriverechoes)** —— 基于 [CharlesPikachu/musicdl](https://github.com/CharlesPikachu/musicdl) 本地化改造：
+> 保留其全部音源检索 / 下载能力，并内置「山河回响 WebUI」（见 [山河回响 WebUI](#-山河回响-webui本仓库新增) 一节）。
 
 # 🎵 Introduction
 
@@ -85,20 +85,34 @@ If you are a copyright or rights holder and believe that this repository infring
 |                                          | [YinyuekuMusicClient](http://yinyueku.cn/)                         | [音乐库](http://yinyueku.cn/)                                                | ✅        | ✅         | [yinyueku.py](musicdl/modules/thirdpartysites/yinyueku.py)           |
 
 
-# 🏔 民族音乐 WebUI（本仓库新增）
+# 🏔 山河回响 WebUI（本仓库新增）
 
-本仓库在 musicdl 基础上内置了一个本地 Web 界面（`webui/mountainriverechoes.py`），
-预置 56 个民族的曲库数据（`webui/ethnos_cache/`，属本机大数据，不入版本库），
-支持检索、试听、批量管理与过期直链自愈。
+**山河回响 (mountainriverechoes)** 是本仓库在内置的本地 Web 界面（后端 `webui/mountainriverechoes.py`，端口 `8766`），
+预置 56 个民族的完整曲库（`webui/ethnos_cache/`，约 6.2 万首歌 / 1.6 万位歌手，属本机大数据，不入版本库），
+提供检索、试听、歌单管理、批量编辑与直链自愈等完整听歌体验。
 
 ```sh
 ./webui/run-mountainriverechoes.sh    # 启动后访问 http://127.0.0.1:8766
 ```
 
-配套入库工具：
+## ✨ 核心能力
 
-- `wx_video_album.py`：微信公众号文章 / 视频专辑 → 曲库条目（mpvoice 音频 + mpvideo 视频 + 腾讯视频兜底，直链过期由主程序自愈逻辑回源续期）。
-- `import_bili_favlist.py`：B 站收藏夹 → 指定民族歌单（增量并入、自动去重）。
+- **56 民族曲库**：逐民族构建歌单（民歌 / 特色曲种 / 民族语言歌曲），歌手卡片可拖拽排序、置顶、隐藏与手工添加；界面自定义（排序 / 置顶 / 增删）自动同步服务端（`webui/ui_state.json`），换浏览器不丢。
+- **多音源聚合搜索**：默认七源并行 —— Bilibili / 咪咕 / 网易云 / 酷狗 / 酷我 / QQ / 微信公众号，结果逐源渐进式返回。
+- **四层直链自愈**：播放遇直链失效（CDN 签名通常数小时~数天过期）时依次尝试——
+  ① 库内直链 → ② 按 id 续签（酷我 rid 直签 / 网易云官方 URL API / 微信文章回源 / QQ 音乐 mid 重签）→ ③ B 站实时解析（`ytdlp:` 形态，永不过期）→ ④ 四源精确同名重搜；
+  自愈成功的新直链会**回写曲库文件**，同一首歌不再重复自愈。
+- **内外贯通的跳转**：搜索结果里歌手列一键进内部歌单（库内没有时弹窗引导创建歌手卡片）；专辑列一律新标签打开原平台页面（能取到平台专辑 id 时为精确专辑页，否则为该平台搜索页）。
+- **微信公众号内容**：搜狗微信搜索接入默认音源，可检索公众号文章内嵌的 mpvoice 音频与 mpvideo 视频（视频号内容暂不支持提取）。
+- **配套入库工具**：
+  - `wx_video_album.py`：微信公众号文章 / 视频专辑 / 公众号合集 → 曲库条目（mpvoice 音频 + mpvideo 视频 + 腾讯视频兜底，直链过期由主程序自愈逻辑回源续期）。
+  - `import_bili_favlist.py`：B 站收藏夹 → 指定民族歌单（增量并入、自动去重、原子写回）。
+
+## 📦 运行时产物（不入版本库）
+
+- `webui/ethnos_cache/`：56 民族曲库数据（主文件 + `versions/` 单版快照，任何改动可回滚一步）。
+- `webui/ui_state.json`：浏览器界面状态的服务端镜像（排序 / 歌单 / 隐藏记录等，带时间戳"新者胜"合并）。
+- `downloads/`：下载产物统一落盘目录。
 
 
 # 📦 Install
@@ -230,6 +244,10 @@ Certain music clients supported by musicdl require extra CLI tools to function c
   ```
 
   If the command prints the full path of `amdecrypt` without an error, amdecrypt was installed successfully.
+
+> 上述工具仅部分上游音源客户端需要。**山河回响 WebUI** 的 B 站 / YouTube 播放通道依赖 `yt-dlp`，
+> 它已列入 `requirements.txt`（pip 安装时自带同名命令行工具），无需手动安装；
+> FFmpeg 仍需按上文自行准备。
 
 
 # 🚀 Quick Start
