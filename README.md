@@ -19,8 +19,8 @@
 | 民族 | GitHub 负责人 |
 | --- | --- |
 | 蒙古族 | 孙雅静 |
-| 回族 | 马北辰 |
-| 藏族 | 赵磊 |
+| 回族 | 19m. |
+| 藏族 | zzz |
 | 维吾尔族 | 张诗琪 |
 | 苗族 | 1V1-yhy |
 | 彝族 | Valeria-1229 |
@@ -60,7 +60,7 @@
 | 塔吉克族 | 乔幽 |
 | 怒族 | 乔幽 |
 | 乌孜别克族 | Yanxiao008 |
-| 俄罗斯族 | 杨舒喻 |
+| 俄罗斯族 | 桃姬九日 |
 | 鄂温克族 | 乔幽 |
 | 德昂族 | 007YEsan |
 | 保安族 | N-ux-hue |
@@ -72,7 +72,7 @@
 | 赫哲族 | duyue430602 |
 | 门巴族 | 123mu（亩） |
 | 珞巴族 | buaixiayu |
-| 基诺族 | 唐佳敏 |
+| 基诺族 | jasmine |
 | 汉族 | zallla |
 
 
@@ -915,4 +915,4 @@ If your playlist exceeds this limit, split it into several smaller playlists and
 
 </details>
 
-更多详情，请联系 **李伟华**（[liwh@ynu.edu.cn](mailto:liwh@ynu.edu.cn)）。
+更多详情，请联系 **作者**（[liwh@ynu.edu.cn](mailto:liwh@ynu.edu.cn)）。
