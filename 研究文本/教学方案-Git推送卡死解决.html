@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>教学方案：GitHub 推送卡死的一次彻底解决</title>
+<style>
+  :root{
+    --paper:#fffdf8; --ink:#3a322a; --sub:#6b5d4f;
+    --brown:#7a4a2b; --ochre:#a8692f; --line:#d8c9b4; --soft:#f6efe4;
+    --warn:#a3472b; --ok:#3b6d11;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:#ece5d8;color:var(--ink);
+    font-family:"Songti SC","SimSun","Noto Serif SC",Georgia,serif;line-height:1.85;font-size:16px;}
+  .page{max-width:880px;margin:24px auto;background:var(--paper);padding:56px 64px 72px;
+    box-shadow:0 1px 8px rgba(80,60,40,.08);}
+  h1{font-size:27px;font-weight:700;color:var(--brown);margin:0 0 6px;line-height:1.4;}
+  .subtitle{color:var(--sub);font-size:14px;margin-bottom:26px;}
+  .rule{border:none;border-top:2px solid var(--brown);margin:6px 0 26px;}
+  h2{font-size:20px;color:var(--brown);margin:38px 0 12px;padding-left:12px;border-left:4px solid var(--ochre);line-height:1.4;}
+  h3{font-size:17px;color:var(--ochre);margin:24px 0 8px;}
+  p{margin:8px 0;text-align:justify;}
+  .lead{font-size:15px;color:var(--sub);}
+  code{font-family:"Consolas","Courier New",monospace;background:#f2ebdd;color:#6b4a26;
+    padding:1px 6px;border-radius:3px;font-size:14.5px;}
+  pre{background:#2f2a24;color:#f0e6d6;padding:14px 18px;border-radius:6px;overflow-x:auto;
+    font-family:"Consolas","Courier New",monospace;font-size:14px;line-height:1.7;margin:10px 0;}
+  pre code{background:none;color:inherit;padding:0;}
+  pre .c{color:#a89b88;}
+  .box{background:var(--soft);border:1px solid var(--line);border-radius:6px;padding:14px 18px;margin:14px 0;}
+  .box ul{margin:6px 0;padding-left:22px;}
+  .box li{margin:5px 0;}
+  .warn{background:#fdf2ee;border:1px solid #e5c3b4;}
+  .ok{background:#f3f7ec;border:1px solid #cddbb4;}
+  table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14.5px;}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top;}
+  th{background:var(--soft);color:var(--brown);font-weight:600;}
+  .step{border-left:3px solid var(--ochre);padding:2px 0 2px 16px;margin:20px 0;}
+  .step .n{display:inline-block;background:var(--ochre);color:#fff;width:24px;height:24px;
+    border-radius:50%;text-align:center;line-height:24px;font-size:14px;margin-right:8px;
+    font-family:sans-serif;}
+  .step h3{display:inline;margin:0;}
+  .note{font-size:13px;color:var(--sub);}
+  .time{float:right;font-size:13px;color:var(--sub);font-family:sans-serif;}
+  @media print{body{background:#fff;}.page{box-shadow:none;margin:0;max-width:none;padding:24px 8px;}}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <h1>教学方案：GitHub 推送卡死的一次彻底解决</h1>
+  <div class="subtitle">面向对象：民族学专业同学（零 git 基础）　|　总时长约 30–40 分钟　|　整理：肖娅琦</div>
+  <hr class="rule">
+
+  <p class="lead">本方案用于把「<code>git push</code> 卡住不动」这个问题的解决过程，完整教给一位没有编程基础的同学。核心不是让他背命令，而是让他理解<strong>「git 为什么会去问一个组件要密码、那个组件为什么卡住、我们怎么把它换掉」</strong>这条链，从而以后自己也能排查。</p>
+
+  <h2>一、教学目标</h2>
+  <div class="box">
+    <ul>
+      <li><b>能说清病症</b>：知道 <code>git push</code> 卡死、超时的现象长什么样，并会和「网络不通」「密码错误」区分开。</li>
+      <li><b>能说清原理</b>：理解 <code>credential.helper</code>（凭证助手）是干什么的、为什么它「叠加」的特性会让 GCM 阴魂不散。</li>
+      <li><b>能动手修好</b>：会创建 GitHub 令牌（PAT）、会写凭证文件、会用「空值清空 + store」两行命令改配置。</li>
+      <li><b>能自己验证</b>：知道怎么判断「真的修好了」而不是假象。</li>
+    </ul>
+  </div>
+
+  <h2>二、课前准备（你这边）</h2>
+  <div class="box">
+    <ul>
+      <li>让同学准备好 <b>GitHub 账号</b>并能登录；确认他电脑已装 Git（有 <code>git</code> 命令即可，<b>不要求装 Git Bash</b>——用他手头任意终端都行）。</li>
+      <li>确认同学的项目目录（比如 <code>D:\musicdl</code>）已经能 <code>git push</code> 到自己的 fork——<b>只差授权这一步</b>。</li>
+      <li>你自己手机上准备好这份文档，方便随时翻。</li>
+    </ul>
+  </div>
+
+  <h2>三、教学流程（六步）</h2>
+
+  <div class="step">
+    <h3><span class="n">1</span>先看现象，建立「同一个坑」的共识</h3><span class="time">约 3 分钟</span>
+    <p>让他回忆或复现：敲下 <code>git push</code> 后，光标一直闪、什么都不输出，等很久最后报超时。</p>
+    <p>关键提问，帮他把「病症」定位准：</p>
+    <div class="box">
+      <ul>
+        <li>「网络能上 GitHub 吗？」——能。浏览器能打开 github.com，说明<b>网是通的</b>。</li>
+        <li>「报的是密码错吗？」——不是。密码错会<b>立刻</b>返回 <code>Authentication failed</code>，不会卡。</li>
+        <li>「那卡住说明什么？」——说明 git 在<b>等一个东西回应</b>，等不到。</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="step">
+    <h3><span class="n">2</span>讲原理：git 的「要密码」是怎么走的</h3><span class="time">约 6 分钟</span>
+    <p>用一句大白话打底：<b>git 自己不会存密码。每次要登录，它都去问一个叫「凭证助手」（credential helper）的小程序。</b></p>
+    <p>你电脑上有三个层级的配置，谁也逃不掉，按这个顺序被读：</p>
+    <table>
+      <tr><th>层级</th><th>文件</th><th>这里放了什么</th></tr>
+      <tr><td>系统级</td><td><code>PortableGit/etc/gitconfig</code></td><td><code>helper-selector</code></td></tr>
+      <tr><td>全局</td><td><code>~/.gitconfig</code></td><td>指向 <b>GCM（图形登录组件）</b></td></tr>
+      <tr><td>仓库级</td><td><code>.git/config</code></td><td>你改的那两行</td></tr>
+    </table>
+    <p><b>卡住的就是 GCM</b>——它本应弹出一个窗口让你登录 GitHub，但在某些 Windows 环境下，这个窗口弹不出来也退不出去，git 就一直干等。</p>
+  </div>
+
+  <div class="step">
+    <h3><span class="n">3</span>点破最难懂的一步：为什么「改了但还没生效」</h3><span class="time">约 6 分钟</span>
+    <p>这是整个问题的<b>题眼</b>，务必讲透：</p>
+    <div class="warn box">
+      <p><b><code>credential.helper</code> 是「叠加」的，不是「覆盖」的。</b></p>
+      <p>你写一句 <code>git config credential.helper store</code>，你以为把 GCM 换掉了——<b>其实只是又在队尾加了一个</b>。原来的 GCM 还在队里，git 挨个问过去，问到 GCM 照样卡死。</p>
+      <p>真正起作用的，是先写一句<b>空值</b>：<code>credential.helper ""</code>。空值的含义是「<b>把前面注册的所有助手全部清空</b>」。清空之后再挂 <code>store</code>，生效的才只有 store 一个。</p>
+    </div>
+    <p>可以打个比方：一队人排队接电话，你想让最后那个人接，就得先把前面所有人都<b>请走</b>，而不是再往队尾塞一个人。</p>
+  </div>
+
+  <div class="step">
+    <h3><span class="n">4</span>动手：三条命令改造凭证链</h3><span class="time">约 5 分钟</span>
+    <p><b>先说清楚：只要有 <code>git</code> 命令，用哪个终端都行</b>——Git Bash、cmd、PowerShell、VS Code 的终端面板都可以，甚至让 AI 助手代你执行也行。<b>Git Bash 不是必需的</b>，它只是最省事的一个入口。要点只有两个：① 先 <code>cd</code> 进项目目录；② 下面的命令原样敲。</p>
+    <pre><code><span class="c"># 1. 加一个空值，清空前面所有已注册的助手（关键！）</span>
+git config --add credential.helper ""
+
+<span class="c"># 2. 挂上 store：改用「读文件」的方式来拿密码</span>
+git config --add credential.helper store
+
+<span class="c"># 3. 检查结果——应该看到「空行 + store」两行</span>
+git config --get-all credential.helper</code></pre>
+    <p class="note">注意第 1 条用的是 <code>--add</code>（追加一项），不是 <code>git config credential.helper ""</code>（那会被解析成「删除该项」）。这是第一个容易踩的坑。</p>
+    <p><b>为什么用 store？</b>因为它最笨也最稳：不弹窗、不联网、不依赖任何图形组件——就是老老实实去读一个文本文件。</p>
+  </div>
+
+  <div class="step">
+    <h3><span class="n">5</span>动手：申请令牌，写进文件</h3><span class="time">约 8 分钟</span>
+    <p><b>第一步：生成令牌（Personal Access Token）。</b>打开 <code>https://github.com/settings/tokens/new</code>：</p>
+    <table>
+      <tr><th>页面上的项</th><th>怎么填</th></tr>
+      <tr><td>Note（备注）</td><td>随便，比如 <code>本地备份</code></td></tr>
+      <tr><td>Expiration（有效期）</td><td>选 90 days</td></tr>
+      <tr><td>Select scopes（权限）</td><td><b>只勾最上面那个 <code>repo</code></b></td></tr>
+    </table>
+    <p>拉到底点 <b>Generate token</b>，页面顶部会出现一串 <code>ghp_</code> 开头的字符——<b>只显示这一次</b>，点复制图标拿走。<b>不要手动框选</b>，容易漏字符。</p>
+
+    <div class="warn box">
+      <p><b>长度自查</b>：经典令牌一定是 <b><code>ghp_</code> + 36 个字符 = 共 40 位</b>。如果你拿到的明显更短（比如 24 位），那就是复制不全，回去重来。这个坑我踩过。</p>
+    </div>
+
+    <p><b>第二步：写进凭证文件。</b>文件位置：<code>C:\Users\你的用户名\.git-credentials</code>（没有就新建）。内容一行：</p>
+    <pre><code>https://你的GitHub用户名:刚才那串令牌@github.com</code></pre>
+    <p>用记事本存成 <b>UTF-8 无 BOM</b>，别存成 <code>.txt</code>（文件名就叫 <code>.git-credentials</code>，注意开头有个点）。</p>
+    <p class="note">安全提示：这个文件是<b>明文</b>存的，等于把钥匙写在纸上。所以令牌别设成永久（90 天够用），丢电脑了记得去 GitHub 撤掉令牌。</p>
+  </div>
+
+  <div class="step">
+    <h3><span class="n">6</span>验证：怎么知道真的修好了</h3><span class="time">约 6 分钟</span>
+    <p>这里有个<b>大坑</b>必须提前警告，否则他会以为成功其实是假象：</p>
+    <div class="warn box">
+      <p><b>如果本地和远端内容完全一样，<code>git push</code> 会直接输出 <code>Everything up-to-date</code> 就结束——它根本不会联网、不会认证！</b>所以看到这句话<b>不能证明凭证有效</b>。</p>
+      <p>要真验证，必须推一个「远端还不存在的东西」，比如一个临时分支。</p>
+    </div>
+    <p><b>推荐的三级验证</b>（从轻到重）：</p>
+    <table>
+      <tr><th>级别</th><th>怎么做</th><th>说明什么</th></tr>
+      <tr><td>① 只查身份</td><td><code>curl -H "Authorization: token 你的令牌" https://api.github.com/user</code></td><td>返回你的用户名 = 令牌有效</td></tr>
+      <tr><td>② 模拟推送</td><td><code>git push --dry-run origin master</code></td><td>不真的推，但走完整认证，能过就基本成了</td></tr>
+      <tr><td>③ 真实端到端</td><td>建个临时分支推上去，再去 GitHub 网页确认看到它，然后删掉</td><td>这才是铁证</td></tr>
+    </table>
+  </div>
+
+  <h2>四、教学检查点（确认他真的懂了）</h2>
+  <div class="box">
+    <ul>
+      <li>让他<b>用自己的话</b>解释：为什么单纯加 <code>store</code> 不够，非得先加空值？</li>
+      <li>让他说出：<code>Everything up-to-date</code> 为什么不能用来证明修好了？</li>
+      <li>让他独立完成一遍「生成令牌 → 写文件 → 验证」，你不插手。</li>
+    </ul>
+  </div>
+
+  <h2>五、常见追问与回答（备着用）</h2>
+  <table>
+    <tr><th>同学会问</th><th>你怎么答</th></tr>
+    <tr>
+      <td>「为什么不修好 GCM，非要绕过它？」</td>
+      <td>GCM 那个卡死跟 Windows 环境、版本有关，修起来成本高还未必稳。用令牌是最直接、可复现的办法，效果一样好。</td>
+    </tr>
+    <tr>
+      <td>「令牌会不会被人看到？」</td>
+      <td>它在你自己电脑的文件里，明文存的。只要不外发、不截图给别人看就没问题。真要交作业截图，记得把令牌那行涂掉。</td>
+    </tr>
+    <tr>
+      <td>「90 天以后呢？」</td>
+      <td>令牌会过期，推送会开始失败。到时候重新生成一个、重新写进那个文件就行，其余配置都不用动。</td>
+    </tr>
+    <tr>
+      <td>「我电脑上也要开那个代理软件吗？」</td>
+      <td>访问 GitHub 需要的话就开着；这个跟我们改的凭证问题是两件独立的事，别混在一起排查。</td>
+    </tr>
+  </table>
+
+  <h2>六、给同学的一页速查卡（可直接发他）</h2>
+  <div class="ok box">
+    <p><b>我的 git push 卡住不动，怎么办？</b></p>
+    <ol>
+      <li>先确认：浏览器能打开 github.com（说明网没问题）。</li>
+      <li>在项目目录里执行这两条：
+        <pre><code>git config --add credential.helper ""
+git config --add credential.helper store</code></pre>
+      </li>
+      <li>去 <code>github.com/settings/tokens/new</code> 建令牌：勾 <b>repo</b>，有效期 90 天，复制那串 <code>ghp_</code>（共 40 位）。</li>
+      <li>写进 <code>C:\Users\你的用户名\.git-credentials</code>：
+        <pre><code>https://用户名:令牌@github.com</code></pre>
+      </li>
+      <li>验证：<code>git push --dry-run origin master</code> 不报错就算成了。</li>
+    </ol>
+    <p class="note">注意：看到 <code>Everything up-to-date</code> 不代表成功，那是没联网的空转。</p>
+  </div>
+
+  <hr class="rule">
+  <p class="note">整理自 2026-10-04 的实际排障记录；本文档可直接打印或发给同学。</p>
+
+</div>
+</body>
+</html>
