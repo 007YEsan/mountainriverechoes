@@ -34,6 +34,7 @@ hiddenimports += collect_submodules('app')
 hiddenimports += collect_submodules('musicdl')
 hiddenimports += collect_submodules('yt_dlp.extractor')
 hiddenimports += collect_submodules('yt_dlp.postprocessor')
+hiddenimports += collect_submodules('webview')
 hiddenimports += [
     # SQLAlchemy 的方言与连接池按字符串动态加载
     'sqlalchemy.dialects.sqlite',
@@ -46,6 +47,8 @@ hiddenimports += [
     'curl_cffi', 'websocket', 'brotli',
     # Flask / Jinja 运行时
     'jinja2.ext',
+    # pywebview 原生窗口(WebView2)
+    'clr', 'clr_loader', 'pythonnet',
 ]
 
 # 明确排除: 占了体积且运行时用不到
@@ -70,6 +73,8 @@ for name in ('LICENSE', 'README.md'):
 # 音源客户端依赖的原生/数据文件
 datas += collect_data_files('musicdl', include_py_files=False)
 datas += collect_data_files('yt_dlp', excludes=['**/__pycache__'])
+# pywebview: WebView2 原生库 + 运行时 JS
+datas += collect_data_files('webview')
 
 binaries = []
 

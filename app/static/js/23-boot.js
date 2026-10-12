@@ -11,7 +11,7 @@
   initDiscover();   /* 后台预热榜单/预置歌单, 不阻塞首屏 */
   renderMyPlaylists();
   const m = location.hash.slice(1).split('?');
-  render(m[0] || 'index', Object.fromEntries(new URLSearchParams(m[1] || '')));
+  render(m[0] || 'ethnos', Object.fromEntries(new URLSearchParams(m[1] || '')));
   pollTasks();
   /* UI 态服务端对齐: 换设备/清缓存后能把上次的排序、隐藏、我的歌单找回来 */
   uiStateBootstrap();
@@ -76,7 +76,7 @@
     topbar.classList.toggle('scrolled', content.scrollTop > 4);
   }, { passive: true });
 
-  /* ---- 6. 侧栏 logo 点击回到音乐库索引 ---- */
+  /* ---- 6. 侧栏 logo 点击回到民族音乐专区 ---- */
   const logo = document.querySelector('.logo');
-  if (logo){ logo.style.cursor = 'pointer'; logo.onclick = () => nav('index'); logo.title = '回到音乐库索引'; }
+  if (logo){ logo.style.cursor = 'pointer'; logo.onclick = () => nav('ethnos'); logo.title = '回到民族音乐专区'; }
 })();

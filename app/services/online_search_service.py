@@ -50,7 +50,7 @@ JOB_RETAIN_AFTER = 900
 def _client_for(sources: list[str], work_dir: str) -> Any:
     '''构造 musicdl 客户端。musicdl 依赖较重, 缺依赖时给出可读错误而不是崩掉'''
     try:
-        import musicdl
+        from musicdl import musicdl
     except Exception as exc:                                    # noqa: BLE001
         raise RuntimeError(f'音乐搜索依赖不可用: {exc}') from exc
     cfg = {

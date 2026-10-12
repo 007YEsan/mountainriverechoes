@@ -11,8 +11,8 @@
 ;     与本安装目录分离, 所以「覆盖安装」和「卸载」都不会弄丢已下载的歌。
 ;   · 曲库母本随安装包一起分发到 {app}\library, 应用首次启动才复制到用户数据目录。
 
-#define MyAppName "山河回响"
-#define MyAppVersion "1.0.0"
+#define MyAppName "山河回响 · 三族民族音乐"
+#define MyAppVersion "1.0.3"
 ; ↓ 发布者: 显示在「程序和功能」列表与安装向导里, 与 README 中的项目归属是两件事
 #define MyAppPublisher "李大光"
 #define MyAppURL "https://github.com/biabia-55/mountainriverechoes"
@@ -20,7 +20,7 @@
 #define MyDbName "mountainriverechoes.db"
 
 [Setup]
-AppId={{7A3B1E52-4C8D-4F1A-9B6E-2D5A8C3F1E40}
+AppId={{9F5B3C2E-8A1D-4F6B-9C3E-2D7A4B5F8E1C}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppVerName={#MyAppName} {#MyAppVersion}
@@ -34,7 +34,7 @@ DefaultGroupName={#MyAppName}
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
 OutputDir=Output
-OutputBaseFilename=MountainRiverEchoes-Setup-{#MyAppVersion}
+OutputBaseFilename=MountainRiverEchoes-ThreeEthnic-Setup-{#MyAppVersion}
 SetupIconFile=..\mountainriverechoes.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
 Compression=lzma2
@@ -49,8 +49,6 @@ RestartApplications=no
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
-; 若你的 Inno Setup 不带简中语言包, 删掉下面这一行即可正常编译
-Name: "chinesesimplified"; MessagesFile: "compiler:Languages\ChineseSimplified.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "创建桌面快捷方式"; GroupDescription: "附加图标:"; Flags: unchecked

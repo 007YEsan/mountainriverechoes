@@ -157,7 +157,7 @@ function renderIndex(){
     // 旧口径是"该民族所有歌手计数求和", 一首歌有多个歌手时会被重复累加 —— 实测比实际多 8,172 首
     const gsongs = (d && d.group_songs) || {};
     const songCnt = g => (gsongs[g] != null ? gsongs[g] : (groups[g] || []).reduce((s, a) => s + a.count, 0));
-    const order = Object.keys(groups).filter(g => ETHNIC_ORDER.includes(g) || g === '汉族民间小调').sort((x, y) => songCnt(y) - songCnt(x));
+    const order = threeSort(Object.keys(groups).filter(g => THREE_ORDER.includes(g)));
     const chip = a => `<div class="eth-artist" data-an="${esc(a.name)}" data-ag="${esc(a.group || '')}" title="${esc(a.name)} · ${a.count}首${a.confirmed ? ' · 官方收录' : ''}">
       <div class="av" ${a.cover ? `style="background-image:url('/api/cover?url=${encodeURIComponent(a.cover)}');background-size:cover"` : ''}>${a.cover ? '' : esc((a.name || '?')[0])}</div>
       <div class="nm">${esc(a.name)}${a.confirmed ? '<span class="cf" title="权威归类">✓</span>' : ''}${state.index.ethEdit ? '<span class="eth-rm" data-rm="${esc(a.name)}" title="从该民族移除">✕</span>' : ''}</div>
@@ -235,7 +235,7 @@ function renderIndex(){
         const gi = ethGrad(g), gs = ethGradSoft(g);
         return `<div class="pl-card eth-card" draggable="true" data-eth="${esc(g)}" title="点击进入 · 拖动调整次序"><div class="cov" style="background:linear-gradient(135deg,${gs[0]},${gs[1]});color:${gi[0]};text-shadow:none">${isHan ? '汉族' : esc(g)}</div><div class="nm">${isHan ? '汉族音乐 · ' + hanCnt + ' 首' : esc(g) + '音乐 · ' + songCnt(g) + ' 首'}</div></div>`;
       };
-      eg.innerHTML = `<div class="pl-grid">${applyOrder([...new Set([...order, '汉族民间小调'])], store.get('cm_order_ethcards', ETHCARD_ORDER_DEFAULT)).map(cardOf).join('')}</div>`;
+      eg.innerHTML = `<div class="pl-grid">${applyOrder([...order], store.get('cm_order_ethcards', ETHCARD_ORDER_DEFAULT)).map(cardOf).join('')}</div>`;
       eg.querySelectorAll('.eth-card[data-eth]').forEach(c => c.onclick = () => {
         state.index.ethnicSel = c.dataset.eth; state.index.ethEdit = false; renderIndex();
       });

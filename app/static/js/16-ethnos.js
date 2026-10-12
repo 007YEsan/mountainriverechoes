@@ -14,11 +14,25 @@ const ETHNIC_ORDER = ['蒙古族', '回族', '藏族', '维吾尔族', '苗族',
   '仫佬族', '羌族', '布朗族', '撒拉族', '毛南族', '仡佬族', '锡伯族', '阿昌族', '普米族', '塔吉克族',
   '怒族', '乌孜别克族', '俄罗斯族', '鄂温克族', '德昂族', '保安族', '裕固族', '京族', '塔塔尔族', '独龙族',
   '鄂伦春族', '赫哲族', '门巴族', '珞巴族', '基诺族'];
+/* 三民族版：只保留这三个民族，卡片按此固定顺序呈现 */
+const THREE_ORDER = ['土族', '德昂族', '阿昌族'];
+const threeSort = (arr, key) => [...arr].sort((a, b) => {
+  const ia = THREE_ORDER.indexOf(key ? key(a) : a);
+  const ib = THREE_ORDER.indexOf(key ? key(b) : b);
+  return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+});
 /* 取「民族名(可带 · 后缀)」对应的多彩渐变, 与民族tab卡片同一套配色; 汉族单独用金色。
    name 形如 '蒙古族·民族音乐' 时自动按 '·' 前一段取色。 */
 function ethGrad(name){
   const g = String(name || '').split('·')[0].trim();
   if (g === '汉族' || g === '汉族民间小调') return ['#8f5e0d', '#c9962c'];
+  /* 三民族专属中国风配色：土族=花儿·七彩袖(朱砂→金) / 德昂族=水鼓·酸茶(茶青→茶褐) / 阿昌族=户撒刀·史诗(黛蓝→银灰) */
+  const CUSTOM = {
+    '土族': ['#b03a2e', '#d9a441'],
+    '德昂族': ['#5a7d4a', '#8c6b3f'],
+    '阿昌族': ['#3a5a72', '#8a8f98'],
+  };
+  if (CUSTOM[g]) return CUSTOM[g];
   const i = ETHNIC_ORDER.indexOf(g);
   return ETH_COLORS[(i < 0 ? 0 : i) % ETH_COLORS.length];
 }
@@ -44,7 +58,7 @@ async function loadEthnos(){
   } catch(err){}
 }
 function ethCardHTML(g){
-  const grad = ETH_COLORS[g.ci % ETH_COLORS.length];
+  const grad = ethGrad(g.name);                                   /* 三族专属中国风配色 */
   const gs = [mixWhite(grad[0], .68), mixWhite(grad[1], .68)];   /* 淡色底 + 本色字 */
   /* 卡片上不再挂「N首」角标(密集), 只保留未构建/构建中这类状态提示; 曲目数在下方的 .nm 行 */
   const st = g.state === 'done' ? '' : (g.state === 'building' ? `<span class="st building">构建中</span>` : `<span class="st">未构建</span>`);
@@ -54,24 +68,18 @@ function ethCardHTML(g){
     <div class="nm"><span>${esc(g.name)}音乐</span><span class="ct">${g.state === 'done' ? g.count + ' 首' : '点击构建'}</span></div></div>`;
 }
 function renderEthnos(){
-  const groups = state.ethnos.groups || [];
-  const done = groups.filter(g => g.state === 'done').length + (state.ethnos.hanDone ? 1 : 0);
+  const groups = threeSort(state.ethnos.groups || [], g => g.name);
+  const done = groups.filter(g => g.state === 'done').length;
   const grid = $('#ethnos-grid');
   if (grid) {
-    const hanCnt = (state.hanInfo && state.hanInfo.count) || 0;
-    const hanCard = `<div class="pl-card eth-card" data-k="han" data-nm="汉族" title="点击进入">
-      <div class="cov" style="background:linear-gradient(135deg,#8f5e0d,#c9962c)">汉族<span class="play-cov"><svg class="ic fill"><use href="#i-play"/></svg></span></div>
-      <div class="nm"><span>汉族音乐</span><span class="ct">${hanCnt ? hanCnt + ' 首' : '点击构建'}</span></div></div>`;
-    grid.innerHTML = groups.map(ethCardHTML).join('') + hanCard || '<div class="empty">加载中...</div>';
-    const hc = grid.querySelector('.eth-card[data-k="han"]');
-    if (hc) hc.onclick = () => nav('playlist', { id: 'han', platform: 'ethnos', name: '汉族 · 民族音乐' });
+    grid.innerHTML = groups.map(ethCardHTML).join('') || '<div class="empty">加载中...</div>';
   }
   const prog = $('#ethnos-progress');
   if (prog) {
     const building = state.ethnos.building;
     prog.style.display = building ? '' : 'none';
-    $('#ethnos-fill').style.width = (done / 55 * 100).toFixed(1) + '%';
-    $('#ethnos-prog-text').textContent = `已构建 ${done} / 55 个民族歌单${building ? '，正在后台遍历音源搜索...' : ''}`;
+    $('#ethnos-fill').style.width = (done / 3 * 100).toFixed(1) + '%';
+    $('#ethnos-prog-text').textContent = `已收录 ${done} / 3 个民族歌单${building ? '，正在后台遍历音源搜索...' : ''}`;
     $('#ethnos-stop').style.display = building ? '' : 'none';
   }
   $$('.eth-card[data-k]').forEach(card => card.onclick = async () => {

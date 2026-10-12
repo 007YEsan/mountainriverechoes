@@ -14,11 +14,15 @@ from pathlib import Path
 
 APP_NAME = 'MountainRiverEchoes'
 APP_TITLE = '山河回响'
-VERSION = '1.0.0'
+VERSION = '1.0.2'
 # 发行者 / 数据目录厂商名。与 README 里的「课程建设方」是两件事, 改这里只会影响
 # 安装包的发布者显示与用户数据目录路径, 不影响曲库内容。
 PUBLISHER = '李大光'
-DATA_DIR_VENDOR = '李大光'
+# 注意: 三族特供版必须用独立的数据目录, 否则会与完整版(56 民族)共用
+# C:\Users\<你>\AppData\Local\李大光\MountainRiverEchoes 工作副本, 首启时把
+# 完整曲库覆盖成三族曲库(污染)。这里把厂商名改成「山河回响-三族」, 使三族版
+# 数据落在 C:\Users\<你>\AppData\Local\山河回响-三族\MountainRiverEchoes, 彻底隔离。
+DATA_DIR_VENDOR = '山河回响-三族'
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -64,7 +68,7 @@ def _default_data_dir() -> Path:
     if is_frozen():
         from platformdirs import user_data_dir
         # 第二参数是「厂商名」, 会进数据目录路径:
-        #   Windows: C:\Users\<你>\AppData\Local\李大光\MountainRiverEchoes
+        #   Windows: C:\Users\<你>\AppData\Local\山河回响-三族\MountainRiverEchoes
         #   macOS:   ~/Library/Application Support/MountainRiverEchoes
         # 改这个值 = 换数据目录。可用 MRE_DATA_DIR 覆盖, 老数据不会丢, 只是要手动搬。
         return Path(user_data_dir(APP_NAME, DATA_DIR_VENDOR))
@@ -79,7 +83,9 @@ class Settings:
     version: str = VERSION
     env: str = 'development'
     host: str = '127.0.0.1'
-    port: int = 8766
+    # 端口默认 8767：8766 保留给网页版(webui)与旧完整版(56 民族)程序，避免同时打开时
+    # 两个实例抢同一端口、后启动的窗口连到先启动的后端而「串台」。
+    port: int = 8767
     debug: bool = False
 
     app_root: Path = field(default_factory=_app_root)
@@ -129,7 +135,7 @@ def load_settings() -> Settings:
     log_dir = Path(_env_str('MRE_LOG_DIR', str(data_dir / 'logs'))).expanduser()
 
     host = _env_str('MRE_HOST', '127.0.0.1')
-    port = _env_int('MRE_PORT', 8766)
+    port = _env_int('MRE_PORT', 8767)
     if not 1 <= port <= 65535:
         raise SystemExit(f'[配置错误] MRE_PORT 超出合法范围(1-65535): {port}')
 

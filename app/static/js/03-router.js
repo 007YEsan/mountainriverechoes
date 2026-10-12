@@ -5,7 +5,7 @@
  * 内容与顺序均未做任何修改（纯搬运）。加载顺序见 index.html。
  * ================================================================ */
 /* ================================================================ 路由 */
-let currentPage = 'index';
+let currentPage = 'ethnos';
 function nav(page, params, push = true){
   const hash = '#' + page + (params ? '?' + new URLSearchParams(params).toString() : '');
   if (push && location.hash !== hash) { history.pushState({ page, params: params || {} }, '', hash); state.navDepth = (state.navDepth || 0) + 1; }
