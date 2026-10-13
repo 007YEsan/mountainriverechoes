@@ -111,6 +111,8 @@ venv.bak/
 # (backup/ 是没 git 时手工打包的兜底快照, 现已由 git 接管)
 backup/
 musicdl_outputs/
+# 安装包产物(exe)：体积大(每个 ~54MB)且每次打包都会变，不入库，成品放本地/网盘
+packaging/installer/Output/
 # 民族曲库 ethnos_cache 主数据已入库(2026-10-03) —— git 历史即回滚层,
 # 应用自身的单版快照目录继续排除, 避免每次界面操作都制造历史噪音
 webui/ethnos_cache/versions/
