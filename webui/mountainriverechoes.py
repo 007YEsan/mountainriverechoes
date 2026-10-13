@@ -1311,6 +1311,18 @@ def index():
     return render_template('mountainriverechoes.html')
 
 
+@app.route('/deang')
+def deang_player():
+    """德昂族民族音乐专属播放器（单文件前端，复用 /api/playlist 等接口）"""
+    return render_template('deang-player.html')
+
+
+@app.route('/guyun')
+def guyun_chashan():
+    """鼓韵茶山 · 德昂族民族音乐桌面端（pywebview 独立窗口入口）"""
+    return render_template('guyun-chashan.html')
+
+
 # ---------------------------------------------------------------- 搜索 (渐进式, 逐源返回)
 @app.route('/api/sources')
 def api_sources():

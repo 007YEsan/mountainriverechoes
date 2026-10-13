@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>德昂族音乐库更新报告 · 2026-10-13</title>
+<style>
+  :root{
+    --paper:#fdfbf7;
+    --ink:#3a2c1e;
+    --ink-soft:#6b5a47;
+    --brown:#7a5230;
+    --brown-dark:#5a3c22;
+    --ochre:#a9743e;
+    --accent:#b07a3f;
+    --line:#e3d6c4;
+    --line-strong:#cbb493;
+    --chip:#f1e8d9;
+    --warm:#f7efe2;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:#efe7da;
+    color:var(--ink);
+    font-family:"Songti SC","STSong","SimSun","Noto Serif CJK SC",serif;
+    line-height:1.75;
+    -webkit-print-color-adjust:exact;
+    print-color-adjust:exact;
+  }
+  .sheet{
+    max-width:820px;
+    margin:32px auto;
+    background:var(--paper);
+    padding:56px 60px 64px;
+    box-shadow:0 2px 24px rgba(90,60,34,.14);
+    border:1px solid var(--line);
+  }
+  @media (max-width:720px){ .sheet{padding:32px 22px 40px;} }
+  h1{
+    font-size:30px;
+    letter-spacing:2px;
+    margin:0 0 6px;
+    color:var(--brown-dark);
+    font-weight:700;
+  }
+  .subtitle{
+    color:var(--ink-soft);
+    font-size:14px;
+    margin:0 0 6px;
+    letter-spacing:1px;
+  }
+  .meta{
+    display:flex;flex-wrap:wrap;gap:10px;
+    margin:18px 0 26px;
+    font-size:13px;color:var(--ink-soft);
+  }
+  .meta span{
+    background:var(--chip);
+    padding:4px 12px;border-radius:14px;
+    border:1px solid var(--line);
+  }
+  .rule{
+    height:3px;background:linear-gradient(90deg,var(--brown-dark),var(--ochre));
+    margin:0 0 30px;border:0;
+  }
+  h2{
+    font-size:20px;color:var(--brown-dark);
+    margin:34px 0 12px;
+    padding-left:12px;
+    border-left:4px solid var(--ochre);
+    letter-spacing:1px;
+  }
+  h3{font-size:16px;color:var(--brown);margin:22px 0 8px;}
+  p{margin:8px 0;font-size:15px;}
+  .lead{
+    font-size:16px;color:var(--ink);
+    background:var(--warm);
+    padding:14px 18px;border-radius:6px;
+    border-left:4px solid var(--ochre);
+  }
+  /* 统计卡片 */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:18px 0;}
+  @media (max-width:640px){ .stats{grid-template-columns:repeat(2,1fr);} }
+  .stat{
+    background:var(--warm);border:1px solid var(--line);
+    border-radius:8px;padding:16px 12px;text-align:center;
+  }
+  .stat .num{font-size:34px;font-weight:700;color:var(--brown-dark);line-height:1.1;}
+  .stat .lbl{font-size:13px;color:var(--ink-soft);margin-top:6px;}
+  .stat .delta{font-size:12px;color:var(--ochre);font-weight:600;}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px;}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;}
+  th{background:var(--warm);color:var(--brown-dark);font-weight:700;letter-spacing:1px;}
+  tr:nth-child(even) td{background:#faf6ee;}
+  .c{text-align:center;}
+  .src-wx{color:#7a5230;font-weight:600;}
+  .src-bili{color:#7a5230;font-weight:600;}
+
+  .tag{display:inline-block;font-size:11px;padding:1px 8px;border-radius:10px;margin-left:6px;vertical-align:1px;}
+  .tag-audio{background:#e8ddc8;color:#6b4a2a;}
+  .tag-video{background:#ddd0ba;color:#5a3c22;}
+
+  ul{margin:8px 0;padding-left:22px;}
+  li{margin:5px 0;font-size:15px;}
+
+  .note{
+    font-size:13px;color:var(--ink-soft);
+    background:#f7f1e6;border:1px dashed var(--line-strong);
+    border-radius:6px;padding:12px 16px;margin:14px 0;
+  }
+  .footer{
+    margin-top:44px;padding-top:16px;border-top:2px solid var(--line-strong);
+    font-size:12px;color:var(--ink-soft);text-align:center;letter-spacing:1px;
+  }
+  .batch{
+    border:1px solid var(--line);border-radius:8px;
+    padding:14px 18px;margin:14px 0;background:#fffdf9;
+  }
+  .batch .bt{font-weight:700;color:var(--brown-dark);font-size:15px;margin-bottom:4px;}
+  .batch .bd{font-size:13.5px;color:var(--ink-soft);}
+  @media print{
+    body{background:#fff;}
+    .sheet{box-shadow:none;margin:0;border:none;max-width:none;}
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <h1>德昂族音乐库更新报告</h1>
+  <p class="subtitle">山河回响 · 中国 56 民族音乐曲库 · e44 德昂族</p>
+  <div class="meta">
+    <span>统计周期：2026-10-13 22:05 — 23:40</span>
+    <span>基线快照：da7cace（22:00 自动备份）</span>
+  </div>
+  <hr class="rule">
+
+  <p class="lead">
+    本次更新通过 <strong>4 批入库操作</strong>，向德昂族民族音乐库新增曲目，来源覆盖<strong>微信公众号</strong>与<strong>哔哩哔哩</strong>两大渠道，内容涵盖民歌、情歌、创世史诗讲唱、器乐与民俗歌舞视频。经去重合并后，净增 <strong>16 条</strong>，无条目移除。
+  </p>
+
+  <h2>一、核心数据一览</h2>
+  <div class="stats">
+    <div class="stat"><div class="num">78</div><div class="lbl">当前库总条目</div></div>
+    <div class="stat"><div class="num">+16</div><div class="lbl">本次净增</div><div class="delta">62 → 78</div></div>
+    <div class="stat"><div class="num">0</div><div class="lbl">移除条目</div></div>
+    <div class="stat"><div class="num">66'05″</div><div class="lbl">新增总时长</div></div>
+  </div>
+
+  <h2>二、来源分布变动</h2>
+  <table>
+    <thead>
+      <tr><th>音源</th><th class="c">入库前</th><th class="c">入库后</th><th class="c">增减</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="src-wx">微信（Weixin）</td><td class="c">1</td><td class="c">15</td><td class="c" style="color:#7a5230;font-weight:700;">+14</td></tr>
+      <tr><td class="src-bili">哔哩哔哩（Bilibili）</td><td class="c">30</td><td class="c">32</td><td class="c" style="color:#7a5230;font-weight:700;">+2</td></tr>
+      <tr><td>酷我（Kuwo）</td><td class="c">23</td><td class="c">23</td><td class="c">0</td></tr>
+      <tr><td>酷狗（Kugou）</td><td class="c">7</td><td class="c">7</td><td class="c">0</td></tr>
+      <tr><td>MyFreeMP3</td><td class="c">1</td><td class="c">1</td><td class="c">0</td></tr>
+      <tr style="font-weight:700;background:#f1e8d9;"><td>合计</td><td class="c">62</td><td class="c">78</td><td class="c" style="color:#5a3c22;">+16</td></tr>
+    </tbody>
+  </table>
+  <p style="font-size:13.5px;color:var(--ink-soft);">
+    本次增量几乎全部来自<strong>微信渠道</strong>（+14 条，占增量的 87.5%），bilibili 渠道补充 2 条。酷我、酷狗等既有音源未发生变化。
+  </p>
+
+  <h2>三、本次新增明细（16 条）</h2>
+
+  <h3>① 微信公众号 · 音频（mpvoice，永久直链）</h3>
+  <table>
+    <thead><tr><th>曲名</th><th class="c">格式</th><th class="c">时长</th></tr></thead>
+    <tbody>
+      <tr><td>达古达愣格来标（古歌）<span class="tag tag-audio">音频</span></td><td class="c">mp3</td><td class="c">04:51</td></tr>
+      <tr><td>摆干朵<span class="tag tag-audio">音频</span></td><td class="c">mp3</td><td class="c">03:32</td></tr>
+      <tr><td>山歌<span class="tag tag-audio">音频</span></td><td class="c">mp3</td><td class="c">03:29</td></tr>
+      <tr><td>Mai Ah Naing 3<span class="tag tag-audio">音频</span></td><td class="c">mp3</td><td class="c">04:11</td></tr>
+      <tr><td>【爱你永不变】德昂情歌<span class="tag tag-audio">音频</span></td><td class="c">mp3</td><td class="c">03:44</td></tr>
+      <tr><td>格山调——我在半路上等你<span class="tag tag-audio">音频</span></td><td class="c">mp3</td><td class="c">03:38</td></tr>
+      <tr><td>春天的德昂山<span class="tag tag-audio">音频</span></td><td class="c">mp3</td><td class="c">03:41</td></tr>
+    </tbody>
+  </table>
+
+  <h3>② 微信公众号 · 视频（腾讯视频 iframe）</h3>
+  <table>
+    <thead><tr><th>曲名</th><th class="c">格式</th><th class="c">时长</th></tr></thead>
+    <tbody>
+      <tr><td>德昂歌曲（茶谣）演唱；张小英 老师<span class="tag tag-video">视频</span></td><td class="c">mp4</td><td class="c">04:46</td></tr>
+      <tr><td>德昂南桑老寨<span class="tag tag-video">视频</span></td><td class="c">mp4</td><td class="c">04:57</td></tr>
+      <tr><td>舍不得（德昂歌曲）演唱；张小英 老师<span class="tag tag-video">视频</span></td><td class="c">mp4</td><td class="c">03:35</td></tr>
+      <tr><td>德昂歌曲（对不起我们有缘无分）<span class="tag tag-video">视频</span></td><td class="c">mp4</td><td class="c">04:46</td></tr>
+    </tbody>
+  </table>
+
+  <h3>③ 微信公众号 · 视频（mpvideo）</h3>
+  <table>
+    <thead><tr><th>曲名</th><th class="c">格式</th><th class="c">时长</th></tr></thead>
+    <tbody>
+      <tr><td>德昂族歌曲 欢乐的泼水节<span class="tag tag-video">视频</span></td><td class="c">mp4</td><td class="c">03:05</td></tr>
+      <tr><td>达情德昂汝买（德昂族通俗歌曲，汝买方言）<span class="tag tag-video">视频</span></td><td class="c">mp4</td><td class="c">03:48</td></tr>
+      <tr><td>德昂族歌曲<span class="tag tag-video">视频</span></td><td class="c">mp4</td><td class="c">04:29</td></tr>
+    </tbody>
+  </table>
+
+  <h3>④ 哔哩哔哩 · 视频</h3>
+  <table>
+    <thead><tr><th>曲名</th><th class="c">演唱/UP主</th><th class="c">格式</th><th class="c">时长</th></tr></thead>
+    <tbody>
+      <tr><td>德昂传说<span class="tag tag-video">视频</span></td><td class="c">正版半夏水玉</td><td class="c">m4a</td><td class="c">05:08</td></tr>
+      <tr><td>【云南少数民族音乐】德昂族民歌、合唱和器乐音乐<span class="tag tag-video">视频</span></td><td class="c">倒霉的K</td><td class="c">m4a</td><td class="c">04:25</td></tr>
+    </tbody>
+  </table>
+
+  <h2>四、入库批次回顾</h2>
+
+  <div class="batch">
+    <div class="bt">批次一 · 微信公众号文章（22:05）</div>
+    <div class="bd">《【库客•妙音】第26期 德昂族民间音乐》（东北师范大学图书馆）→ 3 首音频（达古达愣格来标、摆干朵、山歌）</div>
+  </div>
+  <div class="batch">
+    <div class="bt">批次二 · 哔哩哔哩单曲（22:16）</div>
+    <div class="bd">《德昂传说》——德昂族创世史诗《达古达楞格莱标》讲唱 → 1 条</div>
+  </div>
+  <div class="batch">
+    <div class="bt">批次三 · 哔哩哔哩单曲（22:27）</div>
+    <div class="bd">《【云南少数民族音乐】德昂族民歌、合唱和器乐音乐》 → 1 条</div>
+  </div>
+  <div class="batch">
+    <div class="bt">批次四 · 微信公众号批量（23:07—23:40）</div>
+    <div class="bd">11 个微信文章链接 → 4 首 mpvoice 音频 + 4 首腾讯视频 + 3 个 mpvideo 视频，共 11 条</div>
+  </div>
+
+  <h2>五、内容要点与说明</h2>
+  <ul>
+    <li><strong>创世史诗入藏</strong>：新增《德昂传说》与《达古达愣格来标（古歌）》，二者均指向德昂族创世史诗《达古达楞格莱标》，是该民族最具标志性的文化文本，具有突出的文献价值。</li>
+    <li><strong>歌种覆盖</strong>：本次新增覆盖了德昂族传统音乐的主要歌种——<em>山歌、情歌（啊然、舍不得、爱你永不变）、茶谣（茶图腾民族特有的歌谣）、古歌、泼水节民俗歌舞</em>，类型较为均衡。</li>
+    <li><strong>直链时效</strong>：微信音频为永久直链；腾讯视频与 mpvideo 为时效性签名链接，已写入文章来源 URL，播放时由系统自愈链自动回源续期，无需人工干预。</li>
+    <li><strong>去重情况</strong>：本次 16 条均为全新条目，与既有库无重复；重复提交的《团结之歌》因已存在未重复入库。</li>
+  </ul>
+
+  <div class="note">
+    备注：比对基线为 2026-10-13 22:00 的自动备份快照（git commit <code>da7cace</code>，62 条）。当前工作区尚有未提交的新增内容，待下次自动备份纳入版本控制。
+  </div>
+
+  <div class="footer">
+    山河回响 · 德昂族民族音乐库 · 更新报告生成于 2026-10-13
+  </div>
+
+</div>
+</body>
+</html>

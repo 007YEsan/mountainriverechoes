@@ -122,6 +122,9 @@ webui/ethnos_cache/versions/
 # 一次性调试脚手架(微信音源开发期产物, 成品见 musicdl/modules/sources/weixin.py)
 probe_weixin*.py
 
+# 安装日志(临时产物)
+packaging/installer/install_log.txt
+
 # 本地工具会话数据(ZCode / WorkBuddy)
 .zcode/
 .workbuddy/
