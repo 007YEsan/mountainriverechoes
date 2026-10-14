@@ -280,9 +280,10 @@ env -u HTTP_PROXY -u HTTPS_PROXY -u http_proxy -u https_proxy -u ALL_PROXY -u al
 | 现象 | 原因 | 解法 |
 | -- | -- | -- |
 
-
 | 微信文章抓回 body < 60KB                                   | ret=-2 反爬（2024+ 新版公众号）   | `harvest_article` 已自动转搜狗兜底；仍 0 则标记「暂无法重抓」      |  
-| 合集跑完 0 条 audio/video                                 | 合集本身是图文歌谱类               | 跟用户确认；不强求                                      |  
+| 合集跑完 0 条 audio/video                                 | 合集本身是图文歌谱类               | 跟用户确认；不强求                                      |
+
+
 | 网易云电台直链 403                                          | 40 分钟 vkey 时效            | 不重抓；播放时 `_netease_reissue_url` 按 identifier 续签 |  
 | musicdl 某源 0 命中                                      | 关键词太精准或源站限流（当日高频搜索易触发）   | 换关键词 / 换源 / 稍后再试；酷我酷狗限流隔天恢复                    |  
 | `AttributeError: 'dict' object has no attribute ...` | 把 dict 传给了要 SongInfo 的函数 | `SongInfo.fromdict(d)` 先转换（见 §1.1 注意）          |

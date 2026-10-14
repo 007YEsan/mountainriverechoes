@@ -137,6 +137,7 @@
 
   /* ===== 歌曲表格 ===== */
   .song-table{background:var(--card);border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(43,36,32,.05);}
+  .empty-hint{padding:44px 20px;text-align:center;color:var(--text-3);font-size:14px;}
   .song-row{
     display:flex;align-items:center;gap:14px;padding:13px 20px;
     cursor:pointer;transition:.15s;
@@ -330,7 +331,7 @@
           </div>
           <div class="search">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
-            <input placeholder="搜索水鼓舞、古歌、茶歌、情歌…">
+            <input id="searchInput" placeholder="搜索曲名、歌手、歌种…" autocomplete="off">
           </div>
         </div>
 
@@ -719,9 +720,21 @@
     </div>`;
   }
 
+  let searchQuery = '';
+  function filteredSongs(){
+    const q = searchQuery.trim().toLowerCase();
+    if(!q) return SONGS;
+    return SONGS.filter(s => {
+      const hay = ((s.song_name||'') + ' ' + (s.singers||'') + ' ' + songTag(s.song_name) + ' ' + srcLabel(s)).toLowerCase();
+      return hay.includes(q);
+    });
+  }
   function renderAll(){
     document.getElementById('hotTable').innerHTML = SONGS.slice(0,10).map((s,i)=>songRow(s,i,'热门曲目')).join('');
-    document.getElementById('libTable').innerHTML = SONGS.map((s,i)=>songRow(s,i,'民族乐库')).join('');
+    const fl = filteredSongs();
+    document.getElementById('libTable').innerHTML = fl.length
+      ? fl.map((s,i)=>songRow(s,i,'民族乐库')).join('')
+      : '<div class="empty-hint">未找到「'+searchQuery+'」相关曲目，换个关键词试试</div>';
     document.getElementById('mineTable').innerHTML = SONGS.slice(0,8).map((s,i)=>songRow(s,i,'我的收藏')).join('');
   }
 
@@ -829,6 +842,24 @@
       document.getElementById('sec-mine').classList.toggle('hide', a.dataset.view!=='mine');
     });
   });
+
+  /* ================= 搜索 ================= */
+  const searchInput = document.getElementById('searchInput');
+  if(searchInput){
+    searchInput.addEventListener('input', ()=>{
+      searchQuery = searchInput.value;
+      // 有搜索词时自动切到「民族乐库」页展示结果
+      if(searchQuery.trim()){
+        document.querySelectorAll('.nav a').forEach(x=>x.classList.remove('active'));
+        const libNav = document.querySelector('.nav a[data-view="lib"]');
+        if(libNav) libNav.classList.add('active');
+        document.getElementById('sec-discover').classList.add('hide');
+        document.getElementById('sec-lib').classList.remove('hide');
+        document.getElementById('sec-mine').classList.add('hide');
+      }
+      renderAll();
+    });
+  }
 
   /* ================= 启动：拉真实曲库 ================= */
   async function loadLibrary(){
