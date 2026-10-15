@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>阿昌音乐 · 桌面端</title>
+<style>
+/* ============================================================
+   阿昌音乐 · 桌面端 UI —— 设计系统
+   主色：靛蓝(织锦) / 朱红(银饰点红) / 银白(银饰) / 木色(户撒刀柄)
+   纹样：筒裙几何图腾 · 三角锯齿边 · 回纹 · 青龙白象 · 户撒刀纹
+   ============================================================ */
+:root{
+  --indigo-950:#10172b;
+  --indigo-900:#151d35;
+  --indigo-800:#1b2440;
+  --indigo-700:#24305a;
+  --indigo-600:#2f3e6e;
+  --indigo-500:#3e5088;
+  --indigo-400:#5a6da6;
+  --cinnabar-600:#b83829;
+  --cinnabar-500:#d04a38;
+  --cinnabar-400:#e0674f;
+  --silver-100:#f7f5f1;
+  --silver-150:#f1efe9;
+  --silver-200:#ebe8e1;
+  --silver-300:#dcd8cf;
+  --silver-400:#c3beb2;
+  --wood-500:#9a6a3f;
+  --wood-600:#7a5230;
+  --wood-400:#b8875a;
+  --ink:#232c4a;
+  --ink-2:#5a6385;
+  --ink-3:#8b91a8;
+  --on-dark:#e9e6df;
+  --on-dark-2:#a7adc2;
+  --font-display:"KaiTi","STKaiti","FangSong","SimSun",serif;
+  --font-body:"Microsoft YaHei","PingFang SC","Hiragino Sans GB",sans-serif;
+  --s2:8px; --s3:12px; --s4:16px; --s5:20px; --s6:24px; --s8:32px;
+  --radius-card:14px;
+  --radius-ctl:9px;
+  --sidebar-w:216px;
+  --topbar-h:64px;
+  --player-h:86px;
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{
+  font-family:var(--font-body);font-size:13px;color:var(--ink);
+  background:var(--silver-100);overflow:hidden;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+}
+button{font-family:inherit;background:none;border:none;cursor:pointer;color:inherit}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:var(--silver-300);border-radius:6px;border:2px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-thumb:hover{background:var(--silver-400);background-clip:content-box}
+
+.app{
+  display:grid;
+  grid-template-columns:var(--sidebar-w) 1fr;
+  grid-template-rows:1fr var(--player-h);
+  grid-template-areas:"side main" "player player";
+  height:100vh;width:100vw;
+}
+
+/* ============================================================ 左侧导航 */
+.sidebar{
+  grid-area:side;
+  background:linear-gradient(180deg,var(--indigo-800),var(--indigo-950));
+  color:var(--on-dark);display:flex;flex-direction:column;
+  position:relative;overflow:hidden;
+}
+.sidebar::before{
+  content:"";display:block;height:14px;flex:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='14'%3E%3Cpath d='M0 14 L11 3 L22 14 Z' fill='%23d04a38'/%3E%3C/svg%3E");
+  background-repeat:repeat-x;opacity:.85;
+}
+.logo{display:flex;align-items:center;gap:var(--s3);padding:var(--s4) var(--s4) var(--s5)}
+.logo-mark{width:40px;height:40px;flex:none;filter:drop-shadow(0 2px 6px rgba(0,0,0,.35))}
+.logo-txt{line-height:1.15}
+.logo-txt b{font-family:var(--font-display);font-size:19px;font-weight:700;letter-spacing:2px;display:block}
+.logo-txt small{font-size:10px;color:var(--on-dark-2);letter-spacing:3px;font-family:var(--font-display)}
+
+.nav{padding:var(--s3) var(--s3) 0;display:flex;flex-direction:column;gap:2px}
+.nav-label{font-size:10px;color:var(--on-dark-2);letter-spacing:3px;padding:var(--s2) var(--s3);font-family:var(--font-display)}
+.nav-item{
+  display:flex;align-items:center;gap:var(--s3);
+  width:100%;text-align:left;
+  padding:10px var(--s3);border-radius:var(--radius-ctl);
+  color:var(--on-dark-2);font-size:13px;position:relative;
+  transition:background .18s,color .18s;
+}
+.nav-item svg{width:18px;height:18px;flex:none;opacity:.9}
+.nav-item:hover{background:rgba(255,255,255,.06);color:var(--on-dark)}
+.nav-item.active{background:linear-gradient(90deg,rgba(208,74,56,.28),rgba(208,74,56,.05));color:#fff}
+.nav-item.active::before{
+  content:"";position:absolute;left:-3px;top:50%;transform:translateY(-50%);
+  width:3px;height:20px;border-radius:2px;background:var(--cinnabar-500);
+}
+.nav-item.active svg{opacity:1}
+
+.side-foot{margin-top:auto;padding:var(--s4);border-top:1px solid rgba(255,255,255,.08)}
+.playlist-chip{
+  display:flex;align-items:center;gap:var(--s3);
+  padding:var(--s2) var(--s3);border-radius:var(--radius-ctl);
+  color:var(--on-dark-2);font-size:12px;
+}
+.playlist-chip:hover{background:rgba(255,255,255,.06);color:var(--on-dark)}
+.playlist-chip .dot{width:8px;height:8px;border-radius:2px;background:var(--wood-400);flex:none}
+.playlist-chip:nth-child(2) .dot{background:var(--cinnabar-500)}
+.playlist-chip:nth-child(3) .dot{background:var(--silver-400)}
+
+/* ============================================================ 主区 */
+.main{grid-area:main;display:flex;flex-direction:column;background:var(--silver-100);overflow:hidden}
+.topbar{
+  height:var(--topbar-h);flex:none;display:flex;align-items:center;gap:var(--s4);
+  padding:0 var(--s6);background:var(--silver-100);position:relative;z-index:5;
+}
+.brand-crumb{display:flex;align-items:center;gap:var(--s2);font-family:var(--font-display);font-size:15px;color:var(--indigo-600);white-space:nowrap}
+.brand-crumb .sep{color:var(--silver-400)}
+.search{flex:1;max-width:420px;position:relative;margin-left:auto;margin-right:auto}
+.search svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--ink-3)}
+.search input{
+  width:100%;height:38px;border-radius:19px;
+  border:1px solid var(--silver-300);background:var(--silver-150);
+  padding:0 16px 0 42px;font-size:13px;color:var(--ink);
+  outline:none;transition:border .18s,background .18s,box-shadow .18s;
+}
+.search input:focus{border-color:var(--indigo-500);background:#fff;box-shadow:0 0 0 3px rgba(47,62,110,.10)}
+.topbar-right{display:flex;align-items:center;gap:var(--s2)}
+.icon-btn{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:var(--ink-2);transition:background .18s}
+.icon-btn:hover{background:var(--silver-200);color:var(--indigo-600)}
+.icon-btn svg{width:18px;height:18px}
+
+.content{flex:1;overflow-y:auto;padding:var(--s2) var(--s6) var(--s8)}
+.page{display:none}
+.page.show{display:block;animation:pagein .22s ease}
+@keyframes pagein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ============================================================ Banner */
+.banner{
+  position:relative;border-radius:var(--radius-card);
+  height:210px;overflow:hidden;display:flex;align-items:center;
+  background:
+    radial-gradient(120% 160% at 85% 20%,rgba(208,74,56,.32),transparent 55%),
+    linear-gradient(120deg,var(--indigo-700),var(--indigo-900) 60%,var(--indigo-950));
+  box-shadow:0 12px 32px -14px rgba(21,29,53,.6);
+}
+.banner::before{
+  content:"";position:absolute;inset:0;opacity:.16;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44'%3E%3Cg fill='none' stroke='%23e9e6df' stroke-width='1'%3E%3Cpath d='M22 2 L42 22 L22 42 L2 22 Z'/%3E%3Cpath d='M22 12 L32 22 L22 32 L12 22 Z'/%3E%3C/g%3E%3C/svg%3E");
+}
+.banner::after{
+  content:"";position:absolute;left:0;right:0;bottom:0;height:14px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='14'%3E%3Cpath d='M0 0 L11 14 L22 0 Z' fill='%23d04a38'/%3E%3C/svg%3E");
+  background-repeat:repeat-x;
+}
+.banner-art{position:absolute;right:24px;bottom:6px;height:180px;opacity:.95;filter:drop-shadow(0 10px 24px rgba(0,0,0,.4))}
+.banner-body{position:relative;z-index:2;padding:0 var(--s8);max-width:540px}
+.banner-kicker{
+  display:inline-flex;align-items:center;gap:8px;
+  font-family:var(--font-display);font-size:12px;letter-spacing:3px;
+  color:#e8d9c4;background:rgba(255,255,255,.10);
+  padding:5px 12px;border-radius:20px;margin-bottom:var(--s4);
+  border:1px solid rgba(255,255,255,.14);
+}
+.banner-kicker::before{content:"";width:6px;height:6px;border-radius:1px;background:var(--cinnabar-400);transform:rotate(45deg)}
+.banner-title{font-family:var(--font-display);font-size:34px;line-height:1.2;color:#fff;letter-spacing:2px;font-weight:700}
+.banner-sub{font-size:13px;color:var(--on-dark-2);margin-top:var(--s3);line-height:1.7;max-width:400px}
+.banner-cta{
+  margin-top:var(--s5);display:inline-flex;align-items:center;gap:var(--s2);
+  background:var(--cinnabar-500);color:#fff;padding:9px 20px;border-radius:22px;
+  font-size:13px;font-weight:600;letter-spacing:1px;
+  box-shadow:0 6px 16px -6px rgba(208,74,56,.7);
+  transition:background .18s,transform .18s;
+}
+.banner-cta:hover{background:var(--cinnabar-400);transform:translateY(-1px)}
+.banner-cta svg{width:15px;height:15px}
+
+/* ============================================================ 区块 */
+.section{margin-top:var(--s8)}
+.section-head{display:flex;align-items:baseline;gap:var(--s3);margin-bottom:var(--s4)}
+.section-head h2{font-family:var(--font-display);font-size:20px;letter-spacing:2px;color:var(--ink);font-weight:700}
+.section-head h2::before{
+  content:"";display:inline-block;width:10px;height:10px;margin-right:10px;
+  background:var(--cinnabar-500);transform:rotate(45deg);border-radius:2px;
+  box-shadow:0 0 0 2px rgba(208,74,56,.18);
+}
+.section-head .more{margin-left:auto;font-size:12px;color:var(--ink-3)}
+.section-head .more:hover{color:var(--indigo-600)}
+
+/* ============================================================ 歌单卡片 */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:var(--s4)}
+.card{
+  background:var(--silver-150);border:1px solid var(--silver-200);
+  border-radius:var(--radius-card);padding:var(--s3);cursor:pointer;
+  transition:transform .18s,box-shadow .18s,border-color .18s;position:relative;overflow:hidden;
+}
+.card:hover{transform:translateY(-3px);box-shadow:0 12px 26px -12px rgba(21,29,53,.35);border-color:var(--silver-300)}
+.card-cover{aspect-ratio:1;border-radius:10px;overflow:hidden;position:relative;display:grid;place-items:center}
+.card-cover .tile{position:absolute;inset:0;opacity:.9}
+.card-cover .title-char{
+  position:relative;z-index:2;font-family:var(--font-display);font-size:42px;color:#fff;
+  text-shadow:0 2px 8px rgba(0,0,0,.35);
+}
+.card-cover .play-fab{
+  position:absolute;right:10px;bottom:10px;z-index:3;
+  width:34px;height:34px;border-radius:50%;background:var(--cinnabar-500);color:#fff;
+  display:grid;place-items:center;opacity:0;transform:translateY(6px);
+  transition:opacity .2s,transform .2s;box-shadow:0 4px 10px rgba(0,0,0,.3);
+}
+.card:hover .play-fab{opacity:1;transform:translateY(0)}
+.card-cover .play-fab svg{width:16px;height:16px;margin-left:2px}
+.card-name{margin-top:var(--s3);font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card-meta{font-size:11px;color:var(--ink-3);margin-top:3px}
+
+.cover-indigo{background:linear-gradient(140deg,var(--indigo-500),var(--indigo-800))}
+.cover-cinnabar{background:linear-gradient(140deg,var(--cinnabar-400),var(--cinnabar-600))}
+.cover-wood{background:linear-gradient(140deg,var(--wood-400),var(--wood-600))}
+.cover-silver{background:linear-gradient(140deg,var(--silver-300),var(--indigo-600))}
+.cover-teal{background:linear-gradient(140deg,var(--indigo-400),var(--indigo-700))}
+.cover-dark{background:linear-gradient(140deg,var(--indigo-900),var(--indigo-950))}
+.pat-diamond{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44'%3E%3Cg fill='none' stroke='%23e9e6df' stroke-width='1' opacity='.35'%3E%3Cpath d='M22 2 L42 22 L22 42 L2 22 Z'/%3E%3Cpath d='M22 12 L32 22 L22 32 L12 22 Z'/%3E%3C/g%3E%3C/svg%3E")}
+.pat-triangle{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30'%3E%3Cg fill='none' stroke='%23fff' stroke-width='1' opacity='.4'%3E%3Cpath d='M0 30 L15 12 L30 30 Z'/%3E%3C/g%3E%3C/svg%3E")}
+.pat-diamond-sm{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32'%3E%3Cg fill='none' stroke='%23fff' stroke-width='1' opacity='.35'%3E%3Cpath d='M16 2 L30 16 L16 30 L2 16 Z'/%3E%3C/g%3E%3C/svg%3E")}
+.pat-diamond-red{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44'%3E%3Cg fill='none' stroke='%23d04a38' stroke-width='1' opacity='.5'%3E%3Cpath d='M22 2 L42 22 L22 42 L2 22 Z'/%3E%3C/g%3E%3C/svg%3E")}
+
+/* ============================================================ 歌曲列表 */
+.tracks{background:var(--silver-150);border:1px solid var(--silver-200);border-radius:var(--radius-card);overflow:hidden}
+.track-row{
+  display:grid;grid-template-columns:36px 44px 1fr 180px 60px;
+  align-items:center;gap:var(--s3);padding:11px var(--s4);
+  cursor:pointer;border-bottom:1px solid var(--silver-200);transition:background .15s;
+}
+.track-row:last-child{border-bottom:none}
+.track-row:hover{background:#fff}
+.track-row:hover .idx{display:none}
+.track-row:hover .play-mini{display:grid}
+.track-idx{color:var(--ink-3);font-size:13px;text-align:center;font-variant-numeric:tabular-nums}
+.play-mini{display:none;place-items:center;color:var(--cinnabar-500)}
+.play-mini svg{width:14px;height:14px}
+.track-cover{width:40px;height:40px;border-radius:8px;display:grid;place-items:center;font-family:var(--font-display);color:#fff;font-size:17px;overflow:hidden}
+.track-info{min-width:0}
+.track-name{font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.track-singer{font-size:11px;color:var(--ink-3);margin-top:2px}
+.track-album{font-size:12px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.track-dur{font-size:12px;color:var(--ink-3);text-align:right;font-variant-numeric:tabular-nums}
+.track-when{font-size:12px;color:var(--ink-3);text-align:right;white-space:nowrap}
+
+/* ============================================================ 简介页 */
+.intro-hero{
+  position:relative;border-radius:var(--radius-card);overflow:hidden;
+  background:linear-gradient(120deg,var(--indigo-700),var(--indigo-900) 65%,var(--indigo-950));
+  color:var(--on-dark);padding:var(--s8) var(--s8) var(--s6);
+  display:grid;grid-template-columns:1fr 200px;gap:var(--s6);align-items:center;
+}
+.intro-hero::before{
+  content:"";position:absolute;inset:0;opacity:.14;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44'%3E%3Cg fill='none' stroke='%23e9e6df' stroke-width='1'%3E%3Cpath d='M22 2 L42 22 L22 42 L2 22 Z'/%3E%3C/g%3E%3C/svg%3E");
+}
+.intro-hero > *{position:relative}
+.intro-hero h1{font-family:var(--font-display);font-size:30px;letter-spacing:3px;color:#fff;margin-bottom:var(--s3)}
+.intro-hero h1 small{font-size:14px;color:var(--on-dark-2);letter-spacing:4px;display:block;margin-top:6px;font-weight:400}
+.intro-hero p{font-size:13px;line-height:2;color:var(--on-dark-2);max-width:620px}
+.intro-hero p b{color:var(--on-dark);font-weight:600}
+.intro-art{height:170px;opacity:.95;filter:drop-shadow(0 10px 24px rgba(0,0,0,.4))}
+
+.stat-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--s4);margin-top:var(--s4)}
+.stat{
+  background:var(--silver-150);border:1px solid var(--silver-200);
+  border-radius:var(--radius-card);padding:var(--s4) var(--s5);
+}
+.stat b{display:block;font-family:var(--font-display);font-size:20px;color:var(--indigo-600);letter-spacing:1px}
+.stat span{font-size:11px;color:var(--ink-3);margin-top:4px;display:block}
+
+.culture{display:grid;grid-template-columns:2fr 1fr;gap:var(--s4);margin-top:var(--s4)}
+.culture-col{display:flex;flex-direction:column;gap:var(--s4)}
+.cu-card{
+  background:var(--silver-150);border:1px solid var(--silver-200);
+  border-radius:var(--radius-card);padding:var(--s5) var(--s6);position:relative;overflow:hidden;
+}
+.cu-card .cu-tag{
+  display:inline-block;font-size:10px;letter-spacing:3px;font-family:var(--font-display);
+  color:var(--cinnabar-600);border:1px solid rgba(208,74,56,.35);
+  padding:3px 10px;border-radius:14px;margin-bottom:var(--s3);
+}
+.cu-card h3{font-family:var(--font-display);font-size:19px;color:var(--ink);letter-spacing:1px;margin-bottom:var(--s2)}
+.cu-card p{font-size:12.5px;line-height:1.9;color:var(--ink-2)}
+.cu-card.big{background:linear-gradient(130deg,var(--indigo-700),var(--indigo-950));border:none;min-height:100%}
+.cu-card.big h3{color:#fff;font-size:23px}
+.cu-card.big p{color:var(--on-dark-2)}
+.cu-card.big .cu-tag{color:#e8d9c4;border-color:rgba(255,255,255,.3)}
+.cu-card.big::after{
+  content:"";position:absolute;right:-30px;bottom:-30px;width:150px;height:150px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44'%3E%3Cg fill='none' stroke='%23d04a38' stroke-width='1' opacity='.4'%3E%3Cpath d='M22 2 L42 22 L22 42 L2 22 Z'/%3E%3C/g%3E%3C/svg%3E");
+  transform:rotate(8deg);
+}
+
+.dao-banner{
+  margin-top:var(--s4);border-radius:var(--radius-card);overflow:hidden;position:relative;
+  background:
+    repeating-linear-gradient(90deg,rgba(154,106,63,.25) 0 10px,transparent 10px 16px),
+    linear-gradient(120deg,var(--wood-600),var(--wood-500) 55%,var(--indigo-800));
+  color:#fff;padding:var(--s6) var(--s8);display:flex;align-items:center;gap:var(--s6);
+}
+.dao-banner h3{font-family:var(--font-display);font-size:22px;letter-spacing:2px;white-space:nowrap}
+.dao-banner p{font-size:12.5px;line-height:1.9;color:rgba(255,255,255,.85);max-width:720px}
+.dao-banner .cu-tag{display:inline-block;font-size:10px;letter-spacing:3px;font-family:var(--font-display);color:#fff;border:1px solid rgba(255,255,255,.4);padding:3px 10px;border-radius:14px;margin-bottom:var(--s3)}
+
+/* 我的音乐 统计条 */
+.mine-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s4)}
+.mine-strip .stat{display:flex;align-items:center;gap:var(--s3)}
+.mine-strip .stat .num{font-family:var(--font-display);font-size:26px;color:var(--indigo-600)}
+.mine-strip .stat .lb{font-size:12px;color:var(--ink-2)}
+
+/* ============================================================ 底部播放条 */
+.player{
+  grid-area:player;
+  background:linear-gradient(180deg,var(--indigo-800),var(--indigo-950));
+  color:var(--on-dark);display:grid;grid-template-columns:1fr auto 1fr;
+  align-items:center;gap:var(--s5);padding:0 var(--s5);position:relative;z-index:10;
+}
+.player::before{
+  content:"";position:absolute;top:0;left:0;right:0;height:3px;
+  background:repeating-linear-gradient(90deg,var(--wood-500) 0 10px,var(--wood-600) 10px 16px,transparent 16px 20px);
+  opacity:.75;
+}
+.p-now{display:flex;align-items:center;gap:var(--s3);min-width:0}
+.p-cover{
+  width:52px;height:52px;border-radius:9px;flex:none;overflow:hidden;
+  background:linear-gradient(140deg,var(--indigo-500),var(--indigo-800));
+  display:grid;place-items:center;font-family:var(--font-display);font-size:22px;color:#fff;
+  box-shadow:0 4px 14px rgba(0,0,0,.4);
+}
+.p-meta{min-width:0}
+.p-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.p-singer{font-size:11px;color:var(--on-dark-2);margin-top:3px}
+.p-like{color:var(--on-dark-2);transition:color .18s}
+.p-like:hover,.p-like.on{color:var(--cinnabar-400)}
+.p-like svg{width:18px;height:18px}
+
+.p-center{display:flex;flex-direction:column;align-items:center;gap:8px;min-width:420px}
+.p-controls{display:flex;align-items:center;gap:var(--s5)}
+.p-ctl{color:var(--on-dark-2);display:grid;place-items:center;transition:color .15s,transform .15s}
+.p-ctl:hover{color:var(--on-dark);transform:scale(1.08)}
+.p-ctl svg{width:20px;height:20px}
+.p-ctl.small svg{width:16px;height:16px}
+.p-play{
+  width:44px;height:44px;border-radius:50%;
+  background:linear-gradient(135deg,var(--cinnabar-400),var(--cinnabar-600));
+  color:#fff;display:grid;place-items:center;
+  box-shadow:0 6px 18px -4px rgba(208,74,56,.7);transition:transform .15s;
+}
+.p-play:hover{transform:scale(1.06)}
+.p-play svg{width:20px;height:20px;margin-left:2px}
+.p-progress{display:flex;align-items:center;gap:var(--s3);width:100%;max-width:520px}
+.p-time{font-size:11px;color:var(--on-dark-2);font-variant-numeric:tabular-nums;width:36px;text-align:center}
+.bar{flex:1;height:4px;border-radius:2px;background:rgba(255,255,255,.14);position:relative;cursor:pointer}
+.bar-fill{position:absolute;left:0;top:0;bottom:0;width:32%;border-radius:2px;background:var(--cinnabar-500)}
+.bar-fill::after{content:"";position:absolute;right:-5px;top:50%;transform:translateY(-50%);width:10px;height:10px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.4);opacity:0;transition:opacity .15s}
+.bar:hover .bar-fill::after{opacity:1}
+
+.p-right{display:flex;align-items:center;gap:var(--s4);justify-self:end}
+.p-right .icon-btn{color:var(--on-dark-2)}
+.p-right .icon-btn:hover{color:var(--on-dark);background:rgba(255,255,255,.08)}
+.p-right .icon-btn svg{width:17px;height:17px}
+.vol{display:flex;align-items:center;gap:var(--s2)}
+.vol .bar{width:80px}
+.vol .bar-fill{width:70%;background:var(--on-dark-2)}
+.vol .bar-fill{transition:width .05s}
+
+/* ============================================================ 播放页覆盖层 */
+.player-overlay{
+  position:fixed;inset:0;z-index:300;display:none;flex-direction:column;
+  background:
+    radial-gradient(140% 120% at 50% -10%,rgba(208,74,56,.18),transparent 50%),
+    linear-gradient(180deg,var(--indigo-800) 0%,var(--indigo-900) 60%,var(--indigo-950) 100%);
+  color:var(--on-dark);
+}
+.player-overlay.show{display:flex}
+.po-top{display:flex;align-items:center;justify-content:space-between;padding:20px 28px;flex:none}
+.po-back{width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.12);display:grid;place-items:center;color:#fff;transition:background .18s}
+.po-back:hover{background:rgba(255,255,255,.24)}
+.po-back svg{width:22px;height:22px}
+.po-title{font-family:var(--font-display);font-size:14px;letter-spacing:4px;color:var(--on-dark-2)}
+.po-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow-y:auto;padding:10px 32px 30px}
+
+.po-disc{position:relative;width:270px;height:270px;margin-bottom:24px}
+.po-disc .spin{position:absolute;inset:0;border-radius:50%;animation:spin 28s linear infinite;animation-play-state:paused}
+.po-disc.spinning .spin{animation-play-state:running}
+@keyframes spin{to{transform:rotate(360deg)}}
+.po-disc svg{width:100%;height:100%;display:block}
+.po-disc .core{
+  position:absolute;inset:0;margin:auto;width:74px;height:74px;border-radius:50%;
+  background:radial-gradient(circle at 40% 35%,var(--indigo-400),var(--indigo-700) 70%,var(--indigo-900));
+  box-shadow:inset 0 0 0 3px rgba(255,255,255,.45),0 0 22px rgba(47,62,110,.65);
+  display:grid;place-items:center;z-index:2;
+}
+.po-disc .core svg{width:28px;height:28px;color:#fff}
+
+.po-song{text-align:center;margin-bottom:20px;max-width:520px}
+.po-song .p-name{font-family:var(--font-display);font-size:25px;letter-spacing:2px;color:#fff;font-weight:700;line-height:1.3}
+.po-song .p-singer{font-size:13px;color:var(--on-dark-2);margin-top:8px}
+.po-tags{display:flex;gap:10px;justify-content:center;margin-top:14px;flex-wrap:wrap}
+.po-tag{font-size:12px;padding:4px 14px;border-radius:16px;background:rgba(255,255,255,.12);color:var(--on-dark);border:1px solid rgba(255,255,255,.2)}
+
+.po-progress{width:100%;max-width:520px;margin-bottom:18px}
+.po-progress .bar{background:rgba(255,255,255,.18)}
+.po-progress .bar-fill{background:var(--cinnabar-500)}
+.po-time{display:flex;justify-content:space-between;margin-top:8px;font-size:11px;color:var(--on-dark-2);font-variant-numeric:tabular-nums}
+
+.po-controls{display:flex;align-items:center;gap:44px;margin-bottom:8px}
+.po-ctl{color:var(--on-dark-2);display:grid;place-items:center;transition:color .15s,transform .15s}
+.po-ctl:hover{color:#fff;transform:scale(1.08)}
+.po-ctl svg{width:26px;height:26px}
+.po-ctl.main{
+  width:64px;height:64px;border-radius:50%;
+  background:linear-gradient(135deg,var(--cinnabar-400),var(--cinnabar-600));
+  color:#fff;display:grid;place-items:center;
+  box-shadow:0 8px 22px -6px rgba(208,74,56,.75);transition:transform .15s;
+}
+.po-ctl.main:hover{transform:scale(1.06)}
+.po-ctl.main svg{width:30px;height:30px;margin-left:2px}
+
+@media (max-width:1100px){
+  .track-row{grid-template-columns:36px 40px 1fr 60px}
+  .track-album{display:none}
+  .culture{grid-template-columns:1fr}
+  .stat-strip{grid-template-columns:repeat(2,1fr)}
+}
+@media (max-width:900px){
+  .sidebar{display:none}
+  .app{grid-template-columns:1fr}
+  .p-center{min-width:0}
+  .p-cover{display:none}
+  .intro-hero{grid-template-columns:1fr}
+  .intro-art{display:none}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ==================== 左侧导航 ==================== -->
+  <aside class="sidebar">
+    <div class="logo">
+      <svg class="logo-mark" viewBox="0 0 40 40" aria-label="青龙白象徽记">
+        <defs>
+          <radialGradient id="lg-silver" cx="38%" cy="32%" r="70%">
+            <stop offset="0%" stop-color="#f5f3ef"/><stop offset="55%" stop-color="#dcd8cf"/><stop offset="100%" stop-color="#a8a296"/>
+          </radialGradient>
+        </defs>
+        <circle cx="20" cy="20" r="19" fill="url(#lg-silver)"/>
+        <circle cx="20" cy="20" r="15.5" fill="none" stroke="#8f897c" stroke-width="1"/>
+        <g fill="#9a6a3f">
+          <circle cx="20" cy="1.8" r="1.3"/><circle cx="27" cy="4" r="1.3"/><circle cx="33" cy="10" r="1.3"/>
+          <circle cx="36.5" cy="18" r="1.3"/><circle cx="36.5" cy="22" r="1.3"/><circle cx="33" cy="30" r="1.3"/>
+          <circle cx="27" cy="36" r="1.3"/><circle cx="20" cy="38.2" r="1.3"/>
+        </g>
+        <circle cx="20" cy="20" r="12.5" fill="#2f3e6e"/>
+        <g fill="#f7f5f1">
+          <path d="M13 21 q0-4 3.5-4 h4 q1.8 0 2 2.4 l1.6 6.6 q0.2 1-0.8 1 h-2.4 l-0.4 1.6 h-2.6 l0.5-1.6 h-3.6 z"/>
+          <path d="M13 21 l-1.4-1.2 q-1.6-1.3 0.2-2.9 l1.2 1.4 z"/>
+        </g>
+        <path d="M26 13 q3 2 2 5 q-0.7 2-2.6 2.4" fill="none" stroke="#d04a38" stroke-width="1.6" stroke-linecap="round"/>
+        <circle cx="26.6" cy="11.6" r="1.1" fill="#d04a38"/>
+        <path d="M28.4 12.4 q3.6 3 2 6.4" fill="none" stroke="#e9e6df" stroke-width="1" stroke-linecap="round" opacity=".8"/>
+      </svg>
+      <div class="logo-txt"><b>阿昌音乐</b><small>ACHANG · 德宏</small></div>
+    </div>
+
+    <nav class="nav" id="nav">
+      <div class="nav-label">在 线 音 乐</div>
+      <button class="nav-item active" data-page="discover" data-crumb="发现音乐">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg>
+        发现音乐
+      </button>
+      <button class="nav-item" data-page="playlists" data-crumb="歌单广场">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+        歌单广场
+      </button>
+      <div class="nav-label">阿 昌 文 化</div>
+      <button class="nav-item" data-page="intro" data-crumb="阿昌族音乐简介">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M9 9h.01M15 9h.01M9 13h.01M15 13h.01"/></svg>
+        阿昌族音乐简介
+      </button>
+      <div class="nav-label">我 的</div>
+      <button class="nav-item" data-page="mine" data-crumb="我的音乐">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></svg>
+        我的音乐
+      </button>
+      <button class="nav-item" data-page="recent" data-crumb="最近播放">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        最近播放
+      </button>
+    </nav>
+
+    <div class="side-foot">
+      <div class="playlist-chip" data-goto="mine"><span class="dot"></span>我喜欢的音乐</div>
+      <div class="playlist-chip" data-goto="playlists"><span class="dot"></span>户撒情歌精选</div>
+    </div>
+  </aside>
+
+  <!-- ==================== 主区 ==================== -->
+  <main class="main">
+    <header class="topbar">
+      <div class="brand-crumb">阿昌音乐 <span class="sep">/</span> <span id="crumb">发现音乐</span></div>
+      <div class="search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+        <input type="text" placeholder="搜索阿昌族歌曲、歌手、专辑">
+      </div>
+      <div class="topbar-right">
+        <button class="icon-btn" title="主题">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        </button>
+        <button class="icon-btn" title="设置">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.6-2-3.4-2.4 1a7 7 0 0 0-1.7-1L14.5 3h-5l-.3 3a7 7 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.6a7 7 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 1.7 1l.3 3h5l.3-3a7 7 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6a7 7 0 0 0 .1-1z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- ========== 页 1：发现音乐 ========== -->
+      <section class="page show" id="page-discover">
+        <div class="banner">
+          <div class="banner-body">
+            <span class="banner-kicker">德宏 · 阿昌族</span>
+            <h1 class="banner-title">山歌声声<br>户撒刀光里的民族之魂</h1>
+            <p class="banner-sub">阿昌族创世史诗《遮帕麻和遮咪麻》、情歌、山歌、蹬窝罗 —— 一百六十五首曲目，听见云南德宏。</p>
+            <button class="banner-cta">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+              播放全部
+            </button>
+          </div>
+          <svg class="banner-art" viewBox="0 0 220 180" aria-label="青龙白象">
+            <g fill="none" stroke="#e9e6df" stroke-width="1.1" opacity=".25">
+              <path d="M110 10 L190 90 L110 170 L30 90 Z"/>
+              <path d="M110 40 L160 90 L110 140 L60 90 Z"/>
+            </g>
+            <g fill="#f7f5f1">
+              <path d="M70 118 q0-22 19-22 h24 q10 0 11 13 l9 36 q1 6-4 6 h-13 l-2 9 h-15 l3-9 h-20 z"/>
+              <path d="M70 118 l-8-6 q-9-7 1-16 l7 8 z"/>
+              <rect x="80" y="142" width="8" height="26" rx="3"/>
+              <rect x="104" y="142" width="8" height="26" rx="3"/>
+            </g>
+            <path d="M132 74 q18 12 11 30 q-4 11-14 13" fill="none" stroke="#d04a38" stroke-width="5" stroke-linecap="round"/>
+            <circle cx="136" cy="66" r="5" fill="#d04a38"/>
+            <path d="M146 70 q22 18 12 40" fill="none" stroke="#e9e6df" stroke-width="3" stroke-linecap="round" opacity=".9"/>
+            <g fill="#9a6a3f" opacity=".85">
+              <circle cx="60" cy="128" r="3"/><circle cx="54" cy="138" r="2.4"/><circle cx="60" cy="148" r="3"/><circle cx="54" cy="158" r="2.4"/>
+            </g>
+          </svg>
+        </div>
+
+        <section class="section">
+          <div class="section-head">
+            <h2>阿昌族精选歌单</h2>
+            <button class="more" data-goto="playlists">更多 ›</button>
+          </div>
+          <div class="grid">
+            <div class="card" data-goto="playlists">
+              <div class="card-cover"><div class="tile cover-indigo pat-diamond"></div><span class="title-char">歌</span><span class="play-fab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span></div>
+              <div class="card-name">阿昌族民歌精选</div><div class="card-meta">165 首 · 山歌 / 情歌 / 史诗</div>
+            </div>
+            <div class="card" data-goto="playlists">
+              <div class="card-cover"><div class="tile cover-cinnabar pat-triangle"></div><span class="title-char">情</span><span class="play-fab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span></div>
+              <div class="card-name">户撒刀 · 阿昌情歌</div><div class="card-meta">情歌对唱 · 山野之恋</div>
+            </div>
+            <div class="card" data-goto="playlists">
+              <div class="card-cover"><div class="tile cover-wood pat-diamond-sm"></div><span class="title-char">山</span><span class="play-fab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span></div>
+              <div class="card-name">德宏 · 阿昌山歌</div><div class="card-meta">原生态田野录音</div>
+            </div>
+            <div class="card" data-goto="playlists">
+              <div class="card-cover"><div class="tile cover-silver pat-diamond"></div><span class="title-char">史</span><span class="play-fab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span></div>
+              <div class="card-name">青龙白象 · 创世史诗</div><div class="card-meta">遮帕麻和遮咪麻</div>
+            </div>
+            <div class="card" data-goto="playlists">
+              <div class="card-cover"><div class="tile cover-teal pat-diamond-sm"></div><span class="title-char">舞</span><span class="play-fab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span></div>
+              <div class="card-name">蹬窝罗 · 阿昌舞蹈</div><div class="card-meta">节日歌舞 · 现场</div>
+            </div>
+            <div class="card" data-goto="playlists">
+              <div class="card-cover"><div class="tile cover-dark pat-diamond-red"></div><span class="title-char">语</span><span class="play-fab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span></div>
+              <div class="card-name">阿昌语 · 母语之声</div><div class="card-meta">语言传承 · 童谣</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-head">
+            <h2>阿昌族热门歌曲</h2>
+            <span class="more">播放全部 ›</span>
+          </div>
+          <div class="tracks" id="hotTracks"></div>
+        </section>
+      </section>
+
+      <!-- ========== 页 2：阿昌族音乐简介 ========== -->
+      <section class="page" id="page-intro">
+        <div class="intro-hero">
+          <div>
+            <h1>阿昌族<small>ACHANG · 云南特有的人口较少民族</small></h1>
+            <p>阿昌族主要聚居于<b>德宏傣族景颇族自治州</b>陇川县户撒阿昌族乡与梁河县九保、囊宋两个阿昌族乡。阿昌语属汉藏语系藏缅语族，历史上没有本民族文字，历史与文化全凭口耳相传——<b>歌，因此成了阿昌人的史书</b>。从创世史诗到田间情歌，从火塘边的窝罗到节庆的象脚鼓，音乐贯穿了阿昌人的一生。</p>
+          </div>
+          <svg class="intro-art" viewBox="0 0 220 180" aria-label="青龙白象">
+            <g fill="none" stroke="#e9e6df" stroke-width="1.1" opacity=".25">
+              <path d="M110 10 L190 90 L110 170 L30 90 Z"/>
+            </g>
+            <g fill="#f7f5f1">
+              <path d="M70 118 q0-22 19-22 h24 q10 0 11 13 l9 36 q1 6-4 6 h-13 l-2 9 h-15 l3-9 h-20 z"/>
+              <path d="M70 118 l-8-6 q-9-7 1-16 l7 8 z"/>
+              <rect x="80" y="142" width="8" height="26" rx="3"/>
+              <rect x="104" y="142" width="8" height="26" rx="3"/>
+            </g>
+            <path d="M132 74 q18 12 11 30 q-4 11-14 13" fill="none" stroke="#d04a38" stroke-width="5" stroke-linecap="round"/>
+            <circle cx="136" cy="66" r="5" fill="#d04a38"/>
+            <path d="M146 70 q22 18 12 40" fill="none" stroke="#e9e6df" stroke-width="3" stroke-linecap="round" opacity=".9"/>
+          </svg>
+        </div>
+
+        <div class="stat-strip">
+          <div class="stat"><b>约 4.4 万</b><span>人口（云南特有民族）</span></div>
+          <div class="stat"><b>德宏 · 户撒 / 梁河</b><span>主要聚居地</span></div>
+          <div class="stat"><b>藏缅语族</b><span>阿昌语 · 汉藏语系</span></div>
+          <div class="stat"><b>阿露窝罗节</b><span>最盛大的传统节日</span></div>
+        </div>
+
+        <section class="section">
+          <div class="section-head"><h2>音乐文化</h2></div>
+          <div class="culture">
+            <div class="culture-col">
+              <div class="cu-card big">
+                <span class="cu-tag">国家级非物质文化遗产</span>
+                <h3>创世史诗《遮帕麻和遮咪麻》</h3>
+                <p>天公遮帕麻与地母遮咪麻创世的古老传说，由祭司兼歌手的「活袍」以韵文吟唱，2006 年列入首批国家级非物质文化遗产名录。在节庆与婚礼上，史诗一唱便是几天几夜——它是阿昌族的「荷马史诗」，也是这个无文字民族保存历史的方式。</p>
+              </div>
+            </div>
+            <div class="culture-col">
+              <div class="cu-card">
+                <span class="cu-tag">传统歌舞</span>
+                <h3>蹬窝罗</h3>
+                <p>围着火塘与篝火，踏着象脚鼓与铓锣的节拍甩手踏跳。「窝罗」即歌舞之意，阿露窝罗节上全寨同跳、通宵达旦。</p>
+              </div>
+              <div class="cu-card">
+                <span class="cu-tag">民歌</span>
+                <h3>情歌与山歌</h3>
+                <p>情歌以阿昌语即兴对唱，山川草木皆可入歌；山歌则在山野田间放喉，高亢悠远，一句唱罢满谷回声。</p>
+              </div>
+            </div>
+          </div>
+          <div class="culture" style="grid-template-columns:1fr 2fr">
+            <div class="culture-col">
+              <div class="cu-card">
+                <span class="cu-tag">民族乐器</span>
+                <h3>葫芦箫 · 三月箫</h3>
+                <p>葫芦箫与三月箫低回缠绵，是青年传情的心声；象脚鼓与铓锣定住窝罗的舞步，每逢节庆，鼓锣声传出山寨很远。</p>
+              </div>
+            </div>
+            <div class="culture-col">
+              <div class="cu-card">
+                <span class="cu-tag">节日歌舞</span>
+                <h3>阿露窝罗节</h3>
+                <p>阿昌族一年中最盛大的节日，于每年三月举行。届时竖窝罗牌坊、祭青龙白象图腾，全寨人围着牌坊踏歌而舞，史诗与情歌昼夜不停——这也是采集阿昌族民间音乐最重要的场合。</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="dao-banner">
+            <div>
+              <span class="cu-tag">国家级非物质文化遗产</span>
+              <h3>户撒刀</h3>
+            </div>
+            <p>阿昌人锻了六百年的刀，「柔可绕指、削铁如泥」，锻制技艺同列首批国家级非遗。刀身映出的寒光与织锦的靛蓝、银饰的白，一起构成了阿昌族的色彩记忆——刀鞘上的青龙白象，正是这个民族的精神图腾。</p>
+          </div>
+        </section>
+      </section>
+
+      <!-- ========== 页 3：歌单广场 ========== -->
+      <section class="page" id="page-playlists">
+        <section class="section" style="margin-top:0">
+          <div class="section-head"><h2>全部歌单</h2></div>
+          <div class="grid">
+            <div class="card"><div class="card-cover"><div class="tile cover-indigo pat-diamond"></div><span class="title-char">歌</span><span class="play-fab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span></div><div class="card-name">阿昌族民歌精选</div><div class="card-meta">165 首</div></div>
+            <div class="card"><div class="card-cover"><div class="tile cover-cinnabar pat-triangle"></div><span class="title-char">情</span><span class="play-fab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span></div><div class="card-name">户撒刀 · 阿昌情歌</div><div class="card-meta">42 首</div></div>
+            <div class="card"><div class="card-cover"><div class="tile cover-wood pat-diamond-sm"></div><span class="title-char">山</span><span class="play-fab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span></div><div class="card-name">德宏 · 阿昌山歌</div><div class="card-meta">36 首</div></div>
+            <div class="card"><div class="card-cover"><div class="tile cover-silver pat-diamond"></div><span class="title-char">史</span><span class="play-fab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span></div><div class="card-name">青龙白象 · 创世史诗</div><div class="card-meta">18 首</div></div>
+            <div class="card"><div class="card-cover"><div class="tile cover-teal pat-diamond-sm"></div><span class="title-char">舞</span><span class="play-fab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span></div><div class="card-name">蹬窝罗 · 阿昌舞蹈</div><div class="card-meta">25 首</div></div>
+            <div class="card"><div class="card-cover"><div class="tile cover-dark pat-diamond-red"></div><span class="title-char">语</span><span class="play-fab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span></div><div class="card-name">阿昌语 · 母语之声</div><div class="card-meta">21 首</div></div>
+            <div class="card"><div class="card-cover"><div class="tile cover-wood pat-diamond"></div><span class="title-char">织</span><span class="play-fab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span></div><div class="card-name">织锦谣 · 阿昌妇女歌</div><div class="card-meta">16 首</div></div>
+            <div class="card"><div class="card-cover"><div class="tile cover-cinnabar pat-diamond-sm"></div><span class="title-char">酒</span><span class="play-fab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span></div><div class="card-name">婚宴 · 阿昌酒歌</div><div class="card-meta">19 首</div></div>
+            <div class="card"><div class="card-cover"><div class="tile cover-indigo pat-triangle"></div><span class="title-char">童</span><span class="play-fab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span></div><div class="card-name">阿昌童谣 · 小猫咪</div><div class="card-meta">12 首</div></div>
+            <div class="card"><div class="card-cover"><div class="tile cover-dark pat-diamond"></div><span class="title-char">节</span><span class="play-fab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span></div><div class="card-name">阿露窝罗节 · 现场</div><div class="card-meta">31 首</div></div>
+          </div>
+        </section>
+      </section>
+
+      <!-- ========== 页 4：我的音乐 ========== -->
+      <section class="page" id="page-mine">
+        <div class="mine-strip" style="margin-top:var(--s4)">
+          <div class="stat"><div class="num">32</div><div class="lb">我喜欢的音乐</div></div>
+          <div class="stat"><div class="num">8</div><div class="lb">常听歌手</div></div>
+          <div class="stat"><div class="num">12</div><div class="lb">本地下载</div></div>
+        </div>
+        <section class="section">
+          <div class="section-head"><h2>我喜欢的音乐</h2><span class="more" id="mineCount">共 0 首 ›</span></div>
+          <div class="tracks" id="mineTracks"></div>
+        </section>
+      </section>
+
+      <!-- ========== 页 5：最近播放 ========== -->
+      <section class="page" id="page-recent">
+        <section class="section" style="margin-top:var(--s4)">
+          <div class="section-head"><h2>最近播放</h2><span class="more">清空记录</span></div>
+          <div class="tracks" id="recentTracks"></div>
+        </section>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- ==================== 底部播放条 ==================== -->
+  <footer class="player">
+    <div class="p-now" onclick="openPlayer()" style="cursor:pointer">
+      <div class="p-cover" id="pbCover">阿</div>
+      <div class="p-meta">
+        <div class="p-name" id="pbName">未在播放</div>
+        <div class="p-singer" id="pbSinger">选择一首阿昌族音乐开始聆听</div>
+      </div>
+      <button class="p-like" id="pbLike" onclick="toggleLike()"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.5-4.9-10-9.3C.4 8.4 2 5 5.2 5c2 0 3.4 1.1 4.3 2.4L12 10l2.5-2.6C15.4 6.1 16.8 5 18.8 5 22 5 23.6 8.4 22 11.7 19.5 16.1 12 21 12 21z"/></svg></button>
+    </div>
+
+    <div class="p-center">
+      <div class="p-controls">
+        <button class="p-ctl" title="随机" onclick="shufflePlay()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 3l4 4-4 4"/><path d="M3 7h14a4 4 0 0 1 4 4"/><path d="M7 21l-4-4 4-4"/><path d="M21 17H7a4 4 0 0 1-4-4"/></svg></button>
+        <button class="p-ctl" title="上一首" onclick="prevSong()"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zM20 6v12l-9-6z"/></svg></button>
+        <button class="p-play" title="播放" id="pbPlay" onclick="togglePlay()"><svg id="pbPlayIco" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
+        <button class="p-ctl" title="下一首" onclick="nextSong()"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 6h2v12h-2zM4 6l9 6-9 6z"/></svg></button>
+        <button class="p-ctl small" title="歌单循环" onclick="toggleLoop()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></button>
+      </div>
+      <div class="p-progress">
+        <span class="p-time" id="pbCur">00:00</span>
+        <div class="bar" id="pbBar" onclick="seekBar(event)"><div class="bar-fill" id="pbFill"></div></div>
+        <span class="p-time" id="pbDur">00:00</span>
+      </div>
+    </div>
+
+    <div class="p-right">
+      <button class="icon-btn" title="歌词" onclick="openPlayer()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5h16M4 12h16M4 19h10"/></svg></button>
+      <div class="vol">
+        <button class="icon-btn" id="volBtn" title="音量" onclick="toggleMute()"><svg id="volIco" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 5L6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg></button>
+        <div class="bar" id="volBar" onclick="setVolume(event)"><div class="bar-fill" id="volFill"></div></div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ==================== 播放页覆盖层 ==================== -->
+  <div class="player-overlay" id="playerOverlay">
+    <div class="po-top">
+      <button class="po-back" onclick="closePlayer()" title="返回">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      </button>
+      <div class="po-title">声动阿昌 · 正在播放</div>
+      <div style="width:40px"></div>
+    </div>
+    <div class="po-body">
+      <div class="po-disc" id="poDisc">
+        <div class="spin">
+          <svg viewBox="0 0 280 280" aria-label="织锦银饰唱片">
+            <defs>
+              <radialGradient id="poHideG" cx="42%" cy="38%" r="75%">
+                <stop offset="0%" stop-color="#3E5088"/><stop offset="55%" stop-color="#2F3E6E"/><stop offset="85%" stop-color="#24305A"/><stop offset="100%" stop-color="#1B2440"/>
+              </radialGradient>
+            </defs>
+            <circle cx="140" cy="140" r="138" fill="#DCD8CF"/>
+            <circle cx="140" cy="140" r="130" fill="#EDEBE8"/>
+            <g id="poRing"></g>
+            <g id="poNails"></g>
+            <circle cx="140" cy="140" r="100" fill="url(#poHideG)"/>
+            <g stroke="rgba(245,242,236,.16)" stroke-width="1" id="poGrain"></g>
+            <circle cx="140" cy="140" r="82" fill="none" stroke="rgba(245,242,236,.22)" stroke-width="1.5"/>
+            <circle cx="140" cy="140" r="60" fill="none" stroke="rgba(245,242,236,.16)" stroke-width="1"/>
+            <g fill="none" stroke="rgba(208,74,56,.42)" stroke-width="2" id="poDiamond"></g>
+          </svg>
+        </div>
+        <div class="core">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg>
+        </div>
+      </div>
+
+      <div class="po-song">
+        <div class="p-name" id="poName">未在播放</div>
+        <div class="p-singer" id="poSinger">选择一首阿昌族音乐开始聆听</div>
+        <div class="po-tags" id="poTags"></div>
+      </div>
+
+      <div class="po-progress">
+        <div class="bar" id="poBar" onclick="seekBar(event)"><div class="bar-fill" id="poFill"></div></div>
+        <div class="po-time"><span id="poCur">00:00</span><span id="poDur">00:00</span></div>
+      </div>
+
+      <div class="po-controls">
+        <button class="po-ctl" title="上一首" onclick="prevSong()"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zM20 6v12l-9-6z"/></svg></button>
+        <button class="po-ctl main" title="播放" onclick="togglePlay()"><svg id="poPlayIco" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
+        <button class="po-ctl" title="下一首" onclick="nextSong()"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 6h2v12h-2zM4 6l9 6-9 6z"/></svg></button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ================= 数据 =================
+let SONGS = [];        // 从 /api/playlist 拉取的真实曲目
+let SID = null;        // 播放会话
+let queue = [];        // 播放队列（SONGS 引用）
+let curIdx = -1;       // 队列内位置
+let loopMode = false;
+
+const COVER_CLASSES = ['cover-indigo','cover-cinnabar','cover-wood','cover-teal','cover-silver','cover-dark'];
+const audio = new Audio();
+audio.preload = 'auto';
+
+function fmtDur(sec){ sec = Math.floor(sec||0); const m = Math.floor(sec/60), s = sec%60; return (m<10?'0':'')+m+':'+(s<10?'0':'')+s; }
+function firstChar(name){ const c = (name||'').trim().charAt(0); return c || '阿'; }
+function albumLabel(s){ return s.album || s.source_cn || '阿昌族音乐'; }
+
+// ================= 页面路由：导航切换 + 面包屑同步 =================
+const navItems = document.querySelectorAll('.nav-item[data-page]');
+const pages = document.querySelectorAll('.page');
+const crumb = document.getElementById('crumb');
+
+function goto(key){
+  pages.forEach(p => p.classList.toggle('show', p.id === 'page-' + key));
+  navItems.forEach(n => n.classList.toggle('active', n.dataset.page === key));
+  const btn = document.querySelector('.nav-item[data-page="' + key + '"]');
+  if (btn) crumb.textContent = btn.dataset.crumb;
+  document.querySelector('.content').scrollTop = 0;
+}
+navItems.forEach(n => n.addEventListener('click', () => goto(n.dataset.page)));
+document.querySelectorAll('[data-goto]').forEach(el =>
+  el.addEventListener('click', () => goto(el.dataset.goto)));
+
+// ================= 渲染歌曲列表 =================
+function trackRow(s, i, withWhen){
+  const cc = COVER_CLASSES[i % COVER_CLASSES.length];
+  const midCol = withWhen
+    ? '<div class="track-when">刚刚</div>'
+    : '<div class="track-album">' + albumLabel(s) + '</div>';
+  return '<div class="track-row" onclick="playQueue(' + i + ')">'
+    + '<span class="track-idx idx">' + (i+1) + '</span>'
+    + '<span class="play-mini"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>'
+    + '<div class="track-cover ' + cc + '">' + firstChar(s.song_name) + '</div>'
+    + '<div class="track-info"><div class="track-name">' + (s.song_name||'') + '</div><div class="track-singer">' + (s.singers||'阿昌族') + '</div></div>'
+    + midCol
+    + '<div class="track-dur">' + fmtDur(s.duration_s) + '</div>'
+    + '</div>';
+}
+function renderAll(){
+  document.getElementById('hotTracks').innerHTML = SONGS.slice(0, 12).map((s,i)=>trackRow(s,i,false)).join('');
+  document.getElementById('mineTracks').innerHTML = SONGS.map((s,i)=>trackRow(s,i,false)).join('');
+  document.getElementById('recentTracks').innerHTML = SONGS.slice(0, 12).map((s,i)=>trackRow(s,i,true)).join('');
+  const mc = document.getElementById('mineCount');
+  if (mc) mc.textContent = '共 ' + SONGS.length + ' 首 ›';
+}
+
+// ================= 播放逻辑 =================
+function playQueue(i){
+  queue = SONGS.slice();
+  curIdx = i;
+  loadCur();
+}
+function songTag(name){
+  const n = name||'';
+  if(/史诗|遮帕麻|遮咪麻|创世|传说/.test(n)) return '创世史诗';
+  if(/蹬窝罗|窝罗|舞蹈|阿露/.test(n)) return '蹬窝罗 · 歌舞';
+  if(/情歌|舍不得|爱你|恋/.test(n)) return '情歌';
+  if(/山歌|红歌|党恩|歌谣/.test(n)) return '山歌 · 红歌';
+  if(/儿歌|童谣|小猫咪/.test(n)) return '童谣 · 儿歌';
+  return '阿昌族音乐';
+}
+function srcLabel(s){
+  const x = (s.source_cn || s.source || '');
+  if(/微信/.test(x)) return '微信';
+  if(/哔哩|B站|bilibili/i.test(x)) return 'B站';
+  if(/酷狗/.test(x)) return '酷狗';
+  if(/酷我/.test(x)) return '酷我';
+  if(/咪咕/.test(x)) return '咪咕';
+  if(/网易/.test(x)) return '网易云';
+  return '音源';
+}
+
+function loadCur(){
+  const s = queue[curIdx];
+  if (!s) return;
+  document.getElementById('pbName').textContent = s.song_name;
+  document.getElementById('pbSinger').textContent = (s.singers||'阿昌族') + ' · 阿昌族';
+  document.getElementById('pbCover').textContent = firstChar(s.song_name);
+  document.getElementById('pbDur').textContent = fmtDur(s.duration_s);
+  document.getElementById('pbCur').textContent = '00:00';
+  document.getElementById('pbFill').style.width = '0%';
+  // 播放页同步
+  document.getElementById('poName').textContent = s.song_name;
+  document.getElementById('poSinger').textContent = (s.singers||'阿昌族') + ' · 阿昌族';
+  document.getElementById('poDur').textContent = fmtDur(s.duration_s);
+  document.getElementById('poCur').textContent = '00:00';
+  document.getElementById('poFill').style.width = '0%';
+  document.getElementById('poTags').innerHTML =
+    '<span class="po-tag">' + songTag(s.song_name) + '</span><span class="po-tag">阿昌族</span><span class="po-tag">' + srcLabel(s) + '音源</span>';
+  audio.src = '/api/preview?sid=' + encodeURIComponent(SID) + '&id=' + encodeURIComponent(s.id) + '&n=' + encodeURIComponent(s.song_name) + '&s=' + encodeURIComponent(s.singers||'') + '&src=' + encodeURIComponent(s.source||'');
+  audio.play().then(()=>setPlay(true)).catch(()=>{});
+}
+function setPlay(p){
+  const on = '<path d="M7 5h3v14H7zM14 5h3v14h-3z"/>';
+  const off = '<path d="M8 5v14l11-7z"/>';
+  document.getElementById('pbPlayIco').innerHTML = p ? on : off;
+  document.getElementById('poPlayIco').innerHTML = p ? on : off;
+  document.getElementById('poDisc').classList.toggle('spinning', p);
+}
+function togglePlay(){
+  if (!queue.length){ if (SONGS.length) playQueue(0); return; }
+  if (audio.paused){ audio.play(); setPlay(true); }
+  else { audio.pause(); setPlay(false); }
+}
+function nextSong(){ if(!queue.length) return; curIdx=(curIdx+1)%queue.length; loadCur(); }
+function prevSong(){ if(!queue.length) return; curIdx=(curIdx-1+queue.length)%queue.length; loadCur(); }
+function shufflePlay(){ if(!SONGS.length) return; queue = SONGS.slice().sort(()=>Math.random()-0.5); curIdx=0; loadCur(); }
+function toggleLoop(){ loopMode=!loopMode; }
+function seekBar(e){ if(!audio.duration) return; const r=e.currentTarget.getBoundingClientRect(); const pct=(e.clientX-r.left)/r.width; audio.currentTime = pct*audio.duration; }
+function toggleLike(){ document.getElementById('pbLike').classList.toggle('on'); }
+
+// 播放页开关
+function openPlayer(){
+  if(!queue.length && SONGS.length) playQueue(0);
+  document.getElementById('playerOverlay').classList.add('show');
+}
+function closePlayer(){ document.getElementById('playerOverlay').classList.remove('show'); }
+
+// 音量
+let lastVol = 0.7;
+function toggleMute(){
+  if(audio.volume > 0){ lastVol = audio.volume; audio.volume = 0; }
+  else { audio.volume = lastVol || 0.7; }
+  updateVolUI();
+}
+function setVolume(e){
+  const r = e.currentTarget.getBoundingClientRect();
+  const pct = Math.max(0, Math.min(1, (e.clientX-r.left)/r.width));
+  audio.volume = pct; lastVol = pct;
+  updateVolUI();
+}
+function updateVolUI(){
+  document.getElementById('volFill').style.width = (audio.volume*100)+'%';
+}
+
+// 织锦银饰唱片纹理
+function buildDisc(){
+  const cols = ['#C03A2B','#1B2440','#8B5A3C','#D9A441'];
+  let ring='', nails='', grain='', diamond='';
+  const seg = 24;
+  for(let i=0;i<seg;i++){
+    const a0=(i/seg)*Math.PI*2, a1=((i+0.86)/seg)*Math.PI*2;
+    const c=cols[i%4];
+    ring += '<path d="M '+(140+124*Math.cos(a0)).toFixed(1)+' '+(140+124*Math.sin(a0)).toFixed(1)+' A 124 124 0 0 1 '+(140+124*Math.cos(a1)).toFixed(1)+' '+(140+124*Math.sin(a1)).toFixed(1)+'" stroke="'+c+'" stroke-width="8" fill="none" stroke-linecap="round"/>';
+  }
+  for(let i=0;i<30;i++){
+    const a=(i/30)*Math.PI*2;
+    nails += '<circle cx="'+(140+117*Math.cos(a)).toFixed(1)+'" cy="'+(140+117*Math.sin(a)).toFixed(1)+'" r="2.4" fill="#F5F2EC" opacity=".9"/>';
+  }
+  for(let i=0;i<40;i++){
+    const a=(i/40)*Math.PI*2;
+    grain += '<line x1="'+(140+18*Math.cos(a)).toFixed(1)+'" y1="'+(140+18*Math.sin(a)).toFixed(1)+'" x2="'+(140+96*Math.cos(a)).toFixed(1)+'" y2="'+(140+96*Math.sin(a)).toFixed(1)+'"/>';
+  }
+  diamond = '<path d="M140 70 L170 140 L140 210 L110 140 Z"/><path d="M140 92 L158 140 L140 188 L122 140 Z"/>';
+  document.getElementById('poRing').innerHTML = ring;
+  document.getElementById('poNails').innerHTML = nails;
+  document.getElementById('poGrain').innerHTML = grain;
+  document.getElementById('poDiamond').innerHTML = diamond;
+}
+
+audio.addEventListener('timeupdate', ()=>{
+  if(!audio.duration) return;
+  const pct = (audio.currentTime/audio.duration)*100;
+  document.getElementById('pbFill').style.width = pct+'%';
+  document.getElementById('pbCur').textContent = fmtDur(audio.currentTime);
+  document.getElementById('poFill').style.width = pct+'%';
+  document.getElementById('poCur').textContent = fmtDur(audio.currentTime);
+});
+audio.addEventListener('ended', ()=>{ if(loopMode) audio.play(); else nextSong(); });
+audio.addEventListener('playing', ()=>setPlay(true));
+audio.addEventListener('pause', ()=>setPlay(false));
+audio.addEventListener('error', ()=>{
+  if(audio.src && !audio.dataset.retried){
+    audio.dataset.retried = '1';
+    const s = queue[curIdx];
+    if(s){ audio.src = '/api/preview?sid=' + encodeURIComponent(SID) + '&id=' + encodeURIComponent(s.id) + '&n=' + encodeURIComponent(s.song_name) + '&s=' + encodeURIComponent(s.singers||'') + '&src=' + encodeURIComponent(s.source||''); audio.play().catch(()=>{}); }
+  }
+});
+
+// ================= 启动：拉真实曲库 =================
+async function loadLibrary(){
+  try{
+    const r = await fetch('/api/playlist', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({platform:'ethnos', id:'e37'})
+    });
+    const d = await r.json();
+    if (d && d.tracks && d.tracks.length){ SONGS = d.tracks; SID = d.sid; }
+  }catch(e){}
+  renderAll();
+  buildDisc();
+  updateVolUI();
+}
+loadLibrary();
+</script>
+</body>
+</html>

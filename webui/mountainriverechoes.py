@@ -1323,6 +1323,18 @@ def guyun_chashan():
     return render_template('guyun-chashan.html')
 
 
+@app.route('/achang')
+def shengdong_achang():
+    """声动阿昌 · 阿昌族民族音乐桌面端（pywebview 独立窗口入口）"""
+    return render_template('achang-music-ui.html')
+
+
+@app.route('/tuzu')
+def tuzu_yuefang():
+    """土族乐坊 · 土族民族音乐桌面端（pywebview 独立窗口入口）"""
+    return render_template('tuzu-yuefang.html')
+
+
 # ---------------------------------------------------------------- 搜索 (渐进式, 逐源返回)
 @app.route('/api/sources')
 def api_sources():
